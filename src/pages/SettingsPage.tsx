@@ -212,7 +212,6 @@ export default function SettingsPage() {
 
         <div className="mt-12 text-center">
           <p className="text-xs text-brand-gray">Ajopay Version 1.0.4 (2023)</p>
-          <p className="text-[10px] text-slate-300 mt-1 uppercase tracking-widest font-bold">Made with ❤️ in Lagos</p>
         </div>
       </div>
     </DashboardLayout>
