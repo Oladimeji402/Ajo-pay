@@ -462,7 +462,7 @@ export default function SettingsPage() {
           transition={{ delay: 0.3 }}
           className="text-center py-4"
         >
-          <p className="text-[11px] text-slate-400">Ajopay v1.0.4 · Made with 💚 in Lagos</p>
+          <p className="text-[11px] text-slate-400">Ajopay v1.0.4</p>
         </motion.div>
       </div>
     </DashboardLayout>

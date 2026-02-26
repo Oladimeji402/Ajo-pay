@@ -129,7 +129,7 @@ export const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
 
         {/* Mobile Footer */}
         <div className="lg:hidden text-center pb-6">
-          <p className="text-[11px] text-slate-400">© 2024 Ajopay · Made with 💚 in Lagos</p>
+          <p className="text-[11px] text-slate-400">© 2026 Ajopay </p>
         </div>
       </div>
     </div>
