@@ -118,12 +118,32 @@ export const Footer = () => {
 
       {/* Bottom Bar */}
       <div className="border-t border-white/[0.06]">
-        <Container className="py-6 flex flex-col md:flex-row justify-between items-center gap-3">
+        <Container className="py-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-[11px] text-slate-500">
             © {currentYear} Ajopay Technologies Limited. All rights reserved.
           </p>
-          <p className="text-[11px] text-slate-500 text-center md:text-right">
-            Ajopay is a financial technology company, not a bank. Banking services provided by NDIC-insured partner banks.
+
+          {/* Trust Badges */}
+          <div className="flex items-center gap-3 flex-wrap justify-center">
+            {/* Paystack */}
+            <div className="flex items-center gap-1.5 bg-white/[0.05] border border-white/[0.07] rounded-md px-2.5 py-1.5">
+              <svg width="14" height="14" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="32" height="32" rx="6" fill="#00C3F7" />
+                <path d="M7 11.5h18M7 16h14M7 20.5h10" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+              </svg>
+              <span className="text-[11px] font-semibold text-slate-300">Paystack</span>
+            </div>
+            {/* Visa */}
+            <div className="flex items-center justify-center bg-white rounded-md px-2.5 py-1.5 h-7">
+              <svg width="30" height="10" viewBox="0 0 38 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14.739 0.504L9.816 12.496H6.508L4.081 2.953C3.936 2.376 3.812 2.163 3.362 1.918C2.632 1.519 1.426 1.145 0.363 0.908L0.435 0.504H5.654C6.333 0.504 6.943 0.956 7.102 1.74L8.383 8.558L11.449 0.504H14.739ZM27.367 8.469C27.381 5.244 22.989 5.063 23.018 3.617C23.027 3.175 23.448 2.705 24.367 2.581C24.822 2.519 26.08 2.47 27.508 3.142L28.073 0.766C27.311 0.489 26.326 0.222 25.099 0.222C22.001 0.222 19.808 1.875 19.79 4.264C19.771 6.024 21.354 7.002 22.547 7.583C23.774 8.178 24.183 8.561 24.178 9.094C24.169 9.911 23.2 10.27 22.293 10.285C20.683 10.311 19.72 9.843 18.953 9.489L18.37 11.945C19.14 12.296 20.569 12.601 22.049 12.619C25.341 12.619 27.357 10.986 27.367 8.469ZM35.675 12.496H38.563L36.038 0.504H33.357C32.755 0.504 32.245 0.851 32.021 1.387L27.36 12.496H30.65L31.319 10.629H35.327L35.675 12.496ZM32.218 8.281L33.848 3.664L34.773 8.281H32.218ZM19.166 0.504L16.572 12.496H13.438L16.033 0.504H19.166Z" fill="#1434CB" />
+              </svg>
+            </div>
+            <span className="text-[11px] text-slate-500">· Secured with 256-bit SSL</span>
+          </div>
+
+          <p className="text-[11px] text-slate-500 text-center md:text-right max-w-xs">
+            Ajopay is a fintech platform. Payments processed securely via Paystack.
           </p>
         </Container>
       </div>

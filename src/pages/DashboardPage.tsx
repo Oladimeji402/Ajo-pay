@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '../components/layout/DashboardLayout';
-import { 
-  Eye, 
-  EyeOff, 
-  Plus, 
-  Users, 
-  Bell, 
-  ArrowUpRight, 
+import {
+  Eye,
+  EyeOff,
+  Plus,
+  Users,
+  Bell,
+  ArrowUpRight,
   ArrowDownLeft,
   Flame,
   TrendingUp,
@@ -145,7 +145,7 @@ export default function DashboardPage() {
         {/* ═══════════════════════════════════════════ */}
         {/* SECTION 1: WALLET CARD — The Hero Moment   */}
         {/* ═══════════════════════════════════════════ */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -153,7 +153,7 @@ export default function DashboardPage() {
         >
           {/* Gradient Background */}
           <div className="absolute inset-0 bg-gradient-to-br from-brand-navy via-[#1e3a7d] to-brand-primary"></div>
-          
+
           {/* Geometric Pattern Overlay */}
           <div className="absolute inset-0 opacity-[0.07]">
             <div className="absolute top-0 right-0 w-72 h-72 rounded-full border-[40px] border-white -mr-20 -mt-20"></div>
@@ -169,16 +169,16 @@ export default function DashboardPage() {
                 <Wallet size={16} className="text-white/60" />
                 <span className="text-[13px] font-medium text-white/70">Total Savings Balance</span>
               </div>
-              <button 
-                onClick={() => setShowBalance(!showBalance)} 
+              <button
+                onClick={() => setShowBalance(!showBalance)}
                 className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
               >
                 {showBalance ? <EyeOff size={16} className="text-white/60" /> : <Eye size={16} className="text-white/60" />}
               </button>
             </div>
-            
+
             {/* Balance */}
-            <motion.div 
+            <motion.div
               key={showBalance ? 'show' : 'hide'}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -220,7 +220,7 @@ export default function DashboardPage() {
         {/* ═══════════════════════════════════════════ */}
         {/* SECTION 2: URGENCY BANNER                  */}
         {/* ═══════════════════════════════════════════ */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
@@ -242,7 +242,7 @@ export default function DashboardPage() {
         {/* ═══════════════════════════════════════════ */}
         {/* SECTION 3: QUICK ACTIONS                   */}
         {/* ═══════════════════════════════════════════ */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
@@ -272,9 +272,45 @@ export default function DashboardPage() {
             transition={{ delay: 0.2 }}
             className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm"
           >
+            {/* Fire animation styles */}
+            <style>{`
+              @keyframes flicker {
+                0%, 100% { transform: scaleY(1) scaleX(1); opacity: 1; }
+                25% { transform: scaleY(1.08) scaleX(0.94); opacity: 0.92; }
+                50% { transform: scaleY(0.92) scaleX(1.06); opacity: 1; }
+                75% { transform: scaleY(1.05) scaleX(0.96); opacity: 0.95; }
+              }
+              @keyframes flickerInner {
+                0%, 100% { transform: scaleY(1) translateY(0); opacity: 0.9; }
+                30% { transform: scaleY(1.1) translateY(-1px); opacity: 1; }
+                60% { transform: scaleY(0.9) translateY(1px); opacity: 0.85; }
+              }
+              @keyframes ember {
+                0%, 100% { opacity: 0.4; transform: scale(1); }
+                50% { opacity: 0.7; transform: scale(1.1); }
+              }
+              @keyframes riseParticle {
+                0% { opacity: 0.8; transform: translateY(0) scale(1); }
+                100% { opacity: 0; transform: translateY(-12px) scale(0.3); }
+              }
+              .fire-flame {
+                animation: flicker 0.8s ease-in-out infinite;
+                transform-origin: bottom center;
+              }
+              .fire-inner {
+                animation: flickerInner 0.6s ease-in-out infinite;
+                transform-origin: bottom center;
+              }
+              .fire-ember {
+                animation: ember 2s ease-in-out infinite;
+              }
+              .fire-particle {
+                animation: riseParticle 1.2s ease-out infinite;
+              }
+            `}</style>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 bg-orange-50 rounded-xl flex items-center justify-center">
+                <div className="w-9 h-9 bg-gradient-to-br from-orange-100 to-red-100 rounded-xl flex items-center justify-center">
                   <Flame size={18} className="text-orange-500" />
                 </div>
                 <div>
@@ -282,18 +318,114 @@ export default function DashboardPage() {
                   <p className="text-[11px] text-brand-gray">On-time contributions</p>
                 </div>
               </div>
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-orange-50 rounded-full">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-orange-50 to-red-50 rounded-full border border-orange-100">
                 <Flame size={14} className="text-orange-500" />
                 <span className="text-sm font-bold text-orange-600">6</span>
+                <span className="text-[10px] text-orange-400 font-semibold">months</span>
               </div>
             </div>
-            {/* Streak visualization - last 8 months */}
-            <div className="flex items-center gap-1.5">
+            {/* Streak visualization - fire flames for last 8 months */}
+            <div className="flex items-end gap-1 pt-2 pb-1 px-1">
               {['Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'].map((month, i) => {
                 const isActive = i >= 2; // Last 6 months streak
+                const flameHeight = isActive ? 48 + (i - 2) * 6 : 0; // Much taller flames
+                const flameWidth = 36; // Fixed width for prominent flames
+                const delay = i * 0.12;
                 return (
-                  <div key={month} className="flex-1 flex flex-col items-center gap-1.5">
-                    <div className={`w-full h-8 rounded-lg ${isActive ? 'bg-gradient-to-t from-orange-500 to-amber-400' : 'bg-slate-100'} transition-colors`}></div>
+                  <div key={month} className="flex-1 flex flex-col items-center gap-1">
+                    <div className="relative flex items-end justify-center" style={{ height: '88px' }}>
+                      {isActive ? (
+                        <motion.div
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ delay: 0.3 + delay, type: 'spring', stiffness: 200 }}
+                          className="relative flex items-end justify-center"
+                          style={{ width: `${flameWidth}px`, height: `${flameHeight}px` }}
+                        >
+                          {/* Glow behind flame */}
+                          <div
+                            className="absolute bottom-0 left-1/2 -translate-x-1/2 rounded-full"
+                            style={{
+                              width: '32px',
+                              height: '20px',
+                              background: 'radial-gradient(ellipse, rgba(251,146,60,0.6) 0%, rgba(239,68,68,0.2) 50%, transparent 80%)',
+                              filter: 'blur(6px)',
+                            }}
+                          />
+                          {/* Rising particles */}
+                          <div
+                            className="fire-particle absolute left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-amber-300"
+                            style={{ top: '-4px', animationDelay: `${delay}s` }}
+                          />
+                          <div
+                            className="fire-particle absolute rounded-full bg-orange-400"
+                            style={{ top: '2px', left: '30%', width: '3px', height: '3px', animationDelay: `${delay + 0.4}s` }}
+                          />
+                          {/* Outer flame SVG */}
+                          <svg
+                            viewBox="0 0 32 48"
+                            className="fire-flame absolute bottom-0"
+                            style={{
+                              width: `${flameWidth}px`,
+                              height: `${flameHeight}px`,
+                              animationDelay: `${delay * 0.5}s`,
+                              filter: 'drop-shadow(0 0 6px rgba(251,146,60,0.5)) drop-shadow(0 0 12px rgba(239,68,68,0.2))',
+                            }}
+                          >
+                            <defs>
+                              <linearGradient id={`flame-grad-${i}`} x1="0.5" y1="1" x2="0.5" y2="0">
+                                <stop offset="0%" stopColor="#991b1b" />
+                                <stop offset="20%" stopColor="#dc2626" />
+                                <stop offset="45%" stopColor="#f97316" />
+                                <stop offset="70%" stopColor="#fb923c" />
+                                <stop offset="90%" stopColor="#fbbf24" />
+                                <stop offset="100%" stopColor="#fde68a" />
+                              </linearGradient>
+                            </defs>
+                            <path
+                              d="M16 1C16 1 3 16 3 28C3 36 8 44 16 47C24 44 29 36 29 28C29 16 16 1 16 1Z"
+                              fill={`url(#flame-grad-${i})`}
+                            />
+                            {/* Flame wisp on left */}
+                            <path
+                              d="M10 18C10 18 6 22 7 28C7.5 26 9 24 10 22C10 22 8 26 9 30"
+                              fill="none"
+                              stroke="rgba(251,191,36,0.3)"
+                              strokeWidth="1"
+                            />
+                          </svg>
+                          {/* Inner flame (bright yellow-white core) */}
+                          <svg
+                            viewBox="0 0 32 48"
+                            className="fire-inner absolute bottom-0 left-1/2 -translate-x-1/2"
+                            style={{
+                              width: `${flameWidth * 0.55}px`,
+                              height: `${flameHeight * 0.6}px`,
+                              animationDelay: `${delay * 0.3}s`,
+                            }}
+                          >
+                            <defs>
+                              <linearGradient id={`inner-grad-${i}`} x1="0.5" y1="1" x2="0.5" y2="0">
+                                <stop offset="0%" stopColor="#f97316" />
+                                <stop offset="30%" stopColor="#fbbf24" />
+                                <stop offset="60%" stopColor="#fde68a" />
+                                <stop offset="100%" stopColor="#fefce8" />
+                              </linearGradient>
+                            </defs>
+                            <path
+                              d="M16 8C16 8 8 20 8 28C8 34 11 40 16 43C21 40 24 34 24 28C24 20 16 8 16 8Z"
+                              fill={`url(#inner-grad-${i})`}
+                            />
+                          </svg>
+                        </motion.div>
+                      ) : (
+                        /* Inactive: small grey ember */
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="fire-ember w-4 h-4 rounded-full bg-gradient-to-t from-slate-200 to-slate-100 shadow-inner" style={{ animationDelay: `${delay}s` }} />
+                          <div className="w-[2px] h-5 bg-slate-100 rounded-full" />
+                        </div>
+                      )}
+                    </div>
                     <span className={`text-[9px] font-bold ${isActive ? 'text-orange-500' : 'text-slate-300'}`}>{month}</span>
                   </div>
                 );
@@ -311,7 +443,7 @@ export default function DashboardPage() {
             {/* Background decoration */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10"></div>
             <div className="absolute bottom-0 left-0 w-20 h-20 bg-black/5 rounded-full -ml-8 -mb-8"></div>
-            
+
             <div className="relative z-10">
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles size={16} className="text-emerald-200" />
@@ -347,7 +479,7 @@ export default function DashboardPage() {
               <h3 className="text-[15px] font-bold text-brand-navy">Active Groups</h3>
               <p className="text-[11px] text-brand-gray">Your position in the rotation</p>
             </div>
-            <button 
+            <button
               onClick={() => navigate('/groups')}
               className="flex items-center gap-1 text-xs font-bold text-brand-emerald hover:text-emerald-700 transition-colors"
             >
@@ -406,9 +538,8 @@ export default function DashboardPage() {
                     const dotCount = group.members > 8 ? 8 : group.members;
                     return (
                       <div key={i} className="flex-1 flex flex-col items-center">
-                        <div className={`w-full h-1.5 rounded-full ${
-                          isPast ? 'bg-brand-emerald' : isCurrent ? `bg-gradient-to-r ${group.color}` : 'bg-slate-100'
-                        }`}></div>
+                        <div className={`w-full h-1.5 rounded-full ${isPast ? 'bg-brand-emerald' : isCurrent ? `bg-gradient-to-r ${group.color}` : 'bg-slate-100'
+                          }`}></div>
                         {isCurrent && (
                           <div className="mt-1">
                             <span className="text-[8px] font-bold text-brand-emerald">YOU</span>
@@ -441,14 +572,14 @@ export default function DashboardPage() {
               <h3 className="text-[15px] font-bold text-brand-navy">Recent Activity</h3>
               <p className="text-[11px] text-brand-gray">Your latest transactions</p>
             </div>
-            <button 
+            <button
               onClick={() => navigate('/activity')}
               className="flex items-center gap-1 text-xs font-bold text-brand-emerald hover:text-emerald-700 transition-colors"
             >
               View All <ChevronRight size={14} />
             </button>
           </div>
-          
+
           <div className="p-3 pt-4">
             {transactions.map((tx, index) => (
               <motion.div
@@ -459,11 +590,10 @@ export default function DashboardPage() {
                 className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-all cursor-pointer group"
               >
                 <div className="flex items-center gap-3.5">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
-                    tx.type === 'contribution' 
-                      ? 'bg-brand-primary/8 text-brand-primary group-hover:bg-brand-primary/15' 
-                      : 'bg-emerald-50 text-brand-emerald group-hover:bg-emerald-100'
-                  }`}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${tx.type === 'contribution'
+                    ? 'bg-brand-primary/8 text-brand-primary group-hover:bg-brand-primary/15'
+                    : 'bg-emerald-50 text-brand-emerald group-hover:bg-emerald-100'
+                    }`}>
                     {tx.type === 'contribution' ? <ArrowUpRight size={18} /> : <ArrowDownLeft size={18} />}
                   </div>
                   <div>
@@ -476,14 +606,12 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className={`text-[13px] font-bold ${
-                    tx.type === 'contribution' ? 'text-brand-navy' : 'text-brand-emerald'
-                  }`}>
+                  <p className={`text-[13px] font-bold ${tx.type === 'contribution' ? 'text-brand-navy' : 'text-brand-emerald'
+                    }`}>
                     {tx.type === 'contribution' ? '-' : '+'}{tx.amount}
                   </p>
-                  <span className={`inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest ${
-                    tx.status === 'success' ? 'text-emerald-500' : 'text-amber-500'
-                  }`}>
+                  <span className={`inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest ${tx.status === 'success' ? 'text-emerald-500' : 'text-amber-500'
+                    }`}>
                     <span className="w-1 h-1 bg-current rounded-full"></span>
                     {tx.status}
                   </span>
