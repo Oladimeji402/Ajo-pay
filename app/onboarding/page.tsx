@@ -204,8 +204,10 @@ export default function OnboardingPage() {
   const [dir, setDir] = useState(1);
   const [slideIndex, setSlideIndex] = useState(0);
   const [displayName, setDisplayName] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
   const [search, setSearch] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<number | null>(null);
+  const isAccountNumberValid = /^\d{10}$/.test(accountNumber);
 
   const goTo = (next: Phase) => { setDir(1); setPhase(next); };
   const goBack = (prev: Phase) => { setDir(-1); setPhase(prev); };
@@ -312,6 +314,31 @@ export default function OnboardingPage() {
                     </div>
                   </div>
 
+                  <div>
+                    <label className="block text-[12px] font-bold text-brand-navy uppercase tracking-wide mb-2">Account number</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={accountNumber}
+                        onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                        placeholder="10-digit bank account number"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-brand-navy text-sm font-medium focus:outline-none focus:border-brand-emerald focus:ring-2 focus:ring-brand-emerald/10 transition-all placeholder:text-slate-400"
+                      />
+                      {accountNumber && (
+                        <button onClick={() => setAccountNumber('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-brand-navy">
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[11px] mt-2 text-brand-gray">
+                      Admins use this account number to process your payouts.
+                    </p>
+                    {accountNumber.length > 0 && !isAccountNumberValid && (
+                      <p className="text-[11px] mt-1 text-red-500">Enter a valid 10-digit account number.</p>
+                    )}
+                  </div>
+
                   {/* Preview */}
                   {displayName.trim() && (
                     <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-100">
@@ -331,7 +358,7 @@ export default function OnboardingPage() {
               </div>
 
               <div className="flex-shrink-0 px-5 pb-8 pt-4 bg-white/80 backdrop-blur-xl border-t border-slate-100 space-y-3">
-                <PrimaryBtn onClick={() => goTo('group')} disabled={!displayName.trim()}>
+                <PrimaryBtn onClick={() => goTo('group')} disabled={!displayName.trim() || !isAccountNumberValid}>
                   Continue <ArrowRight size={16} />
                 </PrimaryBtn>
                 <GhostBtn onClick={() => goBack('intro')}>â† Back</GhostBtn>
@@ -444,6 +471,7 @@ export default function OnboardingPage() {
                       { label: 'Group', value: groups.find(g => g.id === selectedGroup)?.name },
                       { label: 'Contribution', value: groups.find(g => g.id === selectedGroup)?.contribution },
                       { label: 'Frequency', value: groups.find(g => g.id === selectedGroup)?.frequency },
+                      { label: 'Payout account', value: accountNumber },
                     ].map((s) => (
                       <div key={s.label} className="flex justify-between items-center py-2 border-b border-slate-50 last:border-0">
                         <span className="text-[12px] text-brand-gray">{s.label}</span>
