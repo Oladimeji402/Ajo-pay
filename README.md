@@ -11,4 +11,4 @@ Prerequisite: Node.js 20+
 2. Start the development server:
    `npm run dev`
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3001](http://localhost:3001).
