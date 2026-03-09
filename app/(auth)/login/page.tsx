@@ -7,18 +7,19 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Loader2 } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { useToast } from '@/components/ui/Toast';
+import { notifyError, notifySuccess } from '@/lib/toast';
 
 export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
     const router = useRouter();
+    const { showToast } = useToast();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError('');
         setIsLoading(true);
 
         const supabase = createSupabaseBrowserClient();
@@ -28,11 +29,12 @@ export default function LoginPage() {
         });
 
         if (signInError) {
-            setError(signInError.message || 'Unable to sign in with those credentials.');
+            notifyError(showToast, signInError, 'Unable to sign in with those credentials.');
             setIsLoading(false);
             return;
         }
 
+        notifySuccess(showToast, 'Signed in successfully. Redirecting to your dashboard...');
         router.push('/dashboard');
         router.refresh();
     };
@@ -69,7 +71,7 @@ export default function LoginPage() {
                     <div className="w-full border-t border-slate-200"></div>
                 </div>
                 <div className="relative flex justify-center text-xs">
-                    <span className="px-3 bg-[#F8FAFC] text-slate-400 font-medium">or continue with email</span>
+                    <span className="px-3 bg-brand-light text-slate-400 font-medium">or continue with email</span>
                 </div>
             </div>
 
@@ -120,10 +122,6 @@ export default function LoginPage() {
                         </Link>
                     </div>
                 </div>
-
-                {error && (
-                    <p className="text-xs font-medium text-red-500">{error}</p>
-                )}
 
                 <Button
                     type="submit"

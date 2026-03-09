@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/Button';
 import { motion } from 'motion/react';
 import { Loader2, Check, X } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { useToast } from '@/components/ui/Toast';
+import { notifySuccess } from '@/lib/toast';
 
 export default function SignUpPage() {
     const [isLoading, setIsLoading] = useState(false);
@@ -25,6 +27,7 @@ export default function SignUpPage() {
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
     const router = useRouter();
+    const { showToast } = useToast();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -47,7 +50,9 @@ export default function SignUpPage() {
         });
 
         if (signUpError) {
-            setError(signUpError.message || 'Unable to create account right now.');
+            const message = signUpError.message || 'Unable to create account right now.';
+            setError(message);
+            showToast(message, { type: 'error' });
             setIsLoading(false);
             return;
         }
@@ -55,7 +60,9 @@ export default function SignUpPage() {
         await supabase.auth.signOut();
         setPendingEmail(email.trim());
         setVerificationMode(true);
-        setNotice('A 6-digit OTP has been sent to your email. Enter it below to verify your account.');
+        const otpNotice = 'A 6-digit OTP has been sent to your email. Enter it below to verify your account.';
+        setNotice(otpNotice);
+        notifySuccess(showToast, otpNotice);
         setIsLoading(false);
     };
 
@@ -65,7 +72,9 @@ export default function SignUpPage() {
         setNotice('');
 
         if (!/^\d{6}$/.test(otp.trim())) {
-            setError('Enter a valid 6-digit OTP code.');
+            const message = 'Enter a valid 6-digit OTP code.';
+            setError(message);
+            showToast(message, { type: 'error' });
             return;
         }
 
@@ -78,12 +87,15 @@ export default function SignUpPage() {
         });
 
         if (verifyError) {
-            setError(verifyError.message || 'OTP verification failed.');
+            const message = verifyError.message || 'OTP verification failed.';
+            setError(message);
+            showToast(message, { type: 'error' });
             setIsVerifying(false);
             return;
         }
 
         setIsVerifying(false);
+        notifySuccess(showToast, 'Email verified successfully. Continue onboarding.');
         router.push('/onboarding');
     };
 
@@ -100,12 +112,16 @@ export default function SignUpPage() {
         });
 
         if (resendError) {
-            setError(resendError.message || 'Failed to resend OTP.');
+            const message = resendError.message || 'Failed to resend OTP.';
+            setError(message);
+            showToast(message, { type: 'error' });
             setIsResending(false);
             return;
         }
 
-        setNotice('A new OTP has been sent to your email.');
+        const resendNotice = 'A new OTP has been sent to your email.';
+        setNotice(resendNotice);
+        notifySuccess(showToast, resendNotice);
         setIsResending(false);
     };
 
@@ -142,9 +158,6 @@ export default function SignUpPage() {
                         onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                         required
                     />
-
-                    {notice && <p className="text-xs font-medium text-emerald-600">{notice}</p>}
-                    {error && <p className="text-xs font-medium text-red-500">{error}</p>}
 
                     <Button type="submit" className="w-full" disabled={isVerifying}>
                         {isVerifying ? (
@@ -306,9 +319,6 @@ export default function SignUpPage() {
                         <a href="#" className="font-semibold text-brand-navy hover:text-brand-primary underline decoration-dotted transition-colors">Privacy Policy</a>
                     </span>
                 </div>
-
-                {notice && <p className="text-xs font-medium text-emerald-600">{notice}</p>}
-                {error && <p className="text-xs font-medium text-red-500">{error}</p>}
 
                 <Button
                     type="submit"

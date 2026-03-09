@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Building2, CheckCircle2, Loader2, LogOut, Save, User, XCircle } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { useToast } from '@/components/ui/Toast';
+import { notifyError, notifySuccess, notifyWarning } from '@/lib/toast';
 
 type Profile = {
     id: string;
@@ -22,13 +24,13 @@ type BankOption = {
 export default function SettingsPage() {
     const router = useRouter();
     const verificationRequestId = useRef(0);
+    const { showToast } = useToast();
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [banksLoading, setBanksLoading] = useState(true);
     const [isVerifyingAccount, setIsVerifyingAccount] = useState(false);
     const [error, setError] = useState('');
-    const [notice, setNotice] = useState('');
     const [verificationError, setVerificationError] = useState('');
 
     const [profileId, setProfileId] = useState('');
@@ -52,6 +54,7 @@ export default function SettingsPage() {
                 } = await supabase.auth.getUser();
 
                 if (!user) {
+                    notifyWarning(showToast, 'Your session has expired. Please log in again.');
                     router.push('/login');
                     return;
                 }
@@ -185,13 +188,12 @@ export default function SettingsPage() {
         const hasAccount = trimmedAccount.length > 0;
 
         if (hasAccount && !canSave) {
-            setError('Complete bank verification before saving account changes.');
+            notifyWarning(showToast, 'Complete bank verification before saving account changes.');
             return;
         }
 
         setSaving(true);
         setError('');
-        setNotice('');
 
         try {
             const supabase = createSupabaseBrowserClient();
@@ -209,9 +211,9 @@ export default function SettingsPage() {
                 throw new Error(updateError.message);
             }
 
-            setNotice('Settings updated successfully.');
+            notifySuccess(showToast, 'Settings updated successfully.');
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to update settings.');
+            notifyError(showToast, err, 'Failed to update settings.');
         } finally {
             setSaving(false);
         }
@@ -220,6 +222,7 @@ export default function SettingsPage() {
     const handleSignOut = async () => {
         const supabase = createSupabaseBrowserClient();
         await supabase.auth.signOut();
+        notifySuccess(showToast, 'Signed out successfully.');
         router.push('/login');
         router.refresh();
     };
@@ -332,7 +335,6 @@ export default function SettingsPage() {
                 Sign Out
             </button>
 
-            {notice && <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-sm text-emerald-700">{notice}</div>}
             {error && <div className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-600">{error}</div>}
         </div>
     );

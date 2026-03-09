@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { Building2, CheckCircle2, Loader2, ShieldCheck, Sparkles, User2, WalletCards, XCircle } from 'lucide-react';
+import { useToast } from '@/components/ui/Toast';
+import { notifyError, notifySuccess, notifyWarning } from '@/lib/toast';
 
 type GroupRow = {
     id: string;
@@ -23,13 +25,13 @@ type BankOption = {
 export default function OnboardingPage() {
     const router = useRouter();
     const verificationRequestId = useRef(0);
+    const { showToast } = useToast();
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [banksLoading, setBanksLoading] = useState(true);
     const [isVerifyingAccount, setIsVerifyingAccount] = useState(false);
     const [error, setError] = useState('');
-    const [notice, setNotice] = useState('');
     const [verificationError, setVerificationError] = useState('');
 
     const [displayName, setDisplayName] = useState('');
@@ -164,7 +166,6 @@ export default function OnboardingPage() {
 
         setSaving(true);
         setError('');
-        setNotice('');
 
         try {
             const supabase = createSupabaseBrowserClient();
@@ -173,6 +174,7 @@ export default function OnboardingPage() {
             } = await supabase.auth.getUser();
 
             if (!user) {
+                notifyWarning(showToast, 'Your session has expired. Please log in again.');
                 router.push('/login');
                 return;
             }
@@ -191,10 +193,10 @@ export default function OnboardingPage() {
             const joinJson = await joinRes.json();
             if (!joinRes.ok) throw new Error(joinJson.error || 'Failed to join selected group.');
 
-            setNotice('Onboarding complete. Redirecting to dashboard...');
+            notifySuccess(showToast, 'Onboarding completed. Welcome to your dashboard.');
             setTimeout(() => router.push('/dashboard'), 800);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Unable to complete onboarding.');
+            notifyError(showToast, err, 'Unable to complete onboarding.');
         } finally {
             setSaving(false);
         }
@@ -343,7 +345,6 @@ export default function OnboardingPage() {
                         </button>
                     </form>
 
-                    {notice && <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-sm text-emerald-700">{notice}</div>}
                     {error && <div className="mt-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-600">{error}</div>}
                 </section>
             </div>

@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { useToast } from '@/components/ui/Toast';
+import { notifySuccess } from '@/lib/toast';
 
 interface DashboardLayoutProps {
     children: ReactNode;
@@ -26,6 +28,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     const router = useRouter();
     const [userName, setUserName] = useState('Member');
     const [userEmail, setUserEmail] = useState('member@ajopay.com');
+    const { showToast } = useToast();
 
     useEffect(() => {
         const loadUser = async () => {
@@ -72,6 +75,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     const handleSignOut = async () => {
         const supabase = createSupabaseBrowserClient();
         await supabase.auth.signOut();
+        notifySuccess(showToast, 'Signed out successfully.');
         router.push('/login');
         router.refresh();
     };

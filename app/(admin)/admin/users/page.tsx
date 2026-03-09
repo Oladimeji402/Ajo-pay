@@ -8,6 +8,8 @@ import { LastSynced } from '@/components/admin/LastSynced';
 import { ChartCard } from '@/components/admin/charts/ChartCard';
 import { AdminAreaChart } from '@/components/admin/charts/AreaChart';
 import { useRealtimeSubscription } from '@/lib/hooks/useRealtimeSubscription';
+import { useToast } from '@/components/ui/Toast';
+import { notifyError, notifySuccess } from '@/lib/toast';
 
 const USERS_REALTIME_TABLES = ['profiles'];
 
@@ -44,6 +46,7 @@ export default function AdminUsersPage() {
   const [userGrowth, setUserGrowth] = useState<GrowthPoint[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+  const { showToast } = useToast();
   const { refreshTrigger, lastEvent } = useRealtimeSubscription({
     channelName: 'admin-users-live',
     tables: USERS_REALTIME_TABLES,
@@ -149,9 +152,10 @@ export default function AdminUsersPage() {
       );
 
       setSelectedIds([]);
+      notifySuccess(showToast, 'Bulk user update completed successfully.');
       await loadAll();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to apply bulk action.');
+      notifyError(showToast, err, 'Unable to apply bulk action.');
     } finally {
       setBulkLoading(false);
     }

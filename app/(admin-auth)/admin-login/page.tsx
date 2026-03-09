@@ -5,26 +5,28 @@ import { useRouter } from 'next/navigation';
 import { adminLogin } from '@/lib/admin-auth';
 import { ShieldAlert, Loader2, ArrowRight, Lock, Mail } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useToast } from '@/components/ui/Toast';
+import { notifyError, notifySuccess } from '@/lib/toast';
 
 export default function AdminLoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
+    const { showToast } = useToast();
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError('');
         setIsLoading(true);
 
         const success = await adminLogin(email, password);
         if (success) {
+            notifySuccess(showToast, 'Admin login successful.');
             router.push('/admin');
             return;
         }
 
-        setError('Invalid administrative credentials. Access denied.');
+        notifyError(showToast, null, 'Invalid administrative credentials. Access denied.');
         setIsLoading(false);
     };
 
@@ -76,17 +78,6 @@ export default function AdminLoginPage() {
                             />
                         </div>
                     </div>
-
-                    {error && (
-                        <motion.div
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className="flex items-center gap-3 p-4 bg-red-50 border border-red-100 rounded-2xl"
-                        >
-                            <ShieldAlert className="text-red-500 shrink-0" size={18} />
-                            <p className="text-[12px] font-bold text-red-600 leading-tight">{error}</p>
-                        </motion.div>
-                    )}
 
                     <button
                         type="submit"
