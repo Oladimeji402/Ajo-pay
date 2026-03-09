@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { ArrowLeft, Users, Wallet, Calendar, Loader2, CheckCircle2 } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { openPaystackInline } from '@/lib/paystack-inline';
+import { useToast } from '@/components/ui/Toast';
+import { notifyError, notifySuccess, notifyWarning } from '@/lib/toast';
 
 type GroupMember = {
     id: string;
@@ -49,12 +51,12 @@ export default function GroupDetailsPage() {
     const [loading, setLoading] = useState(true);
     const [paying, setPaying] = useState(false);
     const [error, setError] = useState('');
-    const [notice, setNotice] = useState('');
 
     const [group, setGroup] = useState<GroupDetail | null>(null);
     const [contributions, setContributions] = useState<ContributionRow[]>([]);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [currentUserEmail, setCurrentUserEmail] = useState<string>('customer@ajopay.local');
+    const { showToast } = useToast();
 
     const loadData = useCallback(async () => {
         if (!groupId) return;
@@ -112,7 +114,6 @@ export default function GroupDetailsPage() {
     const handleContribution = async () => {
         if (!group || !groupId) return;
 
-        setNotice('');
         setError('');
         setPaying(true);
 
@@ -164,19 +165,19 @@ export default function GroupDetailsPage() {
                                 throw new Error(verifyJson.error || 'Payment verification failed.');
                             }
 
-                            setNotice('Contribution verified successfully.');
+                            notifySuccess(showToast, 'Contribution verified successfully.');
                             await loadData();
                         } catch (err) {
-                            setError(err instanceof Error ? err.message : 'Could not verify payment.');
+                            notifyError(showToast, err, 'Could not verify payment.');
                         }
                     })();
                 },
                 onClose: () => {
-                    setNotice((prev) => prev || 'Payment window closed.');
+                    notifyWarning(showToast, 'Payment window closed before completion.');
                 },
             });
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Unable to process contribution.');
+            notifyError(showToast, err, 'Unable to process contribution.');
         } finally {
             setPaying(false);
         }
@@ -256,13 +257,6 @@ export default function GroupDetailsPage() {
                         <p className="font-bold text-brand-navy">NGN {totalContributed.toLocaleString('en-NG')}</p>
                     </div>
                 </div>
-
-                {notice && (
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-xs font-semibold p-3 flex items-center gap-2">
-                        <CheckCircle2 size={14} />
-                        {notice}
-                    </div>
-                )}
 
                 {error && <div className="rounded-xl border border-red-100 bg-red-50 text-red-600 text-xs font-semibold p-3">{error}</div>}
             </div>

@@ -4,6 +4,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
+import { useToast } from '@/components/ui/Toast';
+import { notifySuccess } from '@/lib/toast';
 
 type GroupMember = {
     id: string;
@@ -35,6 +37,7 @@ export default function AdminGroupDetailPage() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [group, setGroup] = useState<GroupData | null>(null);
+    const { showToast } = useToast();
 
     const loadData = useCallback(async () => {
         const res = await fetch(`/api/groups/${id}`, { cache: 'no-store' });
@@ -71,9 +74,12 @@ export default function AdminGroupDetailPage() {
             });
             const json = await res.json();
             if (!res.ok) throw new Error(json.error || 'Failed to update group.');
+            notifySuccess(showToast, 'Group status updated successfully.');
             await loadData();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Could not update status.');
+            const message = err instanceof Error ? err.message : 'Could not update status.';
+            setError(message);
+            showToast(message, { type: 'error' });
         } finally {
             setSaving(false);
         }

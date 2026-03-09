@@ -6,6 +6,8 @@ import { LastSynced } from '@/components/admin/LastSynced';
 import { getAdminEmail } from '@/lib/admin-auth';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useRealtimeSubscription } from '@/lib/hooks/useRealtimeSubscription';
+import { useToast } from '@/components/ui/Toast';
+import { notifyError, notifySuccess } from '@/lib/toast';
 
 const SETTINGS_REALTIME_TABLES = ['payment_records', 'payouts', 'profiles'];
 
@@ -39,7 +41,6 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
   const [profile, setProfile] = useState<AdminProfile | null>(null);
@@ -49,6 +50,7 @@ export default function AdminSettingsPage() {
   const [lastWebhookReceivedAt, setLastWebhookReceivedAt] = useState<string | null>(null);
   const [failedTxCount, setFailedTxCount] = useState(0);
   const [pendingPayoutCount, setPendingPayoutCount] = useState(0);
+  const { showToast } = useToast();
 
   const { connectionStatus, lastEvent, refreshTrigger } = useRealtimeSubscription({
     channelName: 'admin-settings-live',
@@ -139,7 +141,6 @@ export default function AdminSettingsPage() {
 
     setSaving(true);
     setError('');
-    setNotice('');
 
     try {
       const supabase = createSupabaseBrowserClient();
@@ -154,9 +155,9 @@ export default function AdminSettingsPage() {
       if (updateError) throw new Error(updateError.message);
 
       setProfile((prev) => (prev ? { ...prev, name: name.trim(), phone: phone.trim() || null } : prev));
-      setNotice('Admin profile updated successfully.');
+      notifySuccess(showToast, 'Admin profile updated successfully.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to update admin profile.');
+      notifyError(showToast, err, 'Unable to update admin profile.');
     } finally {
       setSaving(false);
     }
@@ -233,7 +234,6 @@ export default function AdminSettingsPage() {
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
             Save Changes
           </button>
-          {notice ? <p className="text-xs font-semibold text-emerald-700">{notice}</p> : null}
           {error ? <p className="text-xs font-semibold text-red-600">{error}</p> : null}
         </div>
       </div>

@@ -8,6 +8,8 @@ import { LastSynced } from '@/components/admin/LastSynced';
 import { ChartCard } from '@/components/admin/charts/ChartCard';
 import { AdminBarChart } from '@/components/admin/charts/BarChart';
 import { useRealtimeSubscription } from '@/lib/hooks/useRealtimeSubscription';
+import { useToast } from '@/components/ui/Toast';
+import { notifyError, notifySuccess } from '@/lib/toast';
 
 const PAYOUTS_REALTIME_TABLES = ['payouts', 'profiles'];
 
@@ -43,6 +45,7 @@ export default function AdminPayoutsPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [payouts, setPayouts] = useState<PayoutRow[]>([]);
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+  const { showToast } = useToast();
   const { refreshTrigger, lastEvent } = useRealtimeSubscription({
     channelName: 'admin-payouts-live',
     tables: PAYOUTS_REALTIME_TABLES,
@@ -128,9 +131,10 @@ export default function AdminPayoutsPage() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed to mark payout as done.');
+      notifySuccess(showToast, 'Payout marked as done.');
       await loadPayouts();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to update payout.');
+      notifyError(showToast, err, 'Unable to update payout.');
     } finally {
       setSavingId('');
     }
@@ -156,9 +160,10 @@ export default function AdminPayoutsPage() {
       );
 
       setSelectedIds([]);
+      notifySuccess(showToast, 'Selected payouts marked as done.');
       await loadPayouts();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to complete batch action.');
+      notifyError(showToast, err, 'Unable to complete batch action.');
     } finally {
       setSavingId('');
     }
@@ -167,8 +172,9 @@ export default function AdminPayoutsPage() {
   const copyToClipboard = async (value: string) => {
     try {
       await navigator.clipboard.writeText(value);
-    } catch {
-      setError('Could not copy to clipboard in this browser session.');
+      notifySuccess(showToast, 'Copied to clipboard.', { duration: 2200 });
+    } catch (err) {
+      notifyError(showToast, err, 'Could not copy to clipboard in this browser session.');
     }
   };
 

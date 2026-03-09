@@ -4,6 +4,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
+import { useToast } from '@/components/ui/Toast';
+import { notifyError, notifySuccess } from '@/lib/toast';
 
 type UserDetail = {
     id: string;
@@ -25,8 +27,8 @@ export default function AdminUserDetailPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
-    const [notice, setNotice] = useState('');
     const [user, setUser] = useState<UserDetail | null>(null);
+    const { showToast } = useToast();
 
     const loadUser = useCallback(async () => {
         const res = await fetch(`/api/admin/users/${id}`, { cache: 'no-store' });
@@ -53,7 +55,6 @@ export default function AdminUserDetailPage() {
     const patchUser = async (updates: Record<string, unknown>) => {
         setSaving(true);
         setError('');
-        setNotice('');
 
         try {
             const res = await fetch(`/api/admin/users/${id}`, {
@@ -63,10 +64,10 @@ export default function AdminUserDetailPage() {
             });
             const json = await res.json();
             if (!res.ok) throw new Error(json.error || 'Failed to update user.');
-            setNotice('User updated.');
+            notifySuccess(showToast, 'User updated successfully.');
             await loadUser();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Unable to update user.');
+            notifyError(showToast, err, 'Unable to update user.');
         } finally {
             setSaving(false);
         }
@@ -94,7 +95,6 @@ export default function AdminUserDetailPage() {
                     <button disabled={saving} onClick={() => patchUser({ status: user.status === 'active' ? 'suspended' : 'active' })} className="px-3 py-2 rounded-lg bg-slate-100 text-brand-navy text-xs font-bold">{user.status === 'active' ? 'Suspend' : 'Activate'}</button>
                 </div>
 
-                {notice && <p className="text-xs text-emerald-700">{notice}</p>}
                 {error && <p className="text-xs text-red-600">{error}</p>}
             </div>
         </div>

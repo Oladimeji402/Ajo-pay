@@ -7,6 +7,8 @@ import { LastSynced } from '@/components/admin/LastSynced';
 import { ChartCard } from '@/components/admin/charts/ChartCard';
 import { AdminPieChart } from '@/components/admin/charts/PieChart';
 import { useRealtimeSubscription } from '@/lib/hooks/useRealtimeSubscription';
+import { useToast } from '@/components/ui/Toast';
+import { notifyError, notifySuccess } from '@/lib/toast';
 
 const GROUPS_REALTIME_TABLES = ['groups', 'group_members'];
 
@@ -33,12 +35,12 @@ export default function AdminGroupsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [groups, setGroups] = useState<GroupRow[]>([]);
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+  const { showToast } = useToast();
   const { refreshTrigger, lastEvent } = useRealtimeSubscription({
     channelName: 'admin-groups-live',
     tables: GROUPS_REALTIME_TABLES,
@@ -86,7 +88,6 @@ export default function AdminGroupsPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    setNotice('');
     setError('');
 
     try {
@@ -107,11 +108,11 @@ export default function AdminGroupsPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed to create group.');
 
-      setNotice('Group created successfully.');
+      notifySuccess(showToast, 'Group created successfully.');
       setForm((prev) => ({ ...prev, name: '' }));
       await loadGroups();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not create group.');
+      notifyError(showToast, err, 'Could not create group.');
     } finally {
       setSaving(false);
     }
@@ -196,7 +197,6 @@ export default function AdminGroupsPage() {
         <button disabled={saving} className="rounded-xl bg-brand-navy px-3 py-2 text-sm font-bold text-white">{saving ? 'Creating...' : 'Create Group'}</button>
       </form>
 
-      {notice && <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-sm font-semibold text-emerald-700">{notice}</div>}
       {error && <div className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm font-semibold text-red-600">{error}</div>}
 
       <div className="rounded-2xl border border-slate-100 bg-white p-2">

@@ -2,7 +2,9 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Users, Search, Calendar, Wallet, ChevronRight, Loader2, CheckCircle2 } from 'lucide-react';
+import { Users, Search, Calendar, Wallet, ChevronRight, Loader2 } from 'lucide-react';
+import { useToast } from '@/components/ui/Toast';
+import { notifyError, notifySuccess } from '@/lib/toast';
 
 type GroupRow = {
     id: string;
@@ -28,11 +30,11 @@ export default function GroupsPage() {
     const [loading, setLoading] = useState(true);
     const [joining, setJoining] = useState<string | null>(null);
     const [error, setError] = useState('');
-    const [notice, setNotice] = useState('');
     const [joinSearch, setJoinSearch] = useState('');
     const [joinedGroups, setJoinedGroups] = useState<GroupRow[]>([]);
     const [discoverGroups, setDiscoverGroups] = useState<GroupRow[]>([]);
     const [contributions, setContributions] = useState<ContributionRow[]>([]);
+    const { showToast } = useToast();
 
     const loadData = async (searchValue = joinSearch) => {
         try {
@@ -117,7 +119,6 @@ export default function GroupsPage() {
         try {
             setJoining(groupId);
             setError('');
-            setNotice('');
 
             const response = await fetch(`/api/groups/${groupId}/join`, { method: 'POST' });
             const payload = await response.json();
@@ -126,10 +127,10 @@ export default function GroupsPage() {
                 throw new Error(payload.error || 'Unable to join this group.');
             }
 
-            setNotice('Group joined successfully.');
+            notifySuccess(showToast, 'Group joined successfully.');
             await loadData(joinSearch);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Unable to join this group.');
+            notifyError(showToast, err, 'Unable to join this group.');
         } finally {
             setJoining(null);
         }
@@ -154,13 +155,6 @@ export default function GroupsPage() {
                     <p className="text-xs text-brand-gray">You joined {joinedCount} group{joinedCount === 1 ? '' : 's'}</p>
                 </div>
             </div>
-
-            {notice && (
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-xs font-semibold p-3 flex items-center gap-2">
-                    <CheckCircle2 size={14} />
-                    {notice}
-                </div>
-            )}
 
             {!!error && (
                 <div className="rounded-xl border border-red-100 bg-red-50 text-red-600 text-xs font-semibold p-3">

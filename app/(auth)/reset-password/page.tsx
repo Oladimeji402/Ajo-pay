@@ -6,18 +6,19 @@ import { Button } from '@/components/ui/Button';
 import { motion } from 'motion/react';
 import { Loader2, Check, X, Lock, CheckCircle2 } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { useToast } from '@/components/ui/Toast';
+import { notifyError, notifySuccess } from '@/lib/toast';
 
 export default function ResetPasswordPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [error, setError] = useState('');
     const router = useRouter();
+    const { showToast } = useToast();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError('');
         setIsLoading(true);
 
         const supabase = createSupabaseBrowserClient();
@@ -26,13 +27,14 @@ export default function ResetPasswordPage() {
         });
 
         if (updateError) {
-            setError(updateError.message || 'Unable to update your password.');
+            notifyError(showToast, updateError, 'Unable to update your password.');
             setIsLoading(false);
             return;
         }
 
         setIsLoading(false);
         setIsSuccess(true);
+        notifySuccess(showToast, 'Password updated successfully.');
     };
 
     const passwordChecks = useMemo(() => [
@@ -129,8 +131,6 @@ export default function ResetPasswordPage() {
                         {isLoading ? <span className="flex items-center gap-2"><Loader2 size={16} className="animate-spin" />Updating password...</span> : 'Reset password'}
                     </Button>
                 </div>
-
-                {error && <p className="text-xs font-medium text-red-500">{error}</p>}
             </form>
         </>
     );

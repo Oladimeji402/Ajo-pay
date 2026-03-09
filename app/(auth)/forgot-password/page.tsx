@@ -7,16 +7,17 @@ import { Button } from '@/components/ui/Button';
 import { ArrowLeft, CheckCircle2, Mail, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { useToast } from '@/components/ui/Toast';
+import { notifyError, notifySuccess } from '@/lib/toast';
 
 export default function ForgotPasswordPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [email, setEmail] = useState('');
-    const [error, setError] = useState('');
+    const { showToast } = useToast();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError('');
         setIsLoading(true);
 
         const supabase = createSupabaseBrowserClient();
@@ -26,13 +27,14 @@ export default function ForgotPasswordPage() {
         });
 
         if (resetError) {
-            setError(resetError.message || 'Unable to send reset instructions.');
+            notifyError(showToast, resetError, 'Unable to send reset instructions.');
             setIsLoading(false);
             return;
         }
 
         setIsLoading(false);
         setIsSubmitted(true);
+        notifySuccess(showToast, 'Password reset instructions sent. Check your email.');
     };
 
     if (isSubmitted) {
@@ -144,8 +146,6 @@ export default function ForgotPasswordPage() {
                         </span>
                     ) : 'Send reset link'}
                 </Button>
-
-                {error && <p className="text-xs font-medium text-red-500">{error}</p>}
 
                 <div className="text-center">
                     <Link
