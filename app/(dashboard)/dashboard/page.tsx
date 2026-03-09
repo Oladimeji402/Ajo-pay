@@ -7,7 +7,6 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 type Profile = {
     name: string;
-    wallet_balance: number;
     total_contributed: number;
     total_received: number;
 };
@@ -55,7 +54,7 @@ export default function DashboardPage() {
                 const [profileRes, groupsRes, txRes] = await Promise.all([
                     supabase
                         .from('profiles')
-                        .select('name, wallet_balance, total_contributed, total_received')
+                        .select('name, total_contributed, total_received')
                         .eq('id', user.id)
                         .maybeSingle(),
                     fetch('/api/groups', { cache: 'no-store' }),
@@ -116,12 +115,12 @@ export default function DashboardPage() {
 
             <div className="grid sm:grid-cols-3 gap-3">
                 <div className="bg-white border border-slate-100 rounded-2xl p-4">
-                    <p className="text-xs text-brand-gray mb-1 flex items-center gap-1"><Wallet size={12} /> Wallet Balance</p>
-                    <p className="text-lg font-bold text-brand-navy">NGN {Number(profile?.wallet_balance ?? 0).toLocaleString('en-NG')}</p>
+                    <p className="text-xs text-brand-gray mb-1 flex items-center gap-1"><Wallet size={12} /> Total Contribution</p>
+                    <p className="text-lg font-bold text-brand-navy">NGN {Number(profile?.total_contributed ?? 0).toLocaleString('en-NG')}</p>
                 </div>
                 <div className="bg-white border border-slate-100 rounded-2xl p-4">
-                    <p className="text-xs text-brand-gray mb-1">Total Contributed</p>
-                    <p className="text-lg font-bold text-brand-navy">NGN {Number(profile?.total_contributed ?? 0).toLocaleString('en-NG')}</p>
+                    <p className="text-xs text-brand-gray mb-1">Total Received</p>
+                    <p className="text-lg font-bold text-brand-navy">NGN {Number(profile?.total_received ?? 0).toLocaleString('en-NG')}</p>
                 </div>
                 <div className="bg-white border border-slate-100 rounded-2xl p-4">
                     <p className="text-xs text-brand-gray mb-1 flex items-center gap-1"><Users size={12} /> Active Groups</p>
