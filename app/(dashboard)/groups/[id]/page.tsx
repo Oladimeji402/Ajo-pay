@@ -1,399 +1,284 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import {
-    ArrowLeft,
-    Users,
-    Calendar,
-    CreditCard,
-    CheckCircle2,
-    Clock,
-    TrendingUp,
-    ChevronRight,
-    Share2,
-    FileText,
-    LogOut,
-    Wallet,
-    ArrowUpRight,
-    ArrowDownLeft,
-    Copy,
-    Shield
-} from 'lucide-react';
-import { motion } from 'motion/react';
+import { ArrowLeft, Users, Wallet, Calendar, Loader2, CheckCircle2 } from 'lucide-react';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { openPaystackInline } from '@/lib/paystack-inline';
 
-// Circular progress ring
-const ProgressRing = ({ progress, size = 80, strokeWidth = 6, color = '#0F766E' }: { progress: number; size?: number; strokeWidth?: number; color?: string }) => {
-    const radius = (size - strokeWidth) / 2;
-    const circumference = radius * 2 * Math.PI;
-    const offset = circumference - (progress / 100) * circumference;
-    return (
-        <svg width={size} height={size} className="transform -rotate-90">
-            <circle cx={size / 2} cy={size / 2} r={radius} stroke="currentColor" strokeWidth={strokeWidth} fill="none" className="text-white/10" />
-            <circle cx={size / 2} cy={size / 2} r={radius} stroke={color} strokeWidth={strokeWidth} fill="none" strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className="transition-all duration-1000 ease-out" />
-        </svg>
-    );
+type GroupMember = {
+    id: string;
+    user_id: string;
+    position: number;
+    contribution_status: string;
+    payout_status: string;
+    profiles?: {
+        id: string;
+        name: string;
+        email: string;
+        phone?: string | null;
+    };
+};
+
+type GroupDetail = {
+    id: string;
+    name: string;
+    contribution_amount: number;
+    frequency: string;
+    max_members: number;
+    current_cycle: number;
+    total_cycles: number;
+    status: string;
+    invite_code: string;
+    members: GroupMember[];
+};
+
+type ContributionRow = {
+    id: string;
+    amount: number;
+    status: string;
+    cycle_number: number;
+    created_at: string;
 };
 
 export default function GroupDetailsPage() {
-    useParams();
-    const [copiedLink, setCopiedLink] = useState(false);
+    const params = useParams<{ id: string }>();
+    const groupId = params.id;
 
-    const group = {
-        id: 1,
-        name: 'Lagos Techies Ajo',
-        totalPot: '₦1,200,000',
-        contributionAmount: '₦50,000',
-        frequency: 'Monthly',
-        membersCount: 12,
-        currentCycle: 4,
-        totalCycles: 12,
-        userContribution: '₦200,000',
-        nextPayoutDate: 'Oct 15, 2023',
-        startDate: 'Jul 1, 2023',
-        status: 'Active',
-        inviteCode: 'AJO-LT2023X',
-        members: [
-            { name: 'Tunde A.', avatar: 'T', status: 'Paid', turn: 1, amount: '₦50,000' },
-            { name: 'Chioma O.', avatar: 'C', status: 'Paid', turn: 2, amount: '₦50,000' },
-            { name: 'Ibrahim K.', avatar: 'I', status: 'Paid', turn: 3, amount: '₦50,000' },
-            { name: 'Franklyn (You)', avatar: 'F', status: 'Pending', turn: 4, amount: '₦50,000', isUser: true },
-            { name: 'Sarah J.', avatar: 'S', status: 'Upcoming', turn: 5, amount: '₦50,000' },
-            { name: 'Adebayo M.', avatar: 'A', status: 'Upcoming', turn: 6, amount: '₦50,000' },
-        ],
-        recentActivity: [
-            { id: 1, type: 'contribution', member: 'Ibrahim K.', amount: '₦50,000', date: 'Oct 10', status: 'success' },
-            { id: 2, type: 'payout', member: 'Chioma O.', amount: '₦600,000', date: 'Oct 1', status: 'success' },
-            { id: 3, type: 'contribution', member: 'Franklyn (You)', amount: '₦50,000', date: 'Sep 12', status: 'success' },
-        ]
+    const [loading, setLoading] = useState(true);
+    const [paying, setPaying] = useState(false);
+    const [error, setError] = useState('');
+    const [notice, setNotice] = useState('');
+
+    const [group, setGroup] = useState<GroupDetail | null>(null);
+    const [contributions, setContributions] = useState<ContributionRow[]>([]);
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [currentUserEmail, setCurrentUserEmail] = useState<string>('customer@ajopay.local');
+
+    const loadData = useCallback(async () => {
+        if (!groupId) return;
+
+        setLoading(true);
+        setError('');
+
+        try {
+            const supabase = createSupabaseBrowserClient();
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
+            setCurrentUserId(user?.id ?? null);
+            setCurrentUserEmail(user?.email ?? 'customer@ajopay.local');
+
+            const [groupRes, contributionsRes] = await Promise.all([
+                fetch(`/api/groups/${groupId}`, { cache: 'no-store' }),
+                fetch(`/api/contributions?groupId=${groupId}`, { cache: 'no-store' }),
+            ]);
+
+            const groupJson = await groupRes.json();
+            const contributionsJson = await contributionsRes.json();
+
+            if (!groupRes.ok) {
+                throw new Error(groupJson.error || 'Failed to load group details.');
+            }
+
+            if (!contributionsRes.ok) {
+                throw new Error(contributionsJson.error || 'Failed to load contributions.');
+            }
+
+            setGroup(groupJson.data as GroupDetail);
+            setContributions(Array.isArray(contributionsJson.data) ? contributionsJson.data : []);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Unable to load group details.');
+        } finally {
+            setLoading(false);
+        }
+    }, [groupId]);
+
+    useEffect(() => {
+        void loadData();
+    }, [loadData]);
+
+    const userMember = useMemo(
+        () => group?.members?.find((member) => member.user_id === currentUserId) ?? null,
+        [group?.members, currentUserId],
+    );
+
+    const totalContributed = useMemo(
+        () => contributions.filter((item) => item.status === 'success').reduce((sum, item) => sum + Number(item.amount), 0),
+        [contributions],
+    );
+
+    const handleContribution = async () => {
+        if (!group || !groupId) return;
+
+        setNotice('');
+        setError('');
+        setPaying(true);
+
+        try {
+            const initRes = await fetch('/api/payments/initialize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    groupId,
+                    cycleNumber: group.current_cycle,
+                    amount: group.contribution_amount,
+                }),
+            });
+
+            const initJson = await initRes.json();
+            if (!initRes.ok) {
+                throw new Error(initJson.error || 'Failed to initialize payment.');
+            }
+
+            const data = initJson.data as {
+                reference: string;
+                accessCode: string;
+                authorizationUrl: string;
+            };
+
+            const publicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
+            if (!publicKey) {
+                window.location.href = data.authorizationUrl;
+                return;
+            }
+
+            await openPaystackInline({
+                key: publicKey,
+                email: currentUserEmail,
+                amount: Number(group.contribution_amount) * 100,
+                ref: data.reference,
+                access_code: data.accessCode,
+                callback: (response) => {
+                    void (async () => {
+                        try {
+                            const verifyRes = await fetch(`/api/payments/verify?reference=${encodeURIComponent(response.reference)}`, {
+                                cache: 'no-store',
+                            });
+
+                            const verifyJson = await verifyRes.json();
+                            if (!verifyRes.ok) {
+                                throw new Error(verifyJson.error || 'Payment verification failed.');
+                            }
+
+                            setNotice('Contribution verified successfully.');
+                            await loadData();
+                        } catch (err) {
+                            setError(err instanceof Error ? err.message : 'Could not verify payment.');
+                        }
+                    })();
+                },
+                onClose: () => {
+                    setNotice((prev) => prev || 'Payment window closed.');
+                },
+            });
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Unable to process contribution.');
+        } finally {
+            setPaying(false);
+        }
     };
 
-    const progressPercent = Math.round((group.currentCycle / group.totalCycles) * 100);
+    if (loading) {
+        return (
+            <div className="min-h-80 grid place-items-center text-brand-gray">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                    <Loader2 className="animate-spin" size={16} />
+                    Loading group details...
+                </div>
+            </div>
+        );
+    }
 
-    const handleCopy = () => {
-        setCopiedLink(true);
-        setTimeout(() => setCopiedLink(false), 2000);
-    };
+    if (!group) {
+        return <div className="text-sm text-red-600">Group not found.</div>;
+    }
 
     return (
-        <div className="max-w-5xl mx-auto space-y-6">
-            {/* Back Navigation */}
-            <Link
-                href="/groups"
-                className="inline-flex items-center gap-2 text-[13px] font-bold text-brand-gray hover:text-brand-navy transition-colors"
-            >
-                <ArrowLeft size={16} />
-                Back to Groups
+        <div className="max-w-4xl mx-auto space-y-5">
+            <Link href="/groups" className="inline-flex items-center gap-2 text-xs font-bold text-brand-gray hover:text-brand-navy">
+                <ArrowLeft size={14} /> Back to Groups
             </Link>
 
-            {/* ─── Hero Card ─── */}
-            <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="relative rounded-[1.75rem] overflow-hidden"
-            >
-                <div className="absolute inset-0 bg-gradient-to-br from-brand-navy via-[#1e3a7d] to-brand-primary"></div>
-                <div className="absolute inset-0 opacity-[0.06]">
-                    <div className="absolute top-0 right-0 w-64 h-64 rounded-full border-[35px] border-white -mr-20 -mt-20"></div>
-                    <div className="absolute bottom-0 left-1/3 w-40 h-40 rounded-full border-[20px] border-white -mb-14"></div>
-                </div>
-
-                <div className="relative z-10 p-6 md:p-8">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                        {/* Left: Group Info */}
-                        <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
-                                    <Users size={22} className="text-white" />
-                                </div>
-                                <div>
-                                    <h1 className="text-xl md:text-2xl font-bold text-white">{group.name}</h1>
-                                    <div className="flex items-center gap-2 mt-0.5">
-                                        <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 text-[10px] font-bold rounded-full uppercase tracking-wider">
-                                            {group.status}
-                                        </span>
-                                        <span className="text-[11px] text-white/50">Cycle {group.currentCycle} of {group.totalCycles}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                {[
-                                    { label: 'Total Pot', value: group.totalPot, icon: <Wallet size={12} /> },
-                                    { label: 'Per Cycle', value: group.contributionAmount, icon: <CreditCard size={12} /> },
-                                    { label: 'Frequency', value: group.frequency, icon: <Calendar size={12} /> },
-                                    { label: 'Members', value: `${group.membersCount}`, icon: <Users size={12} /> },
-                                ].map((stat, i) => (
-                                    <div key={i} className="px-3 py-2.5 bg-white/8 backdrop-blur-sm rounded-xl">
-                                        <div className="flex items-center gap-1.5 mb-1">
-                                            <span className="text-white/40">{stat.icon}</span>
-                                            <p className="text-[9px] text-white/50 font-bold uppercase tracking-wider">{stat.label}</p>
-                                        </div>
-                                        <p className="text-[14px] font-bold text-white">{stat.value}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Right: Progress Ring */}
-                        <div className="flex flex-col items-center">
-                            <div className="relative flex items-center justify-center">
-                                <ProgressRing progress={progressPercent} size={90} strokeWidth={6} color="#10B981" />
-                                <div className="absolute text-center">
-                                    <span className="text-xl font-bold text-white">{progressPercent}%</span>
-                                    <p className="text-[9px] text-white/50 font-medium">complete</p>
-                                </div>
-                            </div>
-                        </div>
+            <div className="bg-white border border-slate-100 rounded-2xl p-5">
+                <div className="flex items-start justify-between gap-4">
+                    <div>
+                        <h1 className="text-xl font-bold text-brand-navy">{group.name}</h1>
+                        <p className="text-xs text-brand-gray capitalize">{group.status} · {group.frequency}</p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-[11px] text-brand-gray">Invite code</p>
+                        <p className="font-mono font-bold text-brand-navy text-sm">{group.invite_code}</p>
                     </div>
                 </div>
-            </motion.div>
 
-            <div className="grid lg:grid-cols-3 gap-6">
-                {/* ─── Main Content (Left 2 cols) ─── */}
-                <div className="lg:col-span-2 space-y-6">
+                <div className="grid sm:grid-cols-3 gap-3 mt-4">
+                    <div className="rounded-xl bg-slate-50 p-3">
+                        <p className="text-[11px] text-brand-gray flex items-center gap-1"><Wallet size={12} /> Per cycle</p>
+                        <p className="font-bold text-brand-navy">NGN {Number(group.contribution_amount).toLocaleString('en-NG')}</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 p-3">
+                        <p className="text-[11px] text-brand-gray flex items-center gap-1"><Users size={12} /> Members</p>
+                        <p className="font-bold text-brand-navy">{group.members.length} / {group.max_members}</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 p-3">
+                        <p className="text-[11px] text-brand-gray flex items-center gap-1"><Calendar size={12} /> Cycle</p>
+                        <p className="font-bold text-brand-navy">{group.current_cycle} / {group.total_cycles}</p>
+                    </div>
+                </div>
+            </div>
 
-                    {/* Rotation Timeline */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
-                        className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm"
+            <div className="bg-white border border-slate-100 rounded-2xl p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h2 className="font-bold text-brand-navy">Your Contribution</h2>
+                        <p className="text-xs text-brand-gray">Real-time payment via Paystack inline checkout</p>
+                    </div>
+                    <button
+                        onClick={handleContribution}
+                        disabled={paying}
+                        className="px-4 py-2 rounded-xl bg-brand-emerald text-white text-sm font-bold disabled:opacity-60"
                     >
-                        <div className="flex items-center justify-between mb-5">
-                            <div>
-                                <h3 className="text-[15px] font-bold text-brand-navy">Rotation Schedule</h3>
-                                <p className="text-[11px] text-brand-gray">Payout order for all members</p>
-                            </div>
-                            <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-wider">
-                                <span className="flex items-center gap-1 text-emerald-500"><span className="w-2 h-2 bg-emerald-500 rounded-full"></span> Paid</span>
-                                <span className="flex items-center gap-1 text-amber-500"><span className="w-2 h-2 bg-amber-500 rounded-full"></span> Current</span>
-                                <span className="flex items-center gap-1 text-slate-300"><span className="w-2 h-2 bg-slate-200 rounded-full"></span> Upcoming</span>
-                            </div>
-                        </div>
-
-                        {/* Visual rotation bar */}
-                        <div className="flex gap-1 mb-6">
-                            {group.members.map((member, i) => {
-                                const isPaid = member.status === 'Paid';
-                                const isCurrent = member.status === 'Pending';
-                                return (
-                                    <div key={i} className="flex-1 relative group/bar">
-                                        <div className={`h-2 rounded-full transition-all ${isPaid ? 'bg-emerald-500' : isCurrent ? 'bg-gradient-to-r from-amber-400 to-amber-500 animate-pulse' : 'bg-slate-100'
-                                            }`}></div>
-                                        {isCurrent && (
-                                            <div className="absolute -bottom-5 left-1/2 -translate-x-1/2">
-                                                <span className="text-[8px] font-bold text-amber-500">YOU</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </div>
-
-                        {/* Members list */}
-                        <div className="space-y-2 mt-8">
-                            {group.members.map((member, i) => {
-                                const isPaid = member.status === 'Paid';
-                                const isCurrent = member.status === 'Pending';
-                                return (
-                                    <motion.div
-                                        key={i}
-                                        initial={{ opacity: 0, x: -8 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: 0.15 + i * 0.04 }}
-                                        className={`flex items-center justify-between p-3.5 rounded-xl transition-all ${member.isUser
-                                            ? 'bg-gradient-to-r from-emerald-50 to-transparent border border-emerald-200/50'
-                                            : 'hover:bg-slate-50 border border-transparent'
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="relative">
-                                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-[12px] font-bold ${member.isUser
-                                                    ? 'bg-gradient-to-br from-brand-emerald to-emerald-500 text-white'
-                                                    : 'bg-slate-100 text-brand-navy'
-                                                    }`}>
-                                                    {member.avatar}
-                                                </div>
-                                                <div className={`absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white flex items-center justify-center ${isPaid ? 'bg-emerald-500' : isCurrent ? 'bg-amber-500' : 'bg-slate-200'
-                                                    }`}>
-                                                    {isPaid && <CheckCircle2 size={8} className="text-white" />}
-                                                    {isCurrent && <Clock size={8} className="text-white" />}
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <p className={`text-[13px] font-bold ${member.isUser ? 'text-brand-emerald' : 'text-brand-navy'}`}>
-                                                    {member.name}
-                                                </p>
-                                                <p className="text-[10px] text-brand-gray">Turn {member.turn} · {member.amount}/cycle</p>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            {isPaid ? (
-                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[10px] font-bold uppercase tracking-wider">
-                                                    <CheckCircle2 size={10} />
-                                                    Received
-                                                </span>
-                                            ) : isCurrent ? (
-                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-600 rounded-lg text-[10px] font-bold uppercase tracking-wider">
-                                                    <Clock size={10} />
-                                                    Your Turn
-                                                </span>
-                                            ) : (
-                                                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Waiting</span>
-                                            )}
-                                        </div>
-                                    </motion.div>
-                                );
-                            })}
-                        </div>
-                    </motion.div>
-
-                    {/* Group Activity Feed */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
-                        className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
-                    >
-                        <div className="p-5 pb-0">
-                            <h3 className="text-[15px] font-bold text-brand-navy">Group Activity</h3>
-                            <p className="text-[11px] text-brand-gray">Recent transactions in this group</p>
-                        </div>
-                        <div className="p-3 pt-4">
-                            {group.recentActivity.map((tx) => (
-                                <div key={tx.id} className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-all">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${tx.type === 'contribution' ? 'bg-brand-primary/8 text-brand-primary' : 'bg-emerald-50 text-brand-emerald'
-                                            }`}>
-                                            {tx.type === 'contribution' ? <ArrowUpRight size={16} /> : <ArrowDownLeft size={16} />}
-                                        </div>
-                                        <div>
-                                            <p className="text-[13px] font-bold text-brand-navy">{tx.member}</p>
-                                            <p className="text-[11px] text-brand-gray">{tx.date} · {tx.type === 'contribution' ? 'Contribution' : 'Payout'}</p>
-                                        </div>
-                                    </div>
-                                    <p className={`text-[13px] font-bold ${tx.type === 'contribution' ? 'text-brand-navy' : 'text-brand-emerald'
-                                        }`}>
-                                        {tx.type === 'contribution' ? '' : '+'}{tx.amount}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-                    </motion.div>
+                        {paying ? 'Processing...' : 'Make Contribution'}
+                    </button>
                 </div>
 
-                {/* ─── Sidebar (Right col) ─── */}
-                <div className="space-y-5">
-                    {/* Your Progress */}
-                    <motion.div
-                        initial={{ opacity: 0, x: 10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.15 }}
-                        className="bg-brand-navy rounded-2xl p-5 text-white shadow-lg relative overflow-hidden"
-                    >
-                        <div className="absolute inset-0 opacity-5">
-                            <div className="absolute -bottom-6 -right-6 w-32 h-32 border-[14px] border-white rounded-full"></div>
-                        </div>
-                        <div className="relative z-10">
-                            <div className="flex items-center gap-2.5 mb-5">
-                                <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                                    <TrendingUp size={16} className="text-emerald-400" />
-                                </div>
-                                <h3 className="text-[14px] font-bold">Your Progress</h3>
-                            </div>
+                <div className="grid sm:grid-cols-2 gap-3 text-sm">
+                    <div className="rounded-xl bg-slate-50 p-3">
+                        <p className="text-xs text-brand-gray">My Position</p>
+                        <p className="font-bold text-brand-navy">{userMember?.position ? `#${userMember.position}` : 'Not assigned'}</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 p-3">
+                        <p className="text-xs text-brand-gray">Total Contributed (This Group)</p>
+                        <p className="font-bold text-brand-navy">NGN {totalContributed.toLocaleString('en-NG')}</p>
+                    </div>
+                </div>
 
-                            <div className="space-y-5">
-                                <div>
-                                    <p className="text-[10px] text-white/50 font-medium mb-1">Total Contributed</p>
-                                    <p className="text-2xl font-bold">{group.userContribution}</p>
-                                </div>
+                {notice && (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-xs font-semibold p-3 flex items-center gap-2">
+                        <CheckCircle2 size={14} />
+                        {notice}
+                    </div>
+                )}
 
-                                <div>
-                                    <p className="text-[10px] text-white/50 font-medium mb-1">Your Position</p>
-                                    <div className="flex items-baseline gap-1">
-                                        <span className="text-2xl font-bold">#{group.currentCycle}</span>
-                                        <span className="text-[12px] text-white/40">of {group.membersCount}</span>
-                                    </div>
-                                </div>
+                {error && <div className="rounded-xl border border-red-100 bg-red-50 text-red-600 text-xs font-semibold p-3">{error}</div>}
+            </div>
 
-                                <div>
-                                    <div className="flex justify-between text-[11px] mb-2">
-                                        <span className="text-white/50">Next Payout</span>
-                                        <span className="font-bold text-emerald-400">{group.nextPayoutDate}</span>
-                                    </div>
-                                    <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                                        <motion.div
-                                            initial={{ width: 0 }}
-                                            animate={{ width: `${progressPercent}%` }}
-                                            transition={{ duration: 1, ease: 'easeOut' }}
-                                            className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full"
-                                        ></motion.div>
-                                    </div>
-                                </div>
-
-                                <button className="w-full py-3 bg-gradient-to-r from-brand-emerald to-emerald-500 hover:from-emerald-600 hover:to-emerald-600 text-white rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand-emerald/20">
-                                    Make Contribution
-                                    <ChevronRight size={16} />
-                                </button>
-                            </div>
+            <div className="bg-white border border-slate-100 rounded-2xl p-5">
+                <h3 className="font-bold text-brand-navy mb-3">Members</h3>
+                <div className="space-y-2">
+                    {group.members.map((member) => (
+                        <div key={member.id} className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 text-sm">
+                            <p className="font-semibold text-brand-navy">
+                                {member.profiles?.name || member.profiles?.email || member.user_id}
+                                {member.user_id === currentUserId ? ' (You)' : ''}
+                            </p>
+                            <p className="text-xs text-brand-gray">Position #{member.position}</p>
                         </div>
-                    </motion.div>
-
-                    {/* Invite Card */}
-                    <motion.div
-                        initial={{ opacity: 0, x: 10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.2 }}
-                        className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm"
-                    >
-                        <div className="flex items-center gap-2.5 mb-4">
-                            <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                                <Share2 size={16} className="text-blue-500" />
-                            </div>
-                            <h4 className="text-[14px] font-bold text-brand-navy">Invite Members</h4>
-                        </div>
-                        <p className="text-[12px] text-brand-gray mb-3">Share the code below to invite people to this group</p>
-                        <div className="flex items-center gap-2">
-                            <div className="flex-1 px-3 py-2.5 bg-slate-50 rounded-xl text-[13px] font-mono font-bold text-brand-navy truncate">
-                                {group.inviteCode}
-                            </div>
-                            <button
-                                onClick={handleCopy}
-                                className={`p-2.5 rounded-xl transition-all text-sm font-bold ${copiedLink
-                                    ? 'bg-emerald-50 text-emerald-600'
-                                    : 'bg-brand-primary text-white hover:bg-brand-primary-hover'
-                                    }`}
-                            >
-                                {copiedLink ? <CheckCircle2 size={16} /> : <Copy size={16} />}
-                            </button>
-                        </div>
-                    </motion.div>
-
-                    {/* Group Actions */}
-                    <motion.div
-                        initial={{ opacity: 0, x: 10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.25 }}
-                        className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
-                    >
-                        <div className="p-4 pb-2">
-                            <h4 className="text-[13px] font-bold text-brand-navy">Group Actions</h4>
-                        </div>
-                        <div className="px-2 pb-2">
-                            {[
-                                { icon: <FileText size={16} />, label: 'View Group Rules', color: 'text-brand-gray hover:text-brand-navy hover:bg-slate-50' },
-                                { icon: <Shield size={16} />, label: 'Dispute Resolution', color: 'text-brand-gray hover:text-brand-navy hover:bg-slate-50' },
-                                { icon: <LogOut size={16} />, label: 'Leave Group', color: 'text-red-500 hover:text-red-600 hover:bg-red-50' },
-                            ].map((action, i) => (
-                                <button key={i} className={`w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all text-[13px] font-medium ${action.color}`}>
-                                    <span className="flex items-center gap-2.5">{action.icon}{action.label}</span>
-                                    <ChevronRight size={14} />
-                                </button>
-                            ))}
-                        </div>
-                    </motion.div>
+                    ))}
                 </div>
             </div>
         </div>

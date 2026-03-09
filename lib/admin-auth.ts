@@ -1,44 +1,68 @@
-export const ADMIN_EMAIL = "admin@ajopay.com";
-export const ADMIN_PASSWORD = "Admin@1234";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-const SESSION_KEY = "ajopay_admin_session";
+export async function adminLogin(email: string, password: string): Promise<boolean> {
+  const supabase = createSupabaseBrowserClient();
 
-export interface AdminSession {
-    email: string;
-    isAdmin: boolean;
-    lastLogin: string;
+  const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (signInError || !signInData.user) {
+    return false;
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("role, status")
+    .eq("id", signInData.user.id)
+    .maybeSingle();
+
+  const isValidAdmin = !profileError && profile?.role === "admin" && profile?.status === "active";
+
+  if (!isValidAdmin) {
+    await supabase.auth.signOut();
+    return false;
+  }
+
+  return true;
 }
 
-export const adminLogin = (email: string, password: string): boolean => {
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-        const session: AdminSession = {
-            email,
-            isAdmin: true,
-            lastLogin: new Date().toISOString(),
-        };
-        localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-        return true;
-    }
+export async function adminLogout() {
+  const supabase = createSupabaseBrowserClient();
+  await supabase.auth.signOut();
+
+  if (typeof window !== "undefined") {
+    window.location.href = "/admin-login";
+  }
+}
+
+export async function isAdminAuthenticated(): Promise<boolean> {
+  const supabase = createSupabaseBrowserClient();
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
     return false;
-};
+  }
 
-export const adminLogout = () => {
-    localStorage.removeItem(SESSION_KEY);
-    if (typeof window !== 'undefined') {
-        window.location.href = '/admin-login';
-    }
-};
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("role, status")
+    .eq("id", user.id)
+    .maybeSingle();
 
-export const isAdminAuthenticated = (): boolean => {
-    if (typeof window === 'undefined') return false;
+  return !profileError && profile?.role === "admin" && profile?.status === "active";
+}
 
-    const sessionStr = localStorage.getItem(SESSION_KEY);
-    if (!sessionStr) return false;
+export async function getAdminEmail(): Promise<string | null> {
+  const supabase = createSupabaseBrowserClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-    try {
-        const session: AdminSession = JSON.parse(sessionStr);
-        return session.isAdmin === true && session.email === ADMIN_EMAIL;
-    } catch (e) {
-        return false;
-    }
-};
+  return user?.email ?? null;
+}

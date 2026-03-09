@@ -1,178 +1,131 @@
 'use client';
 
-import React from 'react';
-import {
-    Users,
-    UsersRound,
-    Banknote,
-    TrendingUp,
-    ArrowUpRight,
-    ArrowDownLeft,
-    Clock,
-    ChevronRight,
-    Search
-} from 'lucide-react';
-import { motion } from 'motion/react';
-import { StatCard } from '@/components/admin/StatCard';
-import { StatusBadge } from '@/components/admin/StatusBadge';
-import { adminStats, dummyTransactions, dummyPayouts } from '@/lib/dummy-data';
-import { useRouter } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { Loader2 } from 'lucide-react';
+
+type AdminStats = {
+    totalUsers: number;
+    activeGroups: number;
+    pendingPayouts: number;
+    totalVolume: number;
+};
+
+type PayoutRow = {
+    id: string;
+    status: string;
+    amount: number;
+    cycle_number: number;
+    groups?: { id: string; name: string } | null;
+    profiles?: { id: string; name: string; email: string; phone?: string | null } | null;
+};
+
+type TxRow = {
+    id: string;
+    type: string;
+    status: string;
+    amount: number;
+    reference: string;
+    created_at: string;
+    groups?: { id: string; name: string } | null;
+    profiles?: { id: string; name: string; email: string } | null;
+};
 
 export default function AdminOverviewPage() {
-    const router = useRouter();
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [stats, setStats] = useState<AdminStats | null>(null);
+    const [payouts, setPayouts] = useState<PayoutRow[]>([]);
+    const [transactions, setTransactions] = useState<TxRow[]>([]);
+
+    useEffect(() => {
+        const run = async () => {
+            setLoading(true);
+            setError('');
+
+            try {
+                const [statsRes, payoutsRes, txRes] = await Promise.all([
+                    fetch('/api/admin/stats', { cache: 'no-store' }),
+                    fetch('/api/admin/payouts?status=pending', { cache: 'no-store' }),
+                    fetch('/api/admin/transactions?page=1&pageSize=8', { cache: 'no-store' }),
+                ]);
+
+                const [statsJson, payoutsJson, txJson] = await Promise.all([statsRes.json(), payoutsRes.json(), txRes.json()]);
+
+                if (!statsRes.ok) throw new Error(statsJson.error || 'Failed to load stats.');
+                if (!payoutsRes.ok) throw new Error(payoutsJson.error || 'Failed to load payouts.');
+                if (!txRes.ok) throw new Error(txJson.error || 'Failed to load transactions.');
+
+                setStats(statsJson.data as AdminStats);
+                setPayouts(Array.isArray(payoutsJson.data) ? payoutsJson.data : []);
+                setTransactions(Array.isArray(txJson.data) ? txJson.data : []);
+            } catch (err) {
+                setError(err instanceof Error ? err.message : 'Unable to load admin dashboard.');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        void run();
+    }, []);
+
+    if (loading) {
+        return <div className="min-h-80 grid place-items-center text-sm text-brand-gray"><Loader2 className="animate-spin" size={16} /></div>;
+    }
+
+    if (error || !stats) {
+        return <div className="rounded-xl border border-red-100 bg-red-50 text-red-600 p-4 text-sm font-semibold">{error || 'No data'}</div>;
+    }
 
     return (
-        <div className="space-y-10">
-            {/* Page Header */}
-            <div>
-                <h1 className="text-3xl font-black text-brand-navy tracking-tight mb-2">Platform Overview</h1>
-                <p className="text-brand-gray text-[15px]">Central control center for AjoPay financial activity and user metrics.</p>
+        <div className="space-y-6">
+            <h1 className="text-2xl font-bold text-brand-navy">Admin Overview</h1>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="rounded-2xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Total Users</p><p className="text-2xl font-bold text-brand-navy">{stats.totalUsers}</p></div>
+                <div className="rounded-2xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Active Groups</p><p className="text-2xl font-bold text-brand-navy">{stats.activeGroups}</p></div>
+                <div className="rounded-2xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Pending Payouts</p><p className="text-2xl font-bold text-brand-navy">{stats.pendingPayouts}</p></div>
+                <div className="rounded-2xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Total Volume</p><p className="text-2xl font-bold text-brand-navy">NGN {Number(stats.totalVolume).toLocaleString('en-NG')}</p></div>
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard
-                    label="Total Users"
-                    value={adminStats.totalUsers.toLocaleString()}
-                    icon={Users}
-                    trend={{ value: '12% inc', isUp: true }}
-                    delay={0.1}
-                />
-                <StatCard
-                    label="Active Groups"
-                    value={adminStats.activeGroups}
-                    icon={UsersRound}
-                    trend={{ value: '3 new', isUp: true }}
-                    color="brand-primary"
-                    delay={0.2}
-                />
-                <StatCard
-                    label="Total Volume"
-                    value={adminStats.totalVolume}
-                    icon={Banknote}
-                    trend={{ value: '8% inc', isUp: true }}
-                    color="emerald-600"
-                    delay={0.3}
-                />
-                <StatCard
-                    label="Pending Payouts"
-                    value={adminStats.pendingPayouts}
-                    icon={Clock}
-                    trend={{ value: 'Urgent', isUp: false }}
-                    color="amber-600"
-                    delay={0.4}
-                />
-            </div>
-
-            <div className="grid lg:grid-cols-3 gap-8">
-                {/* Urgent Payouts */}
-                <motion.div
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
-                    className="lg:col-span-2 bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden"
-                >
-                    <div className="p-8 pb-4 flex items-center justify-between">
-                        <div>
-                            <h3 className="text-lg font-black text-brand-navy">Urgent Payouts</h3>
-                            <p className="text-sm text-brand-gray">Recent cycles requiring manual bank transfers.</p>
-                        </div>
-                        <button
-                            onClick={() => router.push('/admin/payouts')}
-                            className="bg-slate-50 hover:bg-slate-100 p-2.5 rounded-xl transition-colors text-brand-navy"
-                        >
-                            <ChevronRight size={20} />
-                        </button>
+            <div className="grid lg:grid-cols-2 gap-4">
+                <div className="rounded-2xl border border-slate-100 bg-white p-4">
+                    <div className="flex items-center justify-between mb-3">
+                        <h2 className="font-bold text-brand-navy">Pending Payouts</h2>
+                        <Link href="/admin/payouts" className="text-xs font-semibold text-brand-primary">View all</Link>
                     </div>
-
-                    <div className="px-4 pb-4">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-separate border-spacing-y-2">
-                                <thead>
-                                    <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em]">
-                                        <th className="px-4 py-3">Recipient</th>
-                                        <th className="px-4 py-3">Group / Pot</th>
-                                        <th className="px-4 py-3">Bank Details</th>
-                                        <th className="px-4 py-3 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {dummyPayouts.filter(p => p.status === 'pending').slice(0, 5).map((payout) => (
-                                        <tr key={payout.id} className="group hover:bg-slate-50/80 transition-all rounded-2xl">
-                                            <td className="px-4 py-4 bg-white ring-1 ring-slate-100 rounded-l-2xl">
-                                                <p className="text-sm font-bold text-brand-navy">{payout.userName}</p>
-                                                <p className="text-[10px] text-slate-400">Cycle #{payout.cycleNumber}</p>
-                                            </td>
-                                            <td className="px-4 py-4 bg-white ring-1 ring-slate-100">
-                                                <p className="text-sm font-bold text-brand-navy truncate">{payout.groupName}</p>
-                                                <p className="text-[10px] text-brand-emerald font-bold">{payout.amount}</p>
-                                            </td>
-                                            <td className="px-4 py-4 bg-white ring-1 ring-slate-100">
-                                                <p className="text-sm font-medium text-brand-navy">{payout.bankAccount}</p>
-                                                <p className="text-[10px] text-slate-400 font-bold">{payout.bankName}</p>
-                                            </td>
-                                            <td className="px-4 py-4 bg-white ring-1 ring-slate-100 rounded-r-2xl text-right">
-                                                <button
-                                                    onClick={() => router.push('/admin/payouts')}
-                                                    className="px-4 py-2 bg-brand-emerald hover:bg-emerald-600 text-white text-[11px] font-bold rounded-xl transition-all shadow-md shadow-brand-emerald/10"
-                                                >
-                                                    Process
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </motion.div>
-
-                {/* Recent Platform Activity */}
-                <motion.div
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.6 }}
-                    className="bg-white rounded-[32px] border border-slate-100 shadow-sm flex flex-col"
-                >
-                    <div className="p-8 pb-4">
-                        <h3 className="text-lg font-black text-brand-navy">Recent Activity</h3>
-                        <p className="text-sm text-brand-gray">Latest network-wide transactions.</p>
-                    </div>
-
-                    <div className="flex-grow p-4 space-y-2 overflow-y-auto max-h-[480px]">
-                        {dummyTransactions.map((tx) => (
-                            <div key={tx.id} className="flex items-center justify-between p-4 bg-slate-50/50 hover:bg-slate-50 transition-all rounded-2xl group border border-transparent hover:border-slate-100">
-                                <div className="flex items-center gap-3.5">
-                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${tx.type === 'contribution' ? 'bg-brand-primary/10 text-brand-primary' : 'bg-emerald-50 text-brand-emerald'
-                                        }`}>
-                                        {tx.type === 'contribution' ? <ArrowUpRight size={18} /> : <ArrowDownLeft size={18} />}
-                                    </div>
-                                    <div className="min-w-0">
-                                        <p className="text-sm font-bold text-brand-navy truncate">{tx.userName}</p>
-                                        <p className="text-[10px] text-slate-400 font-medium truncate">{tx.groupName}</p>
-                                    </div>
+                    <div className="space-y-2">
+                        {payouts.slice(0, 6).map((payout) => (
+                            <div key={payout.id} className="rounded-xl bg-slate-50 p-3 text-sm flex items-center justify-between">
+                                <div>
+                                    <p className="font-semibold text-brand-navy">{payout.profiles?.name || payout.profiles?.email || 'Recipient'}</p>
+                                    <p className="text-xs text-brand-gray">{payout.groups?.name || 'Group'} · Cycle {payout.cycle_number}</p>
                                 </div>
-                                <div className="text-right">
-                                    <p className={`text-[13px] font-black ${tx.type === 'contribution' ? 'text-brand-navy' : 'text-brand-emerald'
-                                        }`}>
-                                        {tx.type === 'contribution' ? '-' : '+'}{tx.amount}
-                                    </p>
-                                    <StatusBadge status={tx.status} />
-                                </div>
+                                <p className="font-bold text-brand-navy">NGN {Number(payout.amount).toLocaleString('en-NG')}</p>
                             </div>
                         ))}
+                        {payouts.length === 0 && <p className="text-sm text-brand-gray">No pending payouts.</p>}
                     </div>
+                </div>
 
-                    <div className="p-4 border-t border-slate-50">
-                        <button
-                            onClick={() => router.push('/admin/transactions')}
-                            className="w-full py-3 text-[12px] font-bold text-slate-400 hover:text-brand-navy transition-colors flex items-center justify-center gap-2"
-                        >
-                            View Transaction Ledger
-                            <ChevronRight size={14} />
-                        </button>
+                <div className="rounded-2xl border border-slate-100 bg-white p-4">
+                    <div className="flex items-center justify-between mb-3">
+                        <h2 className="font-bold text-brand-navy">Recent Transactions</h2>
+                        <Link href="/admin/transactions" className="text-xs font-semibold text-brand-primary">View all</Link>
                     </div>
-                </motion.div>
+                    <div className="space-y-2">
+                        {transactions.map((tx) => (
+                            <div key={tx.id} className="rounded-xl bg-slate-50 p-3 text-sm flex items-center justify-between">
+                                <div>
+                                    <p className="font-semibold text-brand-navy">{tx.profiles?.name || tx.profiles?.email || 'User'} · {tx.groups?.name || 'Group'}</p>
+                                    <p className="text-xs text-brand-gray">{tx.reference} · {new Date(tx.created_at).toLocaleString()}</p>
+                                </div>
+                                <p className="font-bold text-brand-navy">{tx.type === 'contribution' ? '-' : '+'}NGN {Number(tx.amount).toLocaleString('en-NG')}</p>
+                            </div>
+                        ))}
+                        {transactions.length === 0 && <p className="text-sm text-brand-gray">No transactions found.</p>}
+                    </div>
+                </div>
             </div>
         </div>
     );

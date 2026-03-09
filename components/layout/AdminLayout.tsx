@@ -1,6 +1,6 @@
 'use client';
 
-import React, { ReactNode, useState } from 'react';
+import React, { ReactNode, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -15,7 +15,7 @@ import {
     X,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { adminLogout, ADMIN_EMAIL } from '@/lib/admin-auth';
+import { adminLogout, getAdminEmail } from '@/lib/admin-auth';
 
 interface AdminLayoutProps {
     children: ReactNode;
@@ -24,6 +24,18 @@ interface AdminLayoutProps {
 export const AdminLayout = ({ children }: AdminLayoutProps) => {
     const pathname = usePathname();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [adminEmail, setAdminEmail] = useState('admin@ajopay.com');
+
+    useEffect(() => {
+        const loadAdminEmail = async () => {
+            const email = await getAdminEmail();
+            if (email) {
+                setAdminEmail(email);
+            }
+        };
+
+        void loadAdminEmail();
+    }, []);
 
     const navItems = [
         { name: 'Overview', icon: <LayoutDashboard size={20} />, path: '/admin' },
@@ -36,7 +48,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
 
     const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
 
-    const SidebarContent = () => (
+    const sidebarContent = (
         <>
             {/* Logo */}
             <div className="p-6 border-b border-white/5">
@@ -90,7 +102,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-xs font-bold text-white truncate">Administrator</p>
-                        <p className="text-[10px] text-slate-500 truncate">{ADMIN_EMAIL}</p>
+                        <p className="text-[10px] text-slate-500 truncate">{adminEmail}</p>
                     </div>
                 </div>
                 <button
@@ -108,7 +120,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
         <div className="min-h-screen bg-[#F5F7FB] flex">
             {/* Desktop Sidebar */}
             <aside className="hidden lg:flex w-[280px] bg-brand-navy flex-col sticky top-0 h-screen z-50 shadow-2xl">
-                <SidebarContent />
+                {sidebarContent}
             </aside>
 
             {/* Main Content Area */}
@@ -167,7 +179,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
                             >
                                 <X size={24} />
                             </button>
-                            <SidebarContent />
+                            {sidebarContent}
                         </motion.aside>
                     </>
                 )}

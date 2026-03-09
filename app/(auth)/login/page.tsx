@@ -6,19 +6,35 @@ import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Loader2 } from 'lucide-react';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
     const router = useRouter();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError('');
         setIsLoading(true);
-        setTimeout(() => {
+
+        const supabase = createSupabaseBrowserClient();
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+
+        if (signInError) {
+            setError(signInError.message || 'Unable to sign in with those credentials.');
             setIsLoading(false);
-            router.push('/dashboard');
-        }, 1500);
+            return;
+        }
+
+        router.push('/dashboard');
+        router.refresh();
     };
 
     return (
@@ -63,6 +79,8 @@ export default function LoginPage() {
                     label="Email Address"
                     type="email"
                     placeholder="name@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
                 />
 
@@ -71,6 +89,8 @@ export default function LoginPage() {
                         label="Password"
                         type="password"
                         placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
                         required
                     />
                     <div className="flex items-center justify-between mt-2">
@@ -100,6 +120,10 @@ export default function LoginPage() {
                         </Link>
                     </div>
                 </div>
+
+                {error && (
+                    <p className="text-xs font-medium text-red-500">{error}</p>
+                )}
 
                 <Button
                     type="submit"

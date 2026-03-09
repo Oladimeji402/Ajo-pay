@@ -1,8 +1,8 @@
 'use client';
 
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
     LayoutDashboard,
     Users,
@@ -15,6 +15,7 @@ import {
     ChevronRight,
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 interface DashboardLayoutProps {
     children: ReactNode;
@@ -22,6 +23,37 @@ interface DashboardLayoutProps {
 
 export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     const pathname = usePathname();
+    const router = useRouter();
+    const [userName, setUserName] = useState('Member');
+    const [userEmail, setUserEmail] = useState('member@ajopay.com');
+
+    useEffect(() => {
+        const loadUser = async () => {
+            const supabase = createSupabaseBrowserClient();
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
+
+            if (!user) return;
+            setUserEmail(user.email ?? 'member@ajopay.com');
+
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('name')
+                .eq('id', user.id)
+                .maybeSingle();
+
+            if (profile?.name && profile.name.trim().length > 0) {
+                setUserName(profile.name);
+            } else if (user.email) {
+                setUserName(user.email.split('@')[0]);
+            }
+        };
+
+        void loadUser();
+    }, []);
+
+    const userInitial = useMemo(() => userName.trim().charAt(0).toUpperCase() || 'M', [userName]);
 
     const navItems = [
         { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/dashboard' },
@@ -37,14 +69,21 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         return 'Good evening';
     };
 
+    const handleSignOut = async () => {
+        const supabase = createSupabaseBrowserClient();
+        await supabase.auth.signOut();
+        router.push('/login');
+        router.refresh();
+    };
+
     return (
         <div className="min-h-screen bg-[#F5F7FB] flex flex-col md:flex-row">
             {/* Desktop Sidebar */}
-            <aside className="hidden md:flex w-[260px] bg-brand-navy flex-col sticky top-0 h-screen">
+            <aside className="hidden md:flex w-65 bg-brand-navy flex-col sticky top-0 h-screen">
                 {/* Logo */}
                 <div className="p-6 pb-8">
                     <Link href="/" className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 bg-gradient-to-br from-brand-emerald to-emerald-400 rounded-xl flex items-center justify-center shadow-lg shadow-brand-emerald/30">
+                        <div className="w-9 h-9 bg-linear-to-br from-brand-emerald to-emerald-400 rounded-xl flex items-center justify-center shadow-lg shadow-brand-emerald/30">
                             <span className="text-white font-bold text-lg">A</span>
                         </div>
                         <span className="text-xl font-bold text-white tracking-tight">Ajopay</span>
@@ -52,7 +91,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 </div>
 
                 {/* Nav Items */}
-                <nav className="flex-grow px-4 space-y-1">
+                <nav className="grow px-4 space-y-1">
                     <p className="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] mb-3">Menu</p>
                     {navItems.map((item) => {
                         const isActive = pathname === item.path;
@@ -77,31 +116,31 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                         );
                     })}
 
-                    {/* Create Group CTA */}
+                    {/* Join Group CTA */}
                     <div className="pt-6">
                         <p className="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] mb-3">Quick Action</p>
-                        <button className="w-full flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-brand-emerald to-emerald-500 text-white rounded-xl font-semibold text-sm shadow-lg shadow-brand-emerald/20 hover:shadow-brand-emerald/40 transition-all duration-200">
+                        <Link href="/groups" className="w-full flex items-center gap-3 px-4 py-3 bg-linear-to-r from-brand-emerald to-emerald-500 text-white rounded-xl font-semibold text-sm shadow-lg shadow-brand-emerald/20 hover:shadow-brand-emerald/40 transition-all duration-200">
                             <Plus size={18} />
-                            Create Ajo Group
-                        </button>
+                            Join Group
+                        </Link>
                     </div>
                 </nav>
 
                 {/* User Card at Bottom */}
                 <div className="p-4 mx-4 mb-4 bg-white/5 rounded-2xl">
                     <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-brand-emerald to-emerald-400 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">
-                            F
+                        <div className="w-10 h-10 bg-linear-to-br from-brand-emerald to-emerald-400 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">
+                            {userInitial}
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-white truncate">Franklyn O.</p>
+                            <p className="text-sm font-bold text-white truncate">{userName}</p>
                             <div className="flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 bg-brand-emerald rounded-full animate-pulse"></span>
-                                <p className="text-[10px] text-slate-400 font-medium">Premium Member</p>
+                                <p className="text-[10px] text-slate-400 font-medium truncate">{userEmail}</p>
                             </div>
                         </div>
                     </div>
-                    <button className="flex items-center gap-2 px-3 py-2 w-full text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all duration-200 text-xs font-medium">
+                    <button onClick={handleSignOut} className="flex items-center gap-2 px-3 py-2 w-full text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all duration-200 text-xs font-medium">
                         <LogOut size={14} />
                         <span>Sign Out</span>
                     </button>
@@ -109,12 +148,12 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             </aside>
 
             {/* Main Content Area */}
-            <main className="flex-grow flex flex-col pb-20 md:pb-0 min-w-0">
+            <main className="grow flex flex-col pb-20 md:pb-0 min-w-0">
                 {/* Desktop Header */}
-                <header className="hidden md:flex h-[72px] bg-white/80 backdrop-blur-xl border-b border-slate-100 items-center justify-between px-8 sticky top-0 z-30">
+                <header className="hidden md:flex h-18 bg-white/80 backdrop-blur-xl border-b border-slate-100 items-center justify-between px-8 sticky top-0 z-30">
                     <div>
                         <h1 className="text-lg font-bold text-brand-navy">
-                            {getGreeting()}, Franklyn 👋
+                            {getGreeting()}, {userName} 👋
                         </h1>
                         <p className="text-xs text-brand-gray">Here&apos;s what&apos;s happening with your savings</p>
                     </div>
@@ -137,8 +176,8 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
                         {/* Profile Chip */}
                         <div className="flex items-center gap-2.5 pl-3 border-l border-slate-100">
-                            <div className="w-9 h-9 bg-gradient-to-br from-brand-emerald to-emerald-400 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                                F
+                            <div className="w-9 h-9 bg-linear-to-br from-brand-emerald to-emerald-400 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                {userInitial}
                             </div>
                             <ChevronRight size={14} className="text-slate-300" />
                         </div>
@@ -159,7 +198,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                         return (
                             <React.Fragment key="fab-group">
                                 {/* Center FAB */}
-                                <button className="relative -mt-6 w-12 h-12 bg-gradient-to-br from-brand-emerald to-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-brand-emerald/30 active:scale-95 transition-transform">
+                                <button className="relative -mt-6 w-12 h-12 bg-linear-to-br from-brand-emerald to-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-brand-emerald/30 active:scale-95 transition-transform">
                                     <Plus size={22} />
                                 </button>
                                 <Link

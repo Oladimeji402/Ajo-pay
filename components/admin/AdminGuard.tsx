@@ -14,8 +14,8 @@ export const AdminGuard = ({ children }: AdminGuardProps) => {
     const router = useRouter();
 
     useEffect(() => {
-        const checkAuth = () => {
-            const authStatus = isAdminAuthenticated();
+        const checkAuth = async () => {
+            const authStatus = await isAdminAuthenticated();
             if (!authStatus) {
                 router.push('/admin-login');
             } else {
@@ -23,12 +23,12 @@ export const AdminGuard = ({ children }: AdminGuardProps) => {
             }
         };
 
-        checkAuth();
+        void checkAuth();
     }, [router]);
 
     if (isAuthenticated === null) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8FAFC]">
+            <div className="min-h-screen flex flex-col items-center justify-center bg-brand-light">
                 <div className="w-16 h-16 bg-brand-navy rounded-2xl flex items-center justify-center mb-4 shadow-xl shadow-brand-navy/20">
                     <span className="text-white font-bold text-2xl">A</span>
                 </div>
