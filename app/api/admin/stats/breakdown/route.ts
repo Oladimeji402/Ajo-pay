@@ -24,8 +24,8 @@ export async function GET() {
     if (auth.error) return auth.error;
 
     const [groupsResult, contributionsResult, usersResult] = await Promise.all([
-      auth.supabase.from("groups").select("category, status"),
-      auth.supabase.from("contributions").select("status, amount"),
+      auth.supabase.from("groups").select("id, name, category, status"),
+      auth.supabase.from("contributions").select("status, amount, group_id"),
       auth.supabase.from("profiles").select("role, status"),
     ]);
 
@@ -59,6 +59,29 @@ export async function GET() {
     const usersByStatus = mapToPoints(toBreakdownMap(users.map((user) => user.status ?? "unknown")));
     const usersByRole = mapToPoints(toBreakdownMap(users.map((user) => user.role ?? "unknown")));
 
+    const groupNameLookup = new Map<string, string>();
+    for (const group of groups) {
+      groupNameLookup.set(group.id, group.name ?? "Unknown Group");
+    }
+
+    const groupContributionTotals = new Map<string, number>();
+    for (const contribution of contributions) {
+      if (contribution.status !== "success") continue;
+      if (!contribution.group_id) continue;
+      groupContributionTotals.set(
+        contribution.group_id,
+        (groupContributionTotals.get(contribution.group_id) ?? 0) + Number(contribution.amount ?? 0),
+      );
+    }
+
+    const topGroupsByContributions = Array.from(groupContributionTotals.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([groupId, total]) => ({
+        name: groupNameLookup.get(groupId) ?? "Unknown Group",
+        value: total,
+      }));
+
     return NextResponse.json({
       data: {
         groupsByCategory,
@@ -66,6 +89,7 @@ export async function GET() {
         contributionsByStatus,
         usersByStatus,
         usersByRole,
+        topGroupsByContributions,
       },
     });
   } catch {

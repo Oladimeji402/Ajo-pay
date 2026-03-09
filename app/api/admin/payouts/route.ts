@@ -11,7 +11,7 @@ export async function GET(request: Request) {
 
     let query = auth.supabase
       .from("payouts")
-      .select("*, groups:group_id(id, name), profiles:user_id(id, name, email, phone)")
+      .select("*, groups:group_id(id, name), profiles:user_id(id, name, email, phone, bank_account, bank_name)")
       .order("created_at", { ascending: false });
 
     if (status) query = query.eq("status", status);

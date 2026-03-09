@@ -10,6 +10,8 @@ type RealtimeEvent = {
   timestamp: string;
 };
 
+type RealtimeConnectionStatus = 'connecting' | 'subscribed' | 'closed' | 'errored';
+
 type UseRealtimeSubscriptionOptions = {
   channelName?: string;
   schema?: string;
@@ -21,6 +23,7 @@ const DEFAULT_TABLES = ['contributions', 'payment_records', 'payouts', 'profiles
 export function useRealtimeSubscription(options?: UseRealtimeSubscriptionOptions) {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [lastEvent, setLastEvent] = useState<RealtimeEvent | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<RealtimeConnectionStatus>('connecting');
 
   const schema = options?.schema ?? 'public';
   const tables = options?.tables ?? DEFAULT_TABLES;
@@ -52,9 +55,27 @@ export function useRealtimeSubscription(options?: UseRealtimeSubscriptionOptions
       );
     }
 
-    channel.subscribe();
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        setConnectionStatus('subscribed');
+        return;
+      }
+
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        setConnectionStatus('errored');
+        return;
+      }
+
+      if (status === 'CLOSED') {
+        setConnectionStatus('closed');
+        return;
+      }
+
+      setConnectionStatus('connecting');
+    });
 
     return () => {
+      setConnectionStatus('closed');
       void supabase.removeChannel(channel);
     };
   }, [channelName, schema, supabase, tables]);
@@ -62,5 +83,6 @@ export function useRealtimeSubscription(options?: UseRealtimeSubscriptionOptions
   return {
     lastEvent,
     refreshTrigger,
+    connectionStatus,
   };
 }
