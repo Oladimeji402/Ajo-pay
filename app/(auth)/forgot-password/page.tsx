@@ -6,19 +6,33 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { ArrowLeft, CheckCircle2, Mail, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 export default function ForgotPasswordPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [email, setEmail] = useState('');
+    const [error, setError] = useState('');
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError('');
         setIsLoading(true);
-        setTimeout(() => {
+
+        const supabase = createSupabaseBrowserClient();
+        const redirectTo = `${window.location.origin}/reset-password`;
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo,
+        });
+
+        if (resetError) {
+            setError(resetError.message || 'Unable to send reset instructions.');
             setIsLoading(false);
-            setIsSubmitted(true);
-        }, 1500);
+            return;
+        }
+
+        setIsLoading(false);
+        setIsSubmitted(true);
     };
 
     if (isSubmitted) {
@@ -130,6 +144,8 @@ export default function ForgotPasswordPage() {
                         </span>
                     ) : 'Send reset link'}
                 </Button>
+
+                {error && <p className="text-xs font-medium text-red-500">{error}</p>}
 
                 <div className="text-center">
                     <Link

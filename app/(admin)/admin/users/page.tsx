@@ -1,202 +1,306 @@
 'use client';
 
-import React, { useState } from 'react';
-import {
-    Users,
-    Search,
-    Filter,
-    MoreVertical,
-    UserX,
-    UserCheck,
-    Eye,
-    ShieldCheck,
-    Mail,
-    Phone,
-    Download,
-    ChevronRight
-} from 'lucide-react';
-import { motion } from 'motion/react';
-import { StatusBadge } from '@/components/admin/StatusBadge';
-import { dummyUsers as initialUsers, User } from '@/lib/dummy-data';
-import { useRouter } from 'next/navigation';
+import React, { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { Loader2 } from 'lucide-react';
+import { DataTable, DataTableColumn } from '@/components/admin/DataTable';
+import { LastSynced } from '@/components/admin/LastSynced';
+import { ChartCard } from '@/components/admin/charts/ChartCard';
+import { AdminAreaChart } from '@/components/admin/charts/AreaChart';
+import { useRealtimeSubscription } from '@/lib/hooks/useRealtimeSubscription';
+
+const USERS_REALTIME_TABLES = ['profiles'];
+
+type UserRow = {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+  role: string;
+  status: string;
+  wallet_balance: number;
+  total_contributed: number;
+  created_at: string;
+};
+
+type GrowthPoint = {
+  date: string;
+  count: number;
+};
+
+function initials(value: string) {
+  const parts = value.trim().split(/\s+/).slice(0, 2);
+  return parts.map((p) => p[0]?.toUpperCase() ?? '').join('') || 'U';
+}
 
 export default function AdminUsersPage() {
-    const [users, setUsers] = useState<User[]>(initialUsers);
-    const [searchQuery, setSearchQuery] = useState('');
-    const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [userGrowth, setUserGrowth] = useState<GrowthPoint[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+  const { refreshTrigger, lastEvent } = useRealtimeSubscription({
+    channelName: 'admin-users-live',
+    tables: USERS_REALTIME_TABLES,
+  });
 
-    const filteredUsers = users.filter(u =>
-        u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        u.email.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+  useEffect(() => {
+    if (lastEvent?.timestamp) {
+      setLastSyncedAt(lastEvent.timestamp);
+    }
+  }, [lastEvent]);
 
-    const toggleStatus = (id: string) => {
-        setUsers(prev => prev.map(u =>
-            u.id === id ? { ...u, status: u.status === 'Active' ? 'Suspended' : 'Active' } : u
-        ));
+  const loadAll = async () => {
+    const [usersRes, trendsRes] = await Promise.all([
+      fetch('/api/admin/users?page=1&pageSize=500', { cache: 'no-store' }),
+      fetch('/api/admin/stats/trends?days=90', { cache: 'no-store' }),
+    ]);
+
+    const [usersJson, trendsJson] = await Promise.all([usersRes.json(), trendsRes.json()]);
+
+    if (!usersRes.ok) throw new Error(usersJson.error || 'Failed to load users.');
+    if (!trendsRes.ok) throw new Error(trendsJson.error || 'Failed to load user growth.');
+
+    setUsers(Array.isArray(usersJson.data) ? usersJson.data : []);
+    setUserGrowth(Array.isArray(trendsJson.data?.userGrowth) ? trendsJson.data.userGrowth : []);
+    setLastSyncedAt(new Date().toISOString());
+  };
+
+  useEffect(() => {
+    const run = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        await loadAll();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unable to load users.');
+      } finally {
+        setLoading(false);
+      }
     };
 
-    return (
-        <div className="space-y-8">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                <div>
-                    <h1 className="text-3xl font-black text-brand-navy tracking-tight mb-2">Member Directory</h1>
-                    <p className="text-brand-gray text-[15px]">Manage AjoPay participants, security status, and account verification.</p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-5 py-3 bg-white border border-slate-100 rounded-2xl text-[13px] font-bold text-slate-500 hover:text-brand-navy transition-all shadow-sm">
-                        <Download size={18} />
-                        Export CSV
-                    </button>
-                    <button className="flex items-center gap-2 px-6 py-3 bg-brand-navy text-white rounded-2xl text-[13px] font-bold shadow-lg shadow-brand-navy/20 active:scale-95 transition-all">
-                        <Users size={18} />
-                        Bulk Messaging
-                    </button>
-                </div>
-            </div>
+    void run();
+  }, [refreshTrigger]);
 
-            {/* View Stats Mini */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                    { label: 'Total Members', value: '1,250', color: 'text-brand-navy' },
-                    { label: 'KYC Verified', value: '982', color: 'text-emerald-600' },
-                    { label: 'Suspended', value: '14', color: 'text-red-500' },
-                    { label: 'Premium', value: '312', color: 'text-brand-primary' },
-                ].map((s, i) => (
-                    <div key={i} className="bg-white p-5 rounded-3xl border border-slate-50 shadow-sm">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{s.label}</p>
-                        <p className={`text-xl font-black ${s.color}`}>{s.value}</p>
-                    </div>
-                ))}
-            </div>
+  const filteredUsers = useMemo(() => {
+    return users.filter((user) => {
+      if (roleFilter !== 'all' && user.role !== roleFilter) return false;
+      if (statusFilter !== 'all' && user.status !== statusFilter) return false;
+      if (!search.trim()) return true;
 
-            {/* Search & Filter Bar */}
-            <div className="flex flex-col sm:flex-row gap-4">
-                <div className="relative flex-grow max-w-lg">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 w-5 h-5" />
-                    <input
-                        type="text"
-                        placeholder="Search by name, email, or telephone..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-12 pr-4 py-4 bg-white border border-slate-100 rounded-2xl text-sm font-semibold focus:outline-none focus:ring-4 focus:ring-brand-primary/5 transition-all shadow-sm"
-                    />
-                </div>
-                <div className="flex gap-2">
-                    <button className="p-4 bg-white border border-slate-100 rounded-2xl text-slate-400 hover:text-brand-navy transition-all shadow-sm">
-                        <Filter size={20} />
-                    </button>
-                    <button className="px-6 py-4 bg-white border border-slate-100 rounded-2xl text-[13px] font-bold text-brand-navy hover:bg-slate-50 transition-all shadow-sm">
-                        Active Only
-                    </button>
-                </div>
-            </div>
+      const haystack = [user.name, user.email, user.phone ?? ''].join(' ').toLowerCase();
+      return haystack.includes(search.toLowerCase());
+    });
+  }, [users, roleFilter, statusFilter, search]);
 
-            {/* Users Table */}
-            <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead>
-                            <tr className="bg-slate-50/50 border-b border-slate-50">
-                                <th className="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Participant</th>
-                                <th className="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Contact</th>
-                                <th className="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Verification</th>
-                                <th className="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Financials</th>
-                                <th className="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Status</th>
-                                <th className="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50 text-[13px]">
-                            {filteredUsers.map((user, index) => (
-                                <motion.tr
-                                    key={user.id}
-                                    initial={{ opacity: 0, scale: 0.99 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ delay: index * 0.03 }}
-                                    className="hover:bg-slate-50/50 transition-colors group/row"
-                                >
-                                    <td className="px-8 py-6">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-11 h-11 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center text-brand-navy font-black text-sm group-hover/row:scale-110 transition-transform shadow-sm">
-                                                {user.name.charAt(0)}
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-brand-navy">{user.name}</p>
-                                                <p className="text-[10px] text-slate-400 font-medium">Joined {new Date(user.joinedAt).toLocaleDateString()}</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-8 py-6">
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-2 text-slate-500">
-                                                <Mail size={12} className="text-slate-300" />
-                                                <span className="text-[12px]">{user.email}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-slate-500">
-                                                <Phone size={12} className="text-slate-300" />
-                                                <span className="text-[12px]">{user.phone}</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-8 py-6">
-                                        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-xl w-fit border border-slate-100">
-                                            <ShieldCheck size={14} className="text-brand-primary" />
-                                            <span className="text-[11px] font-bold text-brand-navy italic">{user.kycLevel}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-8 py-6">
-                                        <p className="font-black text-brand-navy">{user.walletBalance}</p>
-                                        <div className="flex items-center gap-1.5 mt-1">
-                                            <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">{user.savingsStreak} STREAK</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-8 py-6">
-                                        <StatusBadge status={user.status} />
-                                    </td>
-                                    <td className="px-8 py-6 text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <button
-                                                onClick={() => router.push(`/admin/users/${user.id}`)}
-                                                className="p-2.5 text-slate-400 hover:text-brand-navy hover:bg-slate-100 rounded-xl transition-all"
-                                                title="View Details"
-                                            >
-                                                <Eye size={18} />
-                                            </button>
-                                            <button
-                                                onClick={() => toggleStatus(user.id)}
-                                                className={`p-2.5 rounded-xl transition-all ${user.status === 'Active'
-                                                        ? 'text-slate-400 hover:text-red-500 hover:bg-red-50'
-                                                        : 'text-emerald-500 bg-emerald-50'
-                                                    }`}
-                                                title={user.status === 'Active' ? 'Suspend' : 'Activate'}
-                                            >
-                                                {user.status === 'Active' ? <UserX size={18} /> : <UserCheck size={18} />}
-                                            </button>
-                                            <button className="p-2.5 text-slate-400 hover:text-brand-navy hover:bg-slate-100 rounded-xl transition-all">
-                                                <MoreVertical size={18} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </motion.tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
 
-                {/* Footer / Pagination */}
-                <div className="p-6 border-t border-slate-50 flex items-center justify-between">
-                    <p className="text-[12px] text-slate-400 font-medium">
-                        Showing <span className="text-brand-navy font-bold">{filteredUsers.length}</span> of 1,250 registered members
-                    </p>
-                    <div className="flex gap-2">
-                        <button className="px-4 py-2 border border-slate-200 rounded-xl text-[12px] font-bold text-slate-400 hover:bg-slate-50 transition-all">Previous</button>
-                        <button className="px-4 py-2 bg-brand-navy text-white rounded-xl text-[12px] font-bold shadow-lg shadow-brand-navy/20">1</button>
-                        <button className="px-4 py-2 border border-slate-200 rounded-xl text-[12px] font-bold text-slate-400 hover:bg-slate-50 transition-all">2</button>
-                        <button className="px-4 py-2 border border-slate-200 rounded-xl text-[12px] font-bold text-slate-400 hover:bg-slate-50 transition-all">Next</button>
-                    </div>
-                </div>
+  const totalUsers = filteredUsers.length;
+  const activeUsers = filteredUsers.filter((u) => u.status === 'active').length;
+  const suspendedUsers = filteredUsers.filter((u) => u.status === 'suspended').length;
+  const newUsersThisMonth = filteredUsers.filter((u) => {
+    const d = new Date(u.created_at);
+    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+  }).length;
+
+  const growthData = userGrowth.map((point) => ({ label: point.date.slice(5), count: point.count }));
+
+  const allSelected = filteredUsers.length > 0 && filteredUsers.every((u) => selectedIds.includes(u.id));
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !filteredUsers.some((u) => u.id === id)));
+      return;
+    }
+
+    const next = new Set(selectedIds);
+    filteredUsers.forEach((u) => next.add(u.id));
+    setSelectedIds(Array.from(next));
+  };
+
+  const runBulkAction = async (updates: Record<string, unknown>) => {
+    if (selectedIds.length === 0) return;
+
+    setBulkLoading(true);
+    setError('');
+
+    try {
+      await Promise.all(
+        selectedIds.map(async (id) => {
+          const res = await fetch(`/api/admin/users/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates),
+          });
+          const json = await res.json();
+          if (!res.ok) throw new Error(json.error || 'Bulk update failed.');
+        }),
+      );
+
+      setSelectedIds([]);
+      await loadAll();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to apply bulk action.');
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  const columns: Array<DataTableColumn<UserRow>> = useMemo(
+    () => [
+      {
+        key: 'select',
+        header: 'Select',
+        className: 'w-16',
+        headerClassName: 'w-16',
+        render: (user) => (
+          <input
+            type="checkbox"
+            checked={selectedIds.includes(user.id)}
+            onChange={() => toggleSelect(user.id)}
+          />
+        ),
+      },
+      {
+        key: 'user',
+        header: 'User',
+        render: (user) => {
+          const displayName = user.name || user.email;
+          return (
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="grid h-10 w-10 place-items-center rounded-full bg-brand-primary text-xs font-bold text-white">
+                {initials(displayName)}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate font-bold text-brand-navy">{displayName}</p>
+                <p className="truncate text-xs text-slate-500">{user.email} . {user.phone || 'No phone'}</p>
+              </div>
             </div>
+          );
+        },
+      },
+      {
+        key: 'roleStatus',
+        header: 'Role / Status',
+        render: (user) => (
+          <div className="flex flex-wrap gap-2 text-xs">
+            <span className="rounded-lg bg-slate-100 px-2 py-1 font-semibold text-slate-700">{user.role}</span>
+            <span
+              className={`rounded-lg px-2 py-1 font-semibold ${user.status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+                }`}
+            >
+              {user.status}
+            </span>
+          </div>
+        ),
+      },
+      {
+        key: 'balances',
+        header: 'Balances',
+        render: (user) => (
+          <div className="flex flex-wrap gap-2 text-xs">
+            <span className="rounded-lg bg-blue-50 px-2 py-1 font-semibold text-blue-700">
+              NGN {Number(user.wallet_balance || 0).toLocaleString('en-NG')}
+            </span>
+            <span className="rounded-lg bg-indigo-50 px-2 py-1 font-semibold text-indigo-700">
+              NGN {Number(user.total_contributed || 0).toLocaleString('en-NG')} contributed
+            </span>
+          </div>
+        ),
+      },
+      {
+        key: 'actions',
+        header: 'Action',
+        className: 'w-24',
+        headerClassName: 'w-24',
+        render: (user) => (
+          <Link
+            href={`/admin/users/${user.id}`}
+            className="inline-flex rounded-lg bg-slate-900 px-2 py-1 text-xs font-semibold text-white"
+          >
+            Open
+          </Link>
+        ),
+      },
+    ],
+    [selectedIds],
+  );
+
+  if (loading) {
+    return <div className="grid min-h-80 place-items-center"><Loader2 className="animate-spin" size={16} /></div>;
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-brand-navy">Admin Users</h1>
+          <LastSynced timestamp={lastSyncedAt} loading={loading || bulkLoading} />
         </div>
-    );
+        <div className="flex flex-wrap gap-2">
+          <button disabled={bulkLoading || selectedIds.length === 0} onClick={() => runBulkAction({ status: 'active' })} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-brand-navy disabled:opacity-50">Bulk Activate</button>
+          <button disabled={bulkLoading || selectedIds.length === 0} onClick={() => runBulkAction({ status: 'suspended' })} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-brand-navy disabled:opacity-50">Bulk Suspend</button>
+          <button disabled={bulkLoading || selectedIds.length === 0} onClick={() => runBulkAction({ role: 'admin' })} className="rounded-xl bg-brand-navy px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">Make Admin</button>
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-2xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Total Users</p><p className="mt-1 text-xl font-bold text-brand-navy">{totalUsers}</p></div>
+        <div className="rounded-2xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Active Users</p><p className="mt-1 text-xl font-bold text-emerald-700">{activeUsers}</p></div>
+        <div className="rounded-2xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Suspended Users</p><p className="mt-1 text-xl font-bold text-red-600">{suspendedUsers}</p></div>
+        <div className="rounded-2xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">New This Month</p><p className="mt-1 text-xl font-bold text-brand-navy">{newUsersThisMonth}</p></div>
+      </div>
+
+      <ChartCard title="User Growth" subtitle="Signups across the last 90 days">
+        <AdminAreaChart
+          data={growthData}
+          xKey="label"
+          series={[{ key: 'count', name: 'New Users', color: '#0F766E' }]}
+          valueFormatter={(v) => `${v.toLocaleString()}`}
+        />
+      </ChartCard>
+
+      <div className="rounded-2xl border border-slate-100 bg-white p-3">
+        <div className="grid gap-3 md:grid-cols-4">
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search users" className="rounded-xl border border-slate-200 px-3 py-2 text-sm md:col-span-2" />
+          <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="rounded-xl border border-slate-200 px-3 py-2 text-sm">
+            <option value="all">All Roles</option>
+            <option value="admin">Admin</option>
+            <option value="user">User</option>
+          </select>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-xl border border-slate-200 px-3 py-2 text-sm">
+            <option value="all">All Status</option>
+            <option value="active">Active</option>
+            <option value="suspended">Suspended</option>
+          </select>
+        </div>
+      </div>
+
+      {error && <div className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+
+      <div className="space-y-2">
+        <label className="inline-flex items-center gap-2 px-2 text-xs font-semibold text-slate-600">
+          <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} /> Select all filtered users
+        </label>
+
+        <DataTable
+          rows={filteredUsers}
+          columns={columns}
+          rowKey={(user) => user.id}
+          emptyMessage="No users found."
+        />
+      </div>
+    </div>
+  );
 }

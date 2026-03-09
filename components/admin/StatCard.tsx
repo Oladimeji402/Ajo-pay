@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { LucideIcon, TrendingUp, TrendingDown } from 'lucide-react';
 
@@ -14,15 +14,43 @@ interface StatCardProps {
     };
     color?: string;
     delay?: number;
+    pulseOnChange?: boolean;
 }
 
-export const StatCard = ({ label, value, icon: Icon, trend, color = 'brand-navy', delay = 0 }: StatCardProps) => {
+export const StatCard = ({
+    label,
+    value,
+    icon: Icon,
+    trend,
+    color = 'brand-navy',
+    delay = 0,
+    pulseOnChange = false,
+}: StatCardProps) => {
+    const [isPulsing, setIsPulsing] = useState(false);
+    const previousValueRef = useRef<string | number>(value);
+
+    useEffect(() => {
+        if (!pulseOnChange) {
+            previousValueRef.current = value;
+            return;
+        }
+
+        if (previousValueRef.current !== value) {
+            setIsPulsing(true);
+            const timeout = setTimeout(() => setIsPulsing(false), 1100);
+            previousValueRef.current = value;
+            return () => clearTimeout(timeout);
+        }
+
+        return;
+    }, [pulseOnChange, value]);
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay }}
-            className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm hover:shadow-md transition-all group"
+            className={`bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm hover:shadow-md transition-all group ${isPulsing ? 'ring-2 ring-emerald-200 shadow-emerald-100' : ''}`}
         >
             <div className="flex justify-between items-start mb-4">
                 <div className={`w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-${color} group-hover:scale-110 transition-transform duration-300`}>

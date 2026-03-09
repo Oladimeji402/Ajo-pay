@@ -13,21 +13,19 @@ export default function AdminLoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setIsLoading(true);
 
-        // Artificial delay for premium feel
-        setTimeout(() => {
-            const success = adminLogin(email, password);
-            if (success) {
-                router.push('/admin');
-            } else {
-                setError('Invalid administrative credentials. Access denied.');
-                setIsLoading(false);
-            }
-        }, 1200);
+        const success = await adminLogin(email, password);
+        if (success) {
+            router.push('/admin');
+            return;
+        }
+
+        setError('Invalid administrative credentials. Access denied.');
+        setIsLoading(false);
     };
 
     return (
@@ -37,16 +35,16 @@ export default function AdminLoginPage() {
             className="w-full"
         >
             <div className="text-center mb-8">
-                <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-red-500/30">
+                <div className="w-16 h-16 bg-linear-to-br from-red-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-red-500/30">
                     <span className="text-white font-bold text-3xl">A</span>
                 </div>
                 <h1 className="text-2xl font-black text-brand-navy mb-2 tracking-tight">Access Control</h1>
                 <p className="text-[13px] text-brand-gray">Authenticate to enter the AjoPay Administrative Panel</p>
             </div>
 
-            <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-xl shadow-slate-200/50 relative overflow-hidden">
+            <div className="bg-white p-8 rounded-4xl border border-slate-100 shadow-xl shadow-slate-200/50 relative overflow-hidden">
                 {/* Visual accent */}
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 via-orange-500 to-red-500 opacity-80"></div>
+                <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-red-500 via-orange-500 to-red-500 opacity-80"></div>
 
                 <form className="space-y-5" onSubmit={handleLogin}>
                     <div>
@@ -85,7 +83,7 @@ export default function AdminLoginPage() {
                             animate={{ opacity: 1, x: 0 }}
                             className="flex items-center gap-3 p-4 bg-red-50 border border-red-100 rounded-2xl"
                         >
-                            <ShieldAlert className="text-red-500 flex-shrink-0" size={18} />
+                            <ShieldAlert className="text-red-500 shrink-0" size={18} />
                             <p className="text-[12px] font-bold text-red-600 leading-tight">{error}</p>
                         </motion.div>
                     )}

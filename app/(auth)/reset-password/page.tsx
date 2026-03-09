@@ -5,21 +5,34 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { motion } from 'motion/react';
 import { Loader2, Check, X, Lock, CheckCircle2 } from 'lucide-react';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 export default function ResetPasswordPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [error, setError] = useState('');
     const router = useRouter();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError('');
         setIsLoading(true);
-        setTimeout(() => {
+
+        const supabase = createSupabaseBrowserClient();
+        const { error: updateError } = await supabase.auth.updateUser({
+            password,
+        });
+
+        if (updateError) {
+            setError(updateError.message || 'Unable to update your password.');
             setIsLoading(false);
-            setIsSuccess(true);
-        }, 1500);
+            return;
+        }
+
+        setIsLoading(false);
+        setIsSuccess(true);
     };
 
     const passwordChecks = useMemo(() => [
@@ -91,7 +104,7 @@ export default function ResetPasswordPage() {
                             <div className="grid grid-cols-2 gap-x-3 gap-y-1">
                                 {passwordChecks.map((check, i) => (
                                     <div key={i} className="flex items-center gap-1.5">
-                                        {check.valid ? <Check size={12} className="text-emerald-500 flex-shrink-0" /> : <X size={12} className="text-slate-300 flex-shrink-0" />}
+                                        {check.valid ? <Check size={12} className="text-emerald-500 shrink-0" /> : <X size={12} className="text-slate-300 shrink-0" />}
                                         <span className={`text-[11px] ${check.valid ? 'text-emerald-600' : 'text-slate-400'}`}>{check.label}</span>
                                     </div>
                                 ))}
@@ -116,6 +129,8 @@ export default function ResetPasswordPage() {
                         {isLoading ? <span className="flex items-center gap-2"><Loader2 size={16} className="animate-spin" />Updating password...</span> : 'Reset password'}
                     </Button>
                 </div>
+
+                {error && <p className="text-xs font-medium text-red-500">{error}</p>}
             </form>
         </>
     );

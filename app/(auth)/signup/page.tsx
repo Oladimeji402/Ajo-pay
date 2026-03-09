@@ -7,20 +7,106 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { motion } from 'motion/react';
 import { Loader2, Check, X } from 'lucide-react';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 export default function SignUpPage() {
     const [isLoading, setIsLoading] = useState(false);
+    const [isVerifying, setIsVerifying] = useState(false);
+    const [isResending, setIsResending] = useState(false);
     const [password, setPassword] = useState('');
     const [agreedToTerms, setAgreedToTerms] = useState(false);
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
+    const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
+    const [otp, setOtp] = useState('');
+    const [pendingEmail, setPendingEmail] = useState('');
+    const [verificationMode, setVerificationMode] = useState(false);
+    const [error, setError] = useState('');
+    const [notice, setNotice] = useState('');
     const router = useRouter();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError('');
+        setNotice('');
         setIsLoading(true);
-        setTimeout(() => {
+
+        const supabase = createSupabaseBrowserClient();
+
+        const fullName = `${firstName} ${lastName}`.trim();
+        const { error: signUpError } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    name: fullName,
+                    phone,
+                },
+            },
+        });
+
+        if (signUpError) {
+            setError(signUpError.message || 'Unable to create account right now.');
             setIsLoading(false);
-            router.push('/onboarding');
-        }, 1500);
+            return;
+        }
+
+        await supabase.auth.signOut();
+        setPendingEmail(email.trim());
+        setVerificationMode(true);
+        setNotice('A 6-digit OTP has been sent to your email. Enter it below to verify your account.');
+        setIsLoading(false);
+    };
+
+    const handleVerifyOtp = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+        setNotice('');
+
+        if (!/^\d{6}$/.test(otp.trim())) {
+            setError('Enter a valid 6-digit OTP code.');
+            return;
+        }
+
+        setIsVerifying(true);
+        const supabase = createSupabaseBrowserClient();
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+            email: pendingEmail,
+            token: otp.trim(),
+            type: 'signup',
+        });
+
+        if (verifyError) {
+            setError(verifyError.message || 'OTP verification failed.');
+            setIsVerifying(false);
+            return;
+        }
+
+        setIsVerifying(false);
+        router.push('/onboarding');
+    };
+
+    const handleResendOtp = async () => {
+        setError('');
+        setNotice('');
+        setIsResending(true);
+
+        const supabase = createSupabaseBrowserClient();
+
+        const { error: resendError } = await supabase.auth.resend({
+            type: 'signup',
+            email: pendingEmail,
+        });
+
+        if (resendError) {
+            setError(resendError.message || 'Failed to resend OTP.');
+            setIsResending(false);
+            return;
+        }
+
+        setNotice('A new OTP has been sent to your email.');
+        setIsResending(false);
     };
 
     const passwordChecks = useMemo(() => [
@@ -33,6 +119,70 @@ export default function SignUpPage() {
     const strengthPercent = (passwordChecks.filter(c => c.valid).length / passwordChecks.length) * 100;
     const strengthColor = strengthPercent <= 25 ? 'bg-red-500' : strengthPercent <= 50 ? 'bg-amber-500' : strengthPercent <= 75 ? 'bg-blue-500' : 'bg-emerald-500';
     const strengthLabel = strengthPercent <= 25 ? 'Weak' : strengthPercent <= 50 ? 'Fair' : strengthPercent <= 75 ? 'Good' : 'Strong';
+
+    if (verificationMode) {
+        return (
+            <div className="space-y-5">
+                <div>
+                    <h2 className="text-2xl font-bold text-brand-navy mb-2">Verify your email</h2>
+                    <p className="text-[13px] text-brand-gray leading-relaxed">
+                        Enter the 6-digit OTP sent to <span className="font-semibold text-brand-navy">{pendingEmail}</span>
+                    </p>
+                </div>
+
+                <form onSubmit={handleVerifyOtp} className="space-y-4">
+                    <Input
+                        label="6-digit OTP"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]{6}"
+                        maxLength={6}
+                        placeholder="123456"
+                        value={otp}
+                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        required
+                    />
+
+                    {notice && <p className="text-xs font-medium text-emerald-600">{notice}</p>}
+                    {error && <p className="text-xs font-medium text-red-500">{error}</p>}
+
+                    <Button type="submit" className="w-full" disabled={isVerifying}>
+                        {isVerifying ? (
+                            <span className="flex items-center gap-2">
+                                <Loader2 size={16} className="animate-spin" />
+                                Verifying OTP...
+                            </span>
+                        ) : 'Verify & Continue'}
+                    </Button>
+
+                    <button
+                        type="button"
+                        onClick={handleResendOtp}
+                        disabled={isResending}
+                        className="w-full text-sm font-semibold text-brand-primary hover:text-brand-primary-hover disabled:opacity-60"
+                    >
+                        {isResending ? 'Resending OTP...' : 'Resend OTP'}
+                    </button>
+                </form>
+
+                <p className="text-center text-[13px] text-brand-gray">
+                    Wrong email?{' '}
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setVerificationMode(false);
+                            setOtp('');
+                            setError('');
+                            setNotice('');
+                        }}
+                        className="font-semibold text-brand-emerald hover:text-brand-emerald-hover transition-colors"
+                    >
+                        Edit registration
+                    </button>
+                </p>
+            </div>
+        );
+    }
 
     return (
         <>
@@ -66,19 +216,19 @@ export default function SignUpPage() {
                     <div className="w-full border-t border-slate-200"></div>
                 </div>
                 <div className="relative flex justify-center text-xs">
-                    <span className="px-3 bg-[#F8FAFC] text-slate-400 font-medium">or sign up with email</span>
+                    <span className="px-3 bg-brand-light text-slate-400 font-medium">or sign up with email</span>
                 </div>
             </div>
 
             {/* Form */}
             <form className="space-y-4" onSubmit={handleSubmit}>
                 <div className="grid grid-cols-2 gap-3">
-                    <Input label="First Name" type="text" placeholder="John" required />
-                    <Input label="Last Name" type="text" placeholder="Doe" required />
+                    <Input label="First Name" type="text" placeholder="John" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+                    <Input label="Last Name" type="text" placeholder="Doe" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
                 </div>
 
-                <Input label="Email Address" type="email" placeholder="name@example.com" required />
-                <Input label="Phone Number" type="tel" placeholder="+234 800 000 0000" required />
+                <Input label="Email Address" type="email" placeholder="name@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                <Input label="Phone Number" type="tel" placeholder="+234 800 000 0000" value={phone} onChange={(e) => setPhone(e.target.value)} required />
 
                 <div>
                     <div className="space-y-1 w-full">
@@ -117,9 +267,9 @@ export default function SignUpPage() {
                                 {passwordChecks.map((check, i) => (
                                     <div key={i} className="flex items-center gap-1.5">
                                         {check.valid ? (
-                                            <Check size={12} className="text-emerald-500 flex-shrink-0" />
+                                            <Check size={12} className="text-emerald-500 shrink-0" />
                                         ) : (
-                                            <X size={12} className="text-slate-300 flex-shrink-0" />
+                                            <X size={12} className="text-slate-300 shrink-0" />
                                         )}
                                         <span className={`text-[11px] ${check.valid ? 'text-emerald-600' : 'text-slate-400'}`}>
                                             {check.label}
@@ -141,7 +291,7 @@ export default function SignUpPage() {
                             className="sr-only peer"
                             required
                         />
-                        <div className="w-[18px] h-[18px] rounded border-2 border-slate-300 peer-checked:border-brand-emerald peer-checked:bg-brand-emerald transition-all flex items-center justify-center flex-shrink-0">
+                        <div className="w-4.5 h-4.5 rounded border-2 border-slate-300 peer-checked:border-brand-emerald peer-checked:bg-brand-emerald transition-all flex items-center justify-center shrink-0">
                             {agreedToTerms && (
                                 <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
                                     <path d="M2 6L5 9L10 3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -156,6 +306,9 @@ export default function SignUpPage() {
                         <a href="#" className="font-semibold text-brand-navy hover:text-brand-primary underline decoration-dotted transition-colors">Privacy Policy</a>
                     </span>
                 </div>
+
+                {notice && <p className="text-xs font-medium text-emerald-600">{notice}</p>}
+                {error && <p className="text-xs font-medium text-red-500">{error}</p>}
 
                 <Button
                     type="submit"
