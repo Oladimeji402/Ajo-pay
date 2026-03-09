@@ -2,6 +2,8 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Copy, Loader2 } from 'lucide-react';
+import { DataTable, DataTableColumn } from '@/components/admin/DataTable';
+import { DateRangeSelector, DateRangeValue } from '@/components/admin/DateRangeSelector';
 import { LastSynced } from '@/components/admin/LastSynced';
 import { ChartCard } from '@/components/admin/charts/ChartCard';
 import { AdminBarChart } from '@/components/admin/charts/BarChart';
@@ -37,7 +39,7 @@ export default function AdminPayoutsPage() {
   const [savingId, setSavingId] = useState('');
   const [error, setError] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [range, setRange] = useState('30');
+  const [range, setRange] = useState<DateRangeValue>('30');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [payouts, setPayouts] = useState<PayoutRow[]>([]);
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
@@ -188,6 +190,111 @@ export default function AdminPayoutsPage() {
     setSelectedIds(Array.from(next));
   };
 
+  const columns: Array<DataTableColumn<PayoutRow>> = useMemo(
+    () => [
+      {
+        key: 'recipient',
+        header: 'Recipient',
+        render: (payout) => {
+          const canSelect = payout.status !== 'done';
+          const isSelected = selectedIds.includes(payout.id);
+
+          return (
+            <div className="min-w-0">
+              <div className="mb-1 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  disabled={!canSelect}
+                  checked={isSelected}
+                  onChange={() => toggleSelect(payout.id)}
+                />
+                <p className="font-semibold text-brand-navy">
+                  {payout.profiles?.name || payout.profiles?.email || 'Recipient'} . {payout.groups?.name || 'Group'}
+                </p>
+              </div>
+              <p className="text-xs text-slate-500">
+                Cycle {payout.cycle_number} . {new Date(payout.created_at).toLocaleString()}
+              </p>
+            </div>
+          );
+        },
+      },
+      {
+        key: 'bank',
+        header: 'Bank Details',
+        render: (payout) => {
+          const payoutBankName = payout.bank_name || payout.profiles?.bank_name || '';
+          const payoutBankAccount = payout.bank_account || payout.profiles?.bank_account || '';
+
+          return (
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div className="rounded-lg bg-slate-50 px-2 py-1.5 text-xs">
+                <p className="font-semibold text-slate-700">Bank Name</p>
+                <div className="mt-0.5 flex items-center justify-between gap-2">
+                  <span className="truncate text-slate-600">{payoutBankName || 'Not set'}</span>
+                  {payoutBankName ? (
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(payoutBankName)}
+                      className="text-slate-500 hover:text-slate-800"
+                    >
+                      <Copy size={12} />
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+              <div className="rounded-lg bg-slate-50 px-2 py-1.5 text-xs">
+                <p className="font-semibold text-slate-700">Account Number</p>
+                <div className="mt-0.5 flex items-center justify-between gap-2">
+                  <span className="font-mono tracking-wide text-slate-600">{payoutBankAccount || 'Not set'}</span>
+                  {payoutBankAccount ? (
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(payoutBankAccount)}
+                      className="text-slate-500 hover:text-slate-800"
+                    >
+                      <Copy size={12} />
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        key: 'amount',
+        header: 'Amount',
+        className: 'w-44',
+        headerClassName: 'w-44',
+        render: (payout) => <span className="font-bold text-brand-navy">{toCurrency(Number(payout.amount ?? 0))}</span>,
+      },
+      {
+        key: 'status',
+        header: 'Status',
+        className: 'w-32',
+        headerClassName: 'w-32',
+        render: (payout) => <span className="capitalize text-slate-700">{payout.status}</span>,
+      },
+      {
+        key: 'action',
+        header: 'Action',
+        className: 'w-40',
+        headerClassName: 'w-40',
+        render: (payout) => (
+          <button
+            disabled={savingId === payout.id || payout.status === 'done'}
+            onClick={() => markDone(payout.id)}
+            className="rounded-lg bg-brand-navy px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
+          >
+            {payout.status === 'done' ? 'Done' : savingId === payout.id ? 'Saving...' : 'Mark Done'}
+          </button>
+        ),
+      },
+    ],
+    [selectedIds, savingId],
+  );
+
   if (loading) return <div className="grid min-h-80 place-items-center"><Loader2 className="animate-spin" size={16} /></div>;
 
   return (
@@ -221,67 +328,18 @@ export default function AdminPayoutsPage() {
             <option value="done">Done</option>
             <option value="failed">Failed</option>
           </select>
-          <select value={range} onChange={(e) => setRange(e.target.value)} className="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-            <option value="7">Last 7 days</option>
-            <option value="30">Last 30 days</option>
-            <option value="90">Last 90 days</option>
-            <option value="all">All time</option>
-          </select>
+          <DateRangeSelector value={range} onChange={setRange} className="justify-self-start md:justify-self-stretch" />
         </div>
       </div>
 
       {error && <div className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-600">{error}</div>}
 
-      <div className="rounded-2xl border border-slate-100 bg-white p-2">
+      <div className="space-y-2">
         <label className="mb-2 inline-flex items-center gap-2 px-2 text-xs font-semibold text-slate-600">
           <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} /> Select all non-done payouts
         </label>
 
-        <div className="space-y-2">
-          {filtered.map((payout) => {
-            const canSelect = payout.status !== 'done';
-            const isSelected = selectedIds.includes(payout.id);
-            const payoutBankName = payout.bank_name || payout.profiles?.bank_name || '';
-            const payoutBankAccount = payout.bank_account || payout.profiles?.bank_account || '';
-
-            return (
-              <div key={payout.id} className="rounded-xl border border-slate-100 p-3 text-sm">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="mb-1 flex items-center gap-2">
-                      <input type="checkbox" disabled={!canSelect} checked={isSelected} onChange={() => toggleSelect(payout.id)} />
-                      <p className="font-semibold text-brand-navy">{payout.profiles?.name || payout.profiles?.email || 'Recipient'} . {payout.groups?.name || 'Group'}</p>
-                    </div>
-                    <p className="text-xs text-slate-500">Cycle {payout.cycle_number} . {new Date(payout.created_at).toLocaleString()} . {payout.status}</p>
-                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                      <div className="rounded-lg bg-slate-50 px-2 py-1.5 text-xs">
-                        <p className="font-semibold text-slate-700">Bank Name</p>
-                        <div className="mt-0.5 flex items-center justify-between gap-2">
-                          <span className="truncate text-slate-600">{payoutBankName || 'Not set'}</span>
-                          {payoutBankName ? <button type="button" onClick={() => copyToClipboard(payoutBankName)} className="text-slate-500 hover:text-slate-800"><Copy size={12} /></button> : null}
-                        </div>
-                      </div>
-                      <div className="rounded-lg bg-slate-50 px-2 py-1.5 text-xs">
-                        <p className="font-semibold text-slate-700">Account Number</p>
-                        <div className="mt-0.5 flex items-center justify-between gap-2">
-                          <span className="font-mono tracking-wide text-slate-600">{payoutBankAccount || 'Not set'}</span>
-                          {payoutBankAccount ? <button type="button" onClick={() => copyToClipboard(payoutBankAccount)} className="text-slate-500 hover:text-slate-800"><Copy size={12} /></button> : null}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-right">
-                    <p className="font-bold text-brand-navy">{toCurrency(Number(payout.amount ?? 0))}</p>
-                    <button disabled={savingId === payout.id || payout.status === 'done'} onClick={() => markDone(payout.id)} className="mt-2 rounded-lg bg-brand-navy px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50">{payout.status === 'done' ? 'Done' : savingId === payout.id ? 'Saving...' : 'Mark Done'}</button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-
-          {filtered.length === 0 && <p className="p-4 text-sm text-slate-500">No payouts found.</p>}
-        </div>
+        <DataTable rows={filtered} columns={columns} rowKey={(payout) => payout.id} emptyMessage="No payouts found." />
       </div>
     </div>
   );

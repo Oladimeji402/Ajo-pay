@@ -2,7 +2,8 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Loader2, Shield, UserCheck, UserX, Users } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { DataTable, DataTableColumn } from '@/components/admin/DataTable';
 import { LastSynced } from '@/components/admin/LastSynced';
 import { ChartCard } from '@/components/admin/charts/ChartCard';
 import { AdminAreaChart } from '@/components/admin/charts/AreaChart';
@@ -156,6 +157,86 @@ export default function AdminUsersPage() {
     }
   };
 
+  const columns: Array<DataTableColumn<UserRow>> = useMemo(
+    () => [
+      {
+        key: 'select',
+        header: 'Select',
+        className: 'w-16',
+        headerClassName: 'w-16',
+        render: (user) => (
+          <input
+            type="checkbox"
+            checked={selectedIds.includes(user.id)}
+            onChange={() => toggleSelect(user.id)}
+          />
+        ),
+      },
+      {
+        key: 'user',
+        header: 'User',
+        render: (user) => {
+          const displayName = user.name || user.email;
+          return (
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="grid h-10 w-10 place-items-center rounded-full bg-brand-primary text-xs font-bold text-white">
+                {initials(displayName)}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate font-bold text-brand-navy">{displayName}</p>
+                <p className="truncate text-xs text-slate-500">{user.email} . {user.phone || 'No phone'}</p>
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        key: 'roleStatus',
+        header: 'Role / Status',
+        render: (user) => (
+          <div className="flex flex-wrap gap-2 text-xs">
+            <span className="rounded-lg bg-slate-100 px-2 py-1 font-semibold text-slate-700">{user.role}</span>
+            <span
+              className={`rounded-lg px-2 py-1 font-semibold ${user.status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+                }`}
+            >
+              {user.status}
+            </span>
+          </div>
+        ),
+      },
+      {
+        key: 'balances',
+        header: 'Balances',
+        render: (user) => (
+          <div className="flex flex-wrap gap-2 text-xs">
+            <span className="rounded-lg bg-blue-50 px-2 py-1 font-semibold text-blue-700">
+              NGN {Number(user.wallet_balance || 0).toLocaleString('en-NG')}
+            </span>
+            <span className="rounded-lg bg-indigo-50 px-2 py-1 font-semibold text-indigo-700">
+              NGN {Number(user.total_contributed || 0).toLocaleString('en-NG')} contributed
+            </span>
+          </div>
+        ),
+      },
+      {
+        key: 'actions',
+        header: 'Action',
+        className: 'w-24',
+        headerClassName: 'w-24',
+        render: (user) => (
+          <Link
+            href={`/admin/users/${user.id}`}
+            className="inline-flex rounded-lg bg-slate-900 px-2 py-1 text-xs font-semibold text-white"
+          >
+            Open
+          </Link>
+        ),
+      },
+    ],
+    [selectedIds],
+  );
+
   if (loading) {
     return <div className="grid min-h-80 place-items-center"><Loader2 className="animate-spin" size={16} /></div>;
   }
@@ -208,44 +289,17 @@ export default function AdminUsersPage() {
 
       {error && <div className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-600">{error}</div>}
 
-      <div className="rounded-2xl border border-slate-100 bg-white p-2">
-        <label className="mb-2 inline-flex items-center gap-2 px-2 text-xs font-semibold text-slate-600">
+      <div className="space-y-2">
+        <label className="inline-flex items-center gap-2 px-2 text-xs font-semibold text-slate-600">
           <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} /> Select all filtered users
         </label>
 
-        <div className="grid gap-2">
-          {filteredUsers.map((user) => {
-            const isSelected = selectedIds.includes(user.id);
-            const displayName = user.name || user.email;
-
-            return (
-              <div key={user.id} className="rounded-xl border border-slate-100 p-3">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(user.id)} />
-                    <span className="grid h-10 w-10 place-items-center rounded-full bg-brand-primary text-xs font-bold text-white">{initials(displayName)}</span>
-                    <div className="min-w-0">
-                      <p className="truncate font-bold text-brand-navy">{displayName}</p>
-                      <p className="truncate text-xs text-slate-500">{user.email} . {user.phone || 'No phone'}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 text-xs">
-                    <span className="rounded-lg bg-slate-100 px-2 py-1 font-semibold text-slate-700">{user.role}</span>
-                    <span className={`rounded-lg px-2 py-1 font-semibold ${user.status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
-                      {user.status}
-                    </span>
-                    <span className="rounded-lg bg-blue-50 px-2 py-1 font-semibold text-blue-700">NGN {Number(user.wallet_balance || 0).toLocaleString('en-NG')}</span>
-                    <span className="rounded-lg bg-indigo-50 px-2 py-1 font-semibold text-indigo-700">NGN {Number(user.total_contributed || 0).toLocaleString('en-NG')} contributed</span>
-                    <Link href={`/admin/users/${user.id}`} className="rounded-lg bg-slate-900 px-2 py-1 font-semibold text-white">Open</Link>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-
-          {filteredUsers.length === 0 && <p className="p-4 text-sm text-slate-500">No users found.</p>}
-        </div>
+        <DataTable
+          rows={filteredUsers}
+          columns={columns}
+          rowKey={(user) => user.id}
+          emptyMessage="No users found."
+        />
       </div>
     </div>
   );

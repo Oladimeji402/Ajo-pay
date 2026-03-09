@@ -3,6 +3,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Download, Loader2, Search } from 'lucide-react';
 import { LastSynced } from '@/components/admin/LastSynced';
+import { DateRangeSelector, DateRangeValue } from '@/components/admin/DateRangeSelector';
+import { DataTable, DataTableColumn } from '@/components/admin/DataTable';
 import { ChartCard } from '@/components/admin/charts/ChartCard';
 import { AdminAreaChart } from '@/components/admin/charts/AreaChart';
 import { useRealtimeSubscription } from '@/lib/hooks/useRealtimeSubscription';
@@ -41,7 +43,7 @@ export default function AdminTransactionsPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
-  const [range, setRange] = useState('30');
+  const [range, setRange] = useState<DateRangeValue>('30');
   const [sortKey, setSortKey] = useState<SortKey>('created_at');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(1);
@@ -181,6 +183,54 @@ export default function AdminTransactionsPage() {
     URL.revokeObjectURL(url);
   };
 
+  const columns: Array<DataTableColumn<TxRow>> = useMemo(
+    () => [
+      {
+        key: 'userGroup',
+        header: 'User / Group',
+        render: (tx) => (
+          <>
+            <p className="font-semibold text-brand-navy">{tx.profiles?.name || tx.profiles?.email || 'User'}</p>
+            <p className="text-xs text-slate-500">{tx.groups?.name || 'Group'} . {tx.type}</p>
+          </>
+        ),
+      },
+      {
+        key: 'reference',
+        header: 'Reference',
+        render: (tx) => <span className="text-xs text-slate-500">{tx.reference} . {tx.provider_reference || '-'}</span>,
+      },
+      {
+        key: 'amount',
+        header: (
+          <button type="button" onClick={() => toggleSort('amount')} className="font-semibold text-brand-navy">
+            Amount
+          </button>
+        ),
+        render: (tx) => <span className="font-bold text-brand-navy">{toCurrency(Number(tx.amount ?? 0))}</span>,
+      },
+      {
+        key: 'status',
+        header: (
+          <button type="button" onClick={() => toggleSort('status')} className="font-semibold text-brand-navy">
+            Status
+          </button>
+        ),
+        render: (tx) => <span className="capitalize">{tx.status}</span>,
+      },
+      {
+        key: 'date',
+        header: (
+          <button type="button" onClick={() => toggleSort('created_at')} className="font-semibold text-brand-navy">
+            Date
+          </button>
+        ),
+        render: (tx) => <span className="text-xs text-slate-600">{new Date(tx.created_at).toLocaleString()}</span>,
+      },
+    ],
+    [sortKey, sortDir],
+  );
+
   if (loading) return <div className="grid min-h-80 place-items-center"><Loader2 className="animate-spin" size={16} /></div>;
 
   return (
@@ -227,53 +277,26 @@ export default function AdminTransactionsPage() {
             <option value="contribution">Contribution</option>
             <option value="payout">Payout</option>
           </select>
-          <select value={range} onChange={(e) => { setRange(e.target.value); setPage(1); }} className="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-            <option value="7">Last 7 days</option>
-            <option value="30">Last 30 days</option>
-            <option value="90">Last 90 days</option>
-            <option value="all">All time</option>
-          </select>
+          <DateRangeSelector
+            value={range}
+            onChange={(next) => {
+              setRange(next);
+              setPage(1);
+            }}
+            className="justify-self-start md:justify-self-stretch"
+          />
         </div>
       </div>
 
       {error && <div className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-600">{error}</div>}
 
-      <div className="overflow-x-auto rounded-2xl border border-slate-100 bg-white">
-        <table className="min-w-full text-sm">
-          <thead className="bg-slate-50 text-left">
-            <tr>
-              <th className="px-4 py-3">User / Group</th>
-              <th className="px-4 py-3">Reference</th>
-              <th className="px-4 py-3">
-                <button type="button" onClick={() => toggleSort('amount')} className="font-semibold text-brand-navy">Amount</button>
-              </th>
-              <th className="px-4 py-3">
-                <button type="button" onClick={() => toggleSort('status')} className="font-semibold text-brand-navy">Status</button>
-              </th>
-              <th className="px-4 py-3">
-                <button type="button" onClick={() => toggleSort('created_at')} className="font-semibold text-brand-navy">Date</button>
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {currentPageRows.map((tx) => (
-              <tr key={tx.id} className={tx.id === highlightedTxId ? 'bg-emerald-50 transition-colors' : ''}>
-                <td className="px-4 py-3">
-                  <p className="font-semibold text-brand-navy">{tx.profiles?.name || tx.profiles?.email || 'User'}</p>
-                  <p className="text-xs text-slate-500">{tx.groups?.name || 'Group'} . {tx.type}</p>
-                </td>
-                <td className="px-4 py-3 text-xs text-slate-500">{tx.reference} . {tx.provider_reference || '-'}</td>
-                <td className="px-4 py-3 font-bold text-brand-navy">{toCurrency(Number(tx.amount ?? 0))}</td>
-                <td className="px-4 py-3 capitalize">{tx.status}</td>
-                <td className="px-4 py-3 text-xs text-slate-600">{new Date(tx.created_at).toLocaleString()}</td>
-              </tr>
-            ))}
-            {currentPageRows.length === 0 && (
-              <tr><td className="px-4 py-6 text-sm text-slate-500" colSpan={5}>No transactions found for current filters.</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        rows={currentPageRows}
+        columns={columns}
+        rowKey={(tx) => tx.id}
+        rowClassName={(tx) => (tx.id === highlightedTxId ? 'bg-emerald-50 transition-colors' : '')}
+        emptyMessage="No transactions found for current filters."
+      />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-slate-500">Page {page} of {totalPages}</p>
