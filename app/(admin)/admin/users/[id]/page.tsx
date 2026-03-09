@@ -83,8 +83,8 @@ export default function AdminUserDetailPage() {
                 <p className="text-sm text-brand-gray">{user.email} · {user.phone || 'No phone'}</p>
 
                 <div className="grid sm:grid-cols-2 gap-3 text-sm">
-                    <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-brand-gray">Wallet Balance</p><p className="font-bold text-brand-navy">NGN {Number(user.wallet_balance).toLocaleString('en-NG')}</p></div>
-                    <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-brand-gray">Total Contributed</p><p className="font-bold text-brand-navy">NGN {Number(user.total_contributed).toLocaleString('en-NG')}</p></div>
+                    <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-brand-gray">Total Contribution</p><p className="font-bold text-brand-navy">NGN {Number(user.total_contributed).toLocaleString('en-NG')}</p></div>
+                    <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-brand-gray">Total Received</p><p className="font-bold text-brand-navy">NGN {Number(user.total_received).toLocaleString('en-NG')}</p></div>
                     <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-brand-gray">Role</p><p className="font-bold text-brand-navy capitalize">{user.role}</p></div>
                     <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-brand-gray">Status</p><p className="font-bold text-brand-navy capitalize">{user.status}</p></div>
                 </div>
