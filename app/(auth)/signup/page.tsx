@@ -10,7 +10,6 @@ import { Loader2, Check, X } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 export default function SignUpPage() {
-    const supabase = createSupabaseBrowserClient();
     const [isLoading, setIsLoading] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
     const [isResending, setIsResending] = useState(false);
@@ -32,6 +31,8 @@ export default function SignUpPage() {
         setError('');
         setNotice('');
         setIsLoading(true);
+
+        const supabase = createSupabaseBrowserClient();
 
         const fullName = `${firstName} ${lastName}`.trim();
         const { error: signUpError } = await supabase.auth.signUp({
@@ -69,6 +70,7 @@ export default function SignUpPage() {
         }
 
         setIsVerifying(true);
+        const supabase = createSupabaseBrowserClient();
         const { error: verifyError } = await supabase.auth.verifyOtp({
             email: pendingEmail,
             token: otp.trim(),
@@ -89,6 +91,8 @@ export default function SignUpPage() {
         setError('');
         setNotice('');
         setIsResending(true);
+
+        const supabase = createSupabaseBrowserClient();
 
         const { error: resendError } = await supabase.auth.resend({
             type: 'signup',
