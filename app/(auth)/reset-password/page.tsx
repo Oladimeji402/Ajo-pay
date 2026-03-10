@@ -9,6 +9,7 @@ import { AlertCircle, Check, CheckCircle2, Eye, EyeOff, Loader2, X } from 'lucid
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
+import { mapAuthError } from '@/lib/auth-errors';
 
 function ResetPasswordContent() {
     const [isLoading, setIsLoading] = useState(false);
@@ -64,7 +65,8 @@ function ResetPasswordContent() {
         });
 
         if (verifyError) {
-            const message = notifyError(showToast, verifyError, 'OTP verification failed.');
+            const message = mapAuthError(verifyError, 'OTP verification failed.');
+            notifyError(showToast, new Error(message), message);
             setError(message);
             setIsVerifyingOtp(false);
             return;
@@ -103,7 +105,8 @@ function ResetPasswordContent() {
         });
 
         if (updateError) {
-            notifyError(showToast, updateError, 'Unable to update your password.');
+            const message = mapAuthError(updateError, 'Unable to update your password.');
+            notifyError(showToast, new Error(message), message);
             setIsLoading(false);
             return;
         }
@@ -136,7 +139,8 @@ function ResetPasswordContent() {
         });
 
         if (resendError) {
-            const message = notifyError(showToast, resendError, 'Failed to resend OTP.');
+            const message = mapAuthError(resendError, 'Failed to resend OTP.');
+            notifyError(showToast, new Error(message), message);
             setError(message);
             setIsVerifyingOtp(false);
             return;

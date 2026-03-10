@@ -139,7 +139,7 @@ export default function AdminUsersPage() {
     setError('');
 
     try {
-      await Promise.all(
+      const results = await Promise.allSettled(
         selectedIds.map(async (id) => {
           const res = await fetch(`/api/admin/users/${id}`, {
             method: 'PATCH',
@@ -151,8 +151,15 @@ export default function AdminUsersPage() {
         }),
       );
 
+      const successCount = results.filter((result) => result.status === 'fulfilled').length;
+      const failureCount = results.length - successCount;
+
       setSelectedIds([]);
-      notifySuccess(showToast, 'Bulk user update completed successfully.');
+      if (failureCount > 0) {
+        notifyError(showToast, new Error(`${failureCount} updates failed.`), `${successCount} of ${results.length} users updated. ${failureCount} failed.`);
+      } else {
+        notifySuccess(showToast, 'Bulk user update completed successfully.');
+      }
       await loadAll();
     } catch (err) {
       notifyError(showToast, err, 'Unable to apply bulk action.');

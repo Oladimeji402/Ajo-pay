@@ -10,6 +10,7 @@ import { motion } from 'motion/react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
+import { mapAuthError } from '@/lib/auth-errors';
 
 export default function ForgotPasswordPage() {
     const [isLoading, setIsLoading] = useState(false);
@@ -40,7 +41,8 @@ export default function ForgotPasswordPage() {
         });
 
         if (otpError) {
-            notifyError(showToast, otpError, 'Unable to send reset OTP.');
+            const message = mapAuthError(otpError, 'Unable to send reset OTP.');
+            notifyError(showToast, new Error(message), message);
             setIsLoading(false);
             return;
         }

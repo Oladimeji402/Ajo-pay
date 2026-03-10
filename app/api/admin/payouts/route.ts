@@ -33,9 +33,14 @@ export async function PATCH(request: Request) {
     const body = await request.json();
     const payoutId = String(body.payoutId ?? "").trim();
     const status = String(body.status ?? "").toLowerCase();
+    const allowedStatuses = new Set(["pending", "processing", "done", "failed"]);
 
     if (!payoutId || !status) {
       return badRequestResponse("payoutId and status are required.");
+    }
+
+    if (!allowedStatuses.has(status)) {
+      return badRequestResponse("Invalid status value.");
     }
 
     const updates: Record<string, unknown> = {

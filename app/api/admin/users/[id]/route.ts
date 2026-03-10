@@ -30,6 +30,8 @@ export async function PATCH(request: Request, context: Context) {
     if (auth.error) return auth.error;
     const { id } = await context.params;
     const body = await request.json();
+    const allowedStatuses = new Set(["active", "suspended"]);
+    const allowedRoles = new Set(["user", "admin"]);
 
     const updates: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
@@ -37,9 +39,21 @@ export async function PATCH(request: Request, context: Context) {
 
     if (body.name !== undefined) updates.name = String(body.name);
     if (body.phone !== undefined) updates.phone = body.phone ? String(body.phone) : null;
-    if (body.status !== undefined) updates.status = String(body.status).toLowerCase();
+    if (body.status !== undefined) {
+      const normalizedStatus = String(body.status).toLowerCase();
+      if (!allowedStatuses.has(normalizedStatus)) {
+        return badRequestResponse("Invalid status value.");
+      }
+      updates.status = normalizedStatus;
+    }
     if (body.kycLevel !== undefined) updates.kyc_level = Number(body.kycLevel);
-    if (body.role !== undefined) updates.role = String(body.role).toLowerCase();
+    if (body.role !== undefined) {
+      const normalizedRole = String(body.role).toLowerCase();
+      if (!allowedRoles.has(normalizedRole)) {
+        return badRequestResponse("Invalid role value.");
+      }
+      updates.role = normalizedRole;
+    }
 
     const { data, error } = await auth.supabase
       .from("profiles")

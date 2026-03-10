@@ -92,6 +92,7 @@ export default function GroupDetailsPage() {
             setContributions(Array.isArray(contributionsJson.data) ? contributionsJson.data : []);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Unable to load group details.');
+            notifyError(showToast, err, 'Failed to load group details. Please refresh.');
         } finally {
             setLoading(false);
         }

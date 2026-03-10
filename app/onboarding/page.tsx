@@ -33,6 +33,7 @@ export default function OnboardingPage() {
     const [isVerifyingAccount, setIsVerifyingAccount] = useState(false);
     const [error, setError] = useState('');
     const [verificationError, setVerificationError] = useState('');
+    const [profileStepCompleted, setProfileStepCompleted] = useState(false);
 
     const [displayName, setDisplayName] = useState('');
     const [bankCode, setBankCode] = useState('');
@@ -180,6 +181,9 @@ export default function OnboardingPage() {
         setSaving(true);
         setError('');
 
+        let profileSavedForThisAttempt = profileStepCompleted;
+        let joinCompleted = false;
+
         try {
             const supabase = createSupabaseBrowserClient();
             const {
@@ -192,26 +196,35 @@ export default function OnboardingPage() {
                 return;
             }
 
-            const { error: updateError } = await supabase
-                .from('profiles')
-                .update({
-                    name: displayName.trim(),
-                    bank_account: bankAccount.trim(),
-                    bank_name: banks.find((bank) => bank.code === bankCode)?.name ?? null,
-                    bank_account_name: resolvedAccountName,
-                })
-                .eq('id', user.id);
+            if (!profileStepCompleted) {
+                const { error: updateError } = await supabase
+                    .from('profiles')
+                    .update({
+                        name: displayName.trim(),
+                        bank_account: bankAccount.trim(),
+                        bank_name: banks.find((bank) => bank.code === bankCode)?.name ?? null,
+                        bank_account_name: resolvedAccountName,
+                    })
+                    .eq('id', user.id);
 
-            if (updateError) throw new Error(updateError.message);
+                if (updateError) throw new Error(updateError.message);
+                profileSavedForThisAttempt = true;
+                setProfileStepCompleted(true);
+            }
 
             const joinRes = await fetch(`/api/groups/${selectedGroup}/join`, { method: 'POST' });
             const joinJson = await joinRes.json();
             if (!joinRes.ok) throw new Error(joinJson.error || 'Failed to join selected group.');
+            joinCompleted = true;
 
             notifySuccess(showToast, 'Onboarding completed. Welcome to your dashboard.');
             setTimeout(() => router.push('/dashboard'), 800);
         } catch (err) {
-            notifyError(showToast, err, 'Unable to complete onboarding.');
+            const fallback = profileSavedForThisAttempt && !joinCompleted
+                ? 'Profile saved. Failed to join group — please try again.'
+                : 'Unable to complete onboarding.';
+            const message = notifyError(showToast, err, fallback);
+            setError(message);
         } finally {
             setSaving(false);
         }

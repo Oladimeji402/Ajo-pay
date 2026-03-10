@@ -147,7 +147,7 @@ export default function AdminPayoutsPage() {
     setError('');
 
     try {
-      await Promise.all(
+      const results = await Promise.allSettled(
         selectedIds.map(async (payoutId) => {
           const res = await fetch('/api/admin/payouts', {
             method: 'PATCH',
@@ -159,8 +159,15 @@ export default function AdminPayoutsPage() {
         }),
       );
 
+      const successCount = results.filter((result) => result.status === 'fulfilled').length;
+      const failureCount = results.length - successCount;
+
       setSelectedIds([]);
-      notifySuccess(showToast, 'Selected payouts marked as done.');
+      if (failureCount > 0) {
+        notifyError(showToast, new Error(`${failureCount} payout updates failed.`), `${successCount} of ${results.length} payouts marked as done. ${failureCount} failed.`);
+      } else {
+        notifySuccess(showToast, 'Selected payouts marked as done.');
+      }
       await loadPayouts();
     } catch (err) {
       notifyError(showToast, err, 'Unable to complete batch action.');
