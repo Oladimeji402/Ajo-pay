@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { badRequestResponse, requireUser, serverErrorResponse } from "@/lib/api/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { appendGroupMemberJoinToGoogleSheet } from "@/lib/google-sheets-sync";
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -24,7 +25,7 @@ export async function POST(_request: Request, context: Context) {
 
     const { data: group, error: groupError } = await auth.supabase
       .from("groups")
-      .select("id, max_members")
+      .select("id, name, category, max_members")
       .eq("id", groupId)
       .maybeSingle();
 
@@ -56,6 +57,20 @@ export async function POST(_request: Request, context: Context) {
       .single();
 
     if (error) return badRequestResponse(error.message);
+
+    void appendGroupMemberJoinToGoogleSheet({
+      groupId,
+      groupName: group.name,
+      groupCategory: group.category,
+      userId: auth.user.id,
+      userName: auth.user.user_metadata?.name ?? "",
+      userEmail: auth.user.email ?? "",
+      position,
+      joinedAt: new Date().toISOString(),
+    }).catch(() => {
+      // Non-blocking integration.
+    });
+
     return NextResponse.json({ data }, { status: 201 });
   } catch {
     return serverErrorResponse();
