@@ -14,6 +14,7 @@ import { notifySuccess } from '@/lib/toast';
 export default function SignUpPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
+    const [isVerified, setIsVerified] = useState(false);
     const [isResending, setIsResending] = useState(false);
     const [password, setPassword] = useState('');
     const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -59,6 +60,7 @@ export default function SignUpPage() {
 
         await supabase.auth.signOut();
         setPendingEmail(email.trim());
+        setIsVerified(false);
         setVerificationMode(true);
         const otpNotice = 'A 6-digit OTP has been sent to your email. Enter it below to verify your account.';
         setNotice(otpNotice);
@@ -68,6 +70,11 @@ export default function SignUpPage() {
 
     const handleVerifyOtp = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (isVerified) {
+            return;
+        }
+
         setError('');
         setNotice('');
 
@@ -94,7 +101,7 @@ export default function SignUpPage() {
             return;
         }
 
-        setIsVerifying(false);
+        setIsVerified(true);
         notifySuccess(showToast, 'Email verified successfully. Continue onboarding.');
         router.push('/onboarding');
     };
@@ -159,11 +166,11 @@ export default function SignUpPage() {
                         required
                     />
 
-                    <Button type="submit" className="w-full" disabled={isVerifying}>
-                        {isVerifying ? (
+                    <Button type="submit" className="w-full" disabled={isVerifying || isVerified}>
+                        {isVerifying || isVerified ? (
                             <span className="flex items-center gap-2">
                                 <Loader2 size={16} className="animate-spin" />
-                                Verifying OTP...
+                                {isVerified ? 'Verified. Redirecting...' : 'Verifying OTP...'}
                             </span>
                         ) : 'Verify & Continue'}
                     </Button>
@@ -171,7 +178,7 @@ export default function SignUpPage() {
                     <button
                         type="button"
                         onClick={handleResendOtp}
-                        disabled={isResending}
+                        disabled={isResending || isVerified}
                         className="w-full text-sm font-semibold text-brand-primary hover:text-brand-primary-hover disabled:opacity-60"
                     >
                         {isResending ? 'Resending OTP...' : 'Resend OTP'}
@@ -184,6 +191,7 @@ export default function SignUpPage() {
                         type="button"
                         onClick={() => {
                             setVerificationMode(false);
+                            setIsVerified(false);
                             setOtp('');
                             setError('');
                             setNotice('');
