@@ -24,7 +24,7 @@ export default function manifest(): MetadataRoute.Manifest {
         src: '/ajopay-mark-mono-dark.svg',
         sizes: '128x128',
         type: 'image/svg+xml',
-        purpose: 'any maskable',
+        purpose: 'maskable',
       },
     ],
   };

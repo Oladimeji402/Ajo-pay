@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { Suspense, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -10,7 +10,7 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
     const [isLoading, setIsLoading] = useState(false);
     const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
@@ -342,5 +342,24 @@ export default function ResetPasswordPage() {
                 )}
             </AnimatePresence>
         </section>
+    );
+}
+
+export default function ResetPasswordPage() {
+    return (
+        <Suspense
+            fallback={
+                <section aria-labelledby="reset-title" className="space-y-6">
+                    <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0f766e]">Password reset</p>
+                        <h2 id="reset-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>
+                            Loading reset form...
+                        </h2>
+                    </div>
+                </section>
+            }
+        >
+            <ResetPasswordContent />
+        </Suspense>
     );
 }
