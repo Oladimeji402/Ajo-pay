@@ -14,6 +14,7 @@ type Profile = {
     phone: string | null;
     bank_account: string | null;
     bank_name: string | null;
+    bank_account_name: string | null;
 };
 
 type BankOption = {
@@ -61,7 +62,7 @@ export default function SettingsPage() {
 
                 const { data, error: profileError } = await supabase
                     .from('profiles')
-                    .select('id, name, email, phone, bank_account, bank_name')
+                    .select('id, name, email, phone, bank_account, bank_name, bank_account_name')
                     .eq('id', user.id)
                     .maybeSingle();
 
@@ -86,6 +87,7 @@ export default function SettingsPage() {
                 setEmail(profile.email ?? user.email ?? '');
                 setPhone(profile.phone ?? '');
                 setBankAccount(profile.bank_account ?? '');
+                setResolvedAccountName(profile.bank_account_name ?? '');
 
                 const bankList = Array.isArray(banksJson.data) ? (banksJson.data as BankOption[]) : [];
                 setBanks(bankList);
@@ -197,13 +199,17 @@ export default function SettingsPage() {
 
         try {
             const supabase = createSupabaseBrowserClient();
+            const selectedBankName = hasAccount
+                ? banks.find((bank) => bank.code === bankCode)?.name ?? null
+                : null;
             const { error: updateError } = await supabase
                 .from('profiles')
                 .update({
                     name: name.trim(),
                     phone: phone.trim() || null,
                     bank_account: hasAccount ? trimmedAccount : null,
-                    bank_name: hasAccount ? resolvedAccountName : null,
+                    bank_name: selectedBankName,
+                    bank_account_name: hasAccount ? resolvedAccountName : null,
                 })
                 .eq('id', profileId);
 
