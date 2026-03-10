@@ -18,6 +18,7 @@ import { motion } from 'motion/react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { notifySuccess } from '@/lib/toast';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 
 interface DashboardLayoutProps {
     children: ReactNode;
@@ -86,12 +87,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <aside className="hidden md:flex w-65 bg-brand-navy flex-col sticky top-0 h-screen">
                 {/* Logo */}
                 <div className="p-6 pb-8">
-                    <Link href="/" className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 bg-linear-to-br from-brand-emerald to-emerald-400 rounded-xl flex items-center justify-center shadow-lg shadow-brand-emerald/30">
-                            <span className="text-white font-bold text-lg">A</span>
-                        </div>
-                        <span className="text-xl font-bold text-white tracking-tight">Ajopay</span>
-                    </Link>
+                    <BrandLogo />
                 </div>
 
                 {/* Nav Items */}
