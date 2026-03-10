@@ -38,7 +38,7 @@ export async function GET(request: Request) {
       query = applyFilters(query);
 
       const { data, error } = await query;
-      if (error) return serverErrorResponse(error.message);
+      if (error) return serverErrorResponse(error);
 
       return NextResponse.json({ data });
     }
@@ -48,7 +48,7 @@ export async function GET(request: Request) {
       .select("group_id")
       .eq("user_id", auth.user.id);
 
-    if (membershipError) return serverErrorResponse(membershipError.message);
+    if (membershipError) return serverErrorResponse(membershipError);
 
     const groupIds = (memberships ?? []).map((member) => member.group_id);
     if (groupIds.length === 0) {
@@ -65,7 +65,7 @@ export async function GET(request: Request) {
 
     const { data, error } = await query;
 
-    if (error) return serverErrorResponse(error.message);
+    if (error) return serverErrorResponse(error);
     return NextResponse.json({ data });
   } catch {
     return serverErrorResponse();
