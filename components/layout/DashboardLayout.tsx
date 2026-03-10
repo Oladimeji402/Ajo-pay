@@ -17,7 +17,7 @@ import {
 import { motion } from 'motion/react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/Toast';
-import { notifySuccess } from '@/lib/toast';
+import { notifyError, notifySuccess } from '@/lib/toast';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 
 interface DashboardLayoutProps {
@@ -75,7 +75,11 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
     const handleSignOut = async () => {
         const supabase = createSupabaseBrowserClient();
-        await supabase.auth.signOut();
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+            notifyError(showToast, error, 'Unable to sign out right now. Please try again.');
+            return;
+        }
         notifySuccess(showToast, 'Signed out successfully.');
         router.push('/login');
         router.refresh();

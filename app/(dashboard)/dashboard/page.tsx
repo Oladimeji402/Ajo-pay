@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowDownLeft, ArrowUpRight, Loader2, Users, Wallet } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { useToast } from '@/components/ui/Toast';
+import { notifyError } from '@/lib/toast';
 
 type Profile = {
     name: string;
@@ -34,6 +36,7 @@ export default function DashboardPage() {
     const [profile, setProfile] = useState<Profile | null>(null);
     const [groups, setGroups] = useState<Group[]>([]);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const { showToast } = useToast();
 
     useEffect(() => {
         const run = async () => {
@@ -81,13 +84,14 @@ export default function DashboardPage() {
                 setTransactions(Array.isArray(txJson.data) ? txJson.data : []);
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Unable to load dashboard.');
+                notifyError(showToast, err, 'Failed to load dashboard. Please refresh.');
             } finally {
                 setLoading(false);
             }
         };
 
         void run();
-    }, []);
+    }, [showToast]);
 
     const activeGroups = useMemo(() => groups.filter((group) => group.status === 'active').length, [groups]);
 

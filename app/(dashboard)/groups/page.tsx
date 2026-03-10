@@ -76,6 +76,7 @@ export default function GroupsPage() {
             setContributions(Array.isArray(contributionsJson.data) ? contributionsJson.data : []);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Unable to load groups.');
+            notifyError(showToast, err, 'Failed to load groups. Please refresh.');
         } finally {
             setLoading(false);
         }

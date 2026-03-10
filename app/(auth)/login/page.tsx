@@ -9,6 +9,7 @@ import { AlertCircle, Loader2 } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
+import { mapAuthError } from '@/lib/auth-errors';
 
 export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
@@ -31,8 +32,9 @@ export default function LoginPage() {
         });
 
         if (signInError) {
-            setFormError(signInError.message || 'Unable to sign in with those credentials.');
-            notifyError(showToast, signInError, 'Unable to sign in with those credentials.');
+            const message = mapAuthError(signInError, 'Unable to sign in with those credentials.');
+            setFormError(message);
+            notifyError(showToast, new Error(message), message);
             setIsLoading(false);
             return;
         }
