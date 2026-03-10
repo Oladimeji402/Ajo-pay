@@ -1,5 +1,6 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { isWhatsappConfigured, sendGroupReceipt } from "@/lib/whatsapp";
+import { appendContributionPaymentToGoogleSheet } from "@/lib/google-sheets-sync";
 
 type PaymentSuccessResult = {
   ok: boolean;
@@ -126,6 +127,20 @@ export async function markContributionPaymentSuccess(params: MarkPaymentSuccessP
       // Intentionally swallow notification errors to keep payment flow resilient.
     });
   }
+
+  void appendContributionPaymentToGoogleSheet({
+    reference: paymentRecord.reference,
+    paidAt: paidAtIso,
+    userId: paymentRecord.user_id,
+    userName: profile?.name ?? "",
+    groupId: paymentRecord.group_id ?? "",
+    groupName: group?.name ?? "",
+    amount: Number(paymentRecord.amount ?? 0),
+    channel: String((params.providerPayload?.channel as string | undefined) ?? "unknown"),
+    providerReference: String((params.providerPayload?.reference as string | undefined) ?? params.reference),
+  }).catch(() => {
+    // Non-blocking integration.
+  });
 
   return {
     ok: true,
