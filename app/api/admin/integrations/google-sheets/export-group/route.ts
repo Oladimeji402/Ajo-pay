@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { appendRowsToGoogleSheet } from "@/lib/google-sheets";
+import { replaceGroupRowsInGoogleSheet } from "@/lib/google-sheets";
 import { badRequestResponse, requireAdmin, serverErrorResponse } from "@/lib/api/auth";
 
 type ExportPayload = {
@@ -106,9 +106,10 @@ export async function POST(request: Request) {
       ];
     });
 
-    const result = await appendRowsToGoogleSheet({
+    const result = await replaceGroupRowsInGoogleSheet({
       spreadsheetId,
       sheetName,
+      groupId,
       headers: [
         "exported_at",
         "exported_by",
@@ -135,7 +136,8 @@ export async function POST(request: Request) {
         groupId,
         spreadsheetId,
         sheetName,
-        appendedRows: result.appendedRows,
+        replacedRows: result.replacedRows,
+        preservedRows: result.preservedRows,
       },
     });
   } catch (error) {

@@ -136,3 +136,65 @@ export async function appendRowsToGoogleSheet(params: {
 
   return { appendedRows: rows.length };
 }
+
+export async function replaceGroupRowsInGoogleSheet(params: {
+  spreadsheetId: string;
+  sheetName: string;
+  headers: string[];
+  groupId: string;
+  rows: GoogleSheetRow[];
+  groupIdColumnHeader?: string;
+}) {
+  const {
+    spreadsheetId,
+    sheetName,
+    headers,
+    groupId,
+    rows,
+    groupIdColumnHeader = "group_id",
+  } = params;
+
+  await ensureSheetExists(spreadsheetId, sheetName);
+
+  const sheets = await getSheetsClient();
+  const existing = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${sheetName}!A:ZZ`,
+    majorDimension: "ROWS",
+  });
+
+  const existingValues = existing.data.values ?? [];
+  const headerRow = (existingValues[0] ?? headers).map((value) => String(value));
+
+  let groupColumnIndex = headerRow.findIndex((value) => value === groupIdColumnHeader);
+  if (groupColumnIndex < 0) {
+    groupColumnIndex = headers.findIndex((value) => value === groupIdColumnHeader);
+  }
+
+  const existingBodyRows = existingValues.slice(1);
+  const preservedRows =
+    groupColumnIndex >= 0
+      ? existingBodyRows.filter((row) => String(row[groupColumnIndex] ?? "") !== groupId)
+      : existingBodyRows;
+
+  const output = [headers, ...preservedRows, ...rows];
+
+  await sheets.spreadsheets.values.clear({
+    spreadsheetId,
+    range: `${sheetName}!A:ZZ`,
+  });
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId,
+    range: `${sheetName}!A1`,
+    valueInputOption: "RAW",
+    requestBody: {
+      values: output,
+    },
+  });
+
+  return {
+    replacedRows: rows.length,
+    preservedRows: preservedRows.length,
+  };
+}
