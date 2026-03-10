@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { motion } from 'motion/react';
-import { Loader2, Check, X, Lock, CheckCircle2 } from 'lucide-react';
+import { Check, CheckCircle2, Loader2, X } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
@@ -53,47 +53,46 @@ export default function ResetPasswordPage() {
 
     if (isSuccess) {
         return (
-            <>
-                <div className="mb-8">
-                    <h2 className="text-2xl font-bold text-brand-navy mb-2">Password updated!</h2>
-                    <p className="text-[13px] text-brand-gray leading-relaxed">Your password has been changed successfully</p>
-                </div>
-                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-6">
-                    <div className="flex justify-center">
-                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.1 }} className="w-20 h-20 bg-emerald-50 rounded-3xl flex items-center justify-center">
-                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.3, type: 'spring', stiffness: 300 }}>
-                                <CheckCircle2 size={40} className="text-brand-emerald" />
-                            </motion.div>
-                        </motion.div>
-                    </div>
-                    <p className="text-[13px] text-brand-gray leading-relaxed max-w-xs mx-auto">
-                        Your password has been reset. You can now sign in with your new password.
+            <section aria-labelledby="reset-success-title" className="space-y-6">
+                <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0f766e]">All done</p>
+                    <h2 id="reset-success-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>
+                        Password updated.
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-500">
+                        You can now sign in with your new password.
                     </p>
-                    <Button onClick={() => router.push('/login')} className="w-full">
-                        Continue to Sign In
-                    </Button>
+                </div>
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+                    className="flex h-20 w-20 items-center justify-center rounded-2xl bg-slate-50"
+                >
+                    <CheckCircle2 size={32} className="text-[#0f766e]" />
                 </motion.div>
-            </>
+                <Button onClick={() => router.push('/login')} className="w-full">
+                    Sign in
+                </Button>
+            </section>
         );
     }
 
     return (
-        <>
-            <div className="mb-8">
-                <h2 className="text-2xl font-bold text-brand-navy mb-2">Set new password</h2>
-                <p className="text-[13px] text-brand-gray leading-relaxed">Create a strong password that you haven&apos;t used before</p>
-            </div>
-            <div className="flex justify-center mb-6">
-                <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center">
-                    <Lock size={28} className="text-blue-500" />
-                </div>
+        <section aria-labelledby="reset-title" className="space-y-6">
+            <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0f766e]">Password reset</p>
+                <h2 id="reset-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>
+                    Set a new password.
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">Make it strong — your circle depends on it.</p>
             </div>
 
-            <form className="space-y-4" onSubmit={handleSubmit}>
+            <form className="space-y-4" onSubmit={handleSubmit} noValidate>
                 <div>
                     <div className="space-y-1 w-full">
-                        <label className="block text-sm font-semibold text-brand-navy">New Password</label>
-                        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Create a strong password" required className="block w-full px-4 py-3 rounded-lg border border-brand-border text-brand-navy placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all duration-200" />
+                        <label htmlFor="reset-new-password" className="block text-sm font-semibold text-brand-navy">New Password</label>
+                        <input id="reset-new-password" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Create a strong password" required className="block w-full px-4 py-3 rounded-lg border border-brand-border text-brand-navy placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all duration-200" />
                     </div>
                     {password.length > 0 && (
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-3 space-y-2.5">
@@ -117,9 +116,9 @@ export default function ResetPasswordPage() {
 
                 <div>
                     <div className="space-y-1 w-full">
-                        <label className="block text-sm font-semibold text-brand-navy">Confirm New Password</label>
+                        <label htmlFor="reset-confirm-password" className="block text-sm font-semibold text-brand-navy">Confirm New Password</label>
                         <div className="relative">
-                            <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter your password" required className={`block w-full px-4 py-3 rounded-lg border text-brand-navy placeholder-slate-400 focus:outline-none focus:ring-2 transition-all duration-200 ${passwordsMismatch ? 'border-red-300 focus:ring-red-500/20 focus:border-red-400' : passwordsMatch ? 'border-emerald-300 focus:ring-emerald-500/20 focus:border-emerald-400' : 'border-brand-border focus:ring-brand-primary/20 focus:border-brand-primary'}`} />
+                            <input id="reset-confirm-password" type="password" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter your password" required className={`block w-full px-4 py-3 rounded-lg border text-brand-navy placeholder-slate-400 focus:outline-none focus:ring-2 transition-all duration-200 ${passwordsMismatch ? 'border-red-300 focus:ring-red-500/20 focus:border-red-400' : passwordsMatch ? 'border-emerald-300 focus:ring-emerald-500/20 focus:border-emerald-400' : 'border-brand-border focus:ring-brand-primary/20 focus:border-brand-primary'}`} />
                             {passwordsMatch && <div className="absolute right-3 top-1/2 -translate-y-1/2"><Check size={16} className="text-emerald-500" /></div>}
                         </div>
                     </div>
@@ -132,6 +131,6 @@ export default function ResetPasswordPage() {
                     </Button>
                 </div>
             </form>
-        </>
+        </section>
     );
 }
