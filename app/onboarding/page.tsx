@@ -59,7 +59,7 @@ export default function OnboardingPage() {
                 }
 
                 const [{ data: profile, error: profileError }, groupsRes] = await Promise.all([
-                    supabase.from('profiles').select('name, bank_account').eq('id', user.id).maybeSingle(),
+                    supabase.from('profiles').select('name, bank_account, bank_name, bank_account_name').eq('id', user.id).maybeSingle(),
                     fetch('/api/groups?scope=all', { cache: 'no-store' }),
                 ]);
 
@@ -67,6 +67,7 @@ export default function OnboardingPage() {
 
                 if (profile?.name) setDisplayName(profile.name);
                 if (profile?.bank_account) setBankAccount(profile.bank_account);
+                if (profile?.bank_account_name) setResolvedAccountName(profile.bank_account_name);
 
                 const groupsJson = await groupsRes.json();
                 if (!groupsRes.ok) throw new Error(groupsJson.error || 'Failed to load groups.');
@@ -83,6 +84,13 @@ export default function OnboardingPage() {
                     new Map(bankList.map((bank) => [bank.code, bank])).values(),
                 );
                 setBanks(uniqueBanks);
+
+                if (profile?.bank_name) {
+                    const matchedBank = uniqueBanks.find((bank) => bank.name === profile.bank_name);
+                    if (matchedBank) {
+                        setBankCode(matchedBank.code);
+                    }
+                }
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Unable to start onboarding.');
             } finally {
@@ -184,6 +192,8 @@ export default function OnboardingPage() {
                 .update({
                     name: displayName.trim(),
                     bank_account: bankAccount.trim(),
+                    bank_name: banks.find((bank) => bank.code === bankCode)?.name ?? null,
+                    bank_account_name: resolvedAccountName,
                 })
                 .eq('id', user.id);
 
