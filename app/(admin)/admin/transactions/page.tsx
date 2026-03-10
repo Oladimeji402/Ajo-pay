@@ -29,6 +29,10 @@ function toCurrency(value: number) {
   return `NGN ${Number(value).toLocaleString('en-NG')}`;
 }
 
+function normalizeStatus(status: string | null | undefined) {
+  return String(status ?? '').toLowerCase();
+}
+
 export default function AdminTransactionsPage() {
   const [loading, setLoading] = useState(true);
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
@@ -130,8 +134,15 @@ export default function AdminTransactionsPage() {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
-  const totalVolume = filtered.reduce((sum, tx) => sum + Number(tx.amount ?? 0), 0);
-  const successCount = filtered.filter((tx) => tx.status === 'success').length;
+  const successfulTransactions = filtered.filter((tx) => {
+    const status = normalizeStatus(tx.status);
+    return status === 'success' || status === 'successful';
+  });
+  const pendingTransactions = filtered.filter((tx) => normalizeStatus(tx.status) === 'pending');
+
+  const successfulVolume = successfulTransactions.reduce((sum, tx) => sum + Number(tx.amount ?? 0), 0);
+  const pendingVolume = pendingTransactions.reduce((sum, tx) => sum + Number(tx.amount ?? 0), 0);
+  const successCount = successfulTransactions.length;
   const successRate = filtered.length > 0 ? (successCount / filtered.length) * 100 : 0;
 
   const trendMap = new Map<string, { label: string; amount: number }>();
@@ -245,8 +256,9 @@ export default function AdminTransactionsPage() {
         </button>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Total Volume</p><p className="text-xl font-bold text-brand-navy">{toCurrency(totalVolume)}</p></div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-2xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Successful Volume</p><p className="text-xl font-bold text-emerald-700">{toCurrency(successfulVolume)}</p></div>
+        <div className="rounded-2xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Pending Volume</p><p className="text-xl font-bold text-amber-700">{toCurrency(pendingVolume)}</p></div>
         <div className="rounded-2xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Transaction Count</p><p className="text-xl font-bold text-brand-navy">{filtered.length.toLocaleString()}</p></div>
         <div className="rounded-2xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Success Rate</p><p className="text-xl font-bold text-brand-navy">{successRate.toFixed(1)}%</p></div>
       </div>
