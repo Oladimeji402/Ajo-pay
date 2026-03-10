@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { ArrowLeft, CheckCircle2, Loader2, Mail } from 'lucide-react';
@@ -14,27 +15,39 @@ export default function ForgotPasswordPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [email, setEmail] = useState('');
+    const router = useRouter();
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+    const isLocalSupabase = supabaseUrl.includes('127.0.0.1') || supabaseUrl.includes('localhost');
     const { showToast } = useToast();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        const normalizedEmail = email.trim();
+
+        if (!normalizedEmail) {
+            notifyError(showToast, new Error('Please enter your email address.'), 'Please enter your email address.');
+            return;
+        }
+
         setIsLoading(true);
 
         const supabase = createSupabaseBrowserClient();
-        const redirectTo = `${window.location.origin}/reset-password`;
-        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo,
+        const { error: otpError } = await supabase.auth.signInWithOtp({
+            email: normalizedEmail,
+            options: {
+                shouldCreateUser: false,
+            },
         });
 
-        if (resetError) {
-            notifyError(showToast, resetError, 'Unable to send reset instructions.');
+        if (otpError) {
+            notifyError(showToast, otpError, 'Unable to send reset OTP.');
             setIsLoading(false);
             return;
         }
 
         setIsLoading(false);
         setIsSubmitted(true);
-        notifySuccess(showToast, 'Password reset instructions sent. Check your email.');
+        notifySuccess(showToast, 'Password reset OTP sent. Check your email.');
     };
 
     if (isSubmitted) {
@@ -69,10 +82,22 @@ export default function ForgotPasswordPage() {
                 </motion.div>
 
                 <p className="text-[13px] leading-relaxed text-slate-500">
-                    If this email is registered, a reset link will arrive shortly. Also check your spam folder.
+                    If this email is registered, a recovery OTP will arrive shortly. Also check your spam folder.
                 </p>
 
+                {isLocalSupabase && (
+                    <p className="text-[12px] leading-relaxed text-slate-500">
+                        Local Supabase detected: check test emails at <span className="font-semibold text-brand-navy">http://127.0.0.1:54324</span> (Inbucket).
+                    </p>
+                )}
+
                 <div className="space-y-3">
+                    <button
+                        onClick={() => router.push(`/reset-password?email=${encodeURIComponent(email.trim())}`)}
+                        className="inline-flex w-full items-center justify-center rounded-xl border border-[#0f766e]/20 bg-[#0f766e]/5 px-4 py-2.5 text-sm font-semibold text-[#0f766e] hover:bg-[#0f766e]/10 transition-colors"
+                    >
+                        I have the OTP code
+                    </button>
                     <button
                         onClick={() => setIsSubmitted(false)}
                         className="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-navy shadow-sm hover:bg-slate-50 transition-colors"
@@ -101,7 +126,7 @@ export default function ForgotPasswordPage() {
                     Forgot your password?
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                    Enter your email and we&apos;ll send a reset link.
+                    Enter your email and we&apos;ll send a password reset OTP.
                 </p>
             </div>
 
@@ -126,7 +151,7 @@ export default function ForgotPasswordPage() {
                             <Loader2 size={16} className="animate-spin" />
                             Sending...
                         </span>
-                    ) : 'Send reset link'}
+                    ) : 'Send reset OTP'}
                 </Button>
             </form>
 

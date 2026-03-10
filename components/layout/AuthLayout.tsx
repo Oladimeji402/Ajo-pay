@@ -4,6 +4,7 @@ import { ReactNode } from 'react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
 import { Public_Sans, Space_Grotesk } from 'next/font/google';
+import { BrandLogo } from '../ui/BrandLogo';
 
 interface AuthLayoutProps {
     children: ReactNode;
@@ -56,14 +57,7 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
 
                     <div className="relative z-10 flex h-full flex-col px-10 py-10">
                         {/* Logo */}
-                        <Link href="/" className="group inline-flex items-center gap-2.5 self-start">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0f766e] text-sm font-bold text-white">
-                                A
-                            </div>
-                            <span className="text-sm font-semibold tracking-widest text-white/60 transition group-hover:text-white/90" style={{ fontFamily: 'var(--font-auth-heading)' }}>
-                                AJOPAY
-                            </span>
-                        </Link>
+                        <BrandLogo className="self-start" size="sm" />
 
                         {/* Central statement */}
                         <motion.div
@@ -113,10 +107,7 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
                     <div className="mx-auto flex w-full max-w-130 flex-1 flex-col justify-center px-5 py-10 sm:px-8">
                         {/* Mobile logo */}
                         <div className="mb-8 flex items-center justify-between lg:hidden">
-                            <Link href="/" className="inline-flex items-center gap-2">
-                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0f766e] text-xs font-bold text-white">A</div>
-                                <span className="text-sm font-semibold tracking-widest text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>AJOPAY</span>
-                            </Link>
+                            <BrandLogo size="sm" dark />
                         </div>
 
                         {/* Card */}

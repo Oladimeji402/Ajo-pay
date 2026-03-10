@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { motion } from 'motion/react';
-import { AlertCircle, Check, CheckCircle2, Loader2, X } from 'lucide-react';
+import { AlertCircle, Check, CheckCircle2, Eye, EyeOff, Loader2, X } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { notifySuccess } from '@/lib/toast';
@@ -16,6 +16,7 @@ export default function SignUpPage() {
     const [isVerifying, setIsVerifying] = useState(false);
     const [isVerified, setIsVerified] = useState(false);
     const [isResending, setIsResending] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const [password, setPassword] = useState('');
     const [agreedToTerms, setAgreedToTerms] = useState(false);
     const [firstName, setFirstName] = useState('');
@@ -253,16 +254,26 @@ export default function SignUpPage() {
                 <div>
                     <div className="space-y-1 w-full">
                         <label htmlFor="signup-password" className="block text-sm font-semibold text-brand-navy">Password</label>
-                        <input
-                            id="signup-password"
-                            type="password"
-                            autoComplete="new-password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="Create a strong password"
-                            required
-                            className="block w-full px-4 py-3 rounded-lg border border-brand-border text-brand-navy placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all duration-200"
-                        />
+                        <div className="relative">
+                            <input
+                                id="signup-password"
+                                type={showPassword ? 'text' : 'password'}
+                                autoComplete="new-password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="Create a strong password"
+                                required
+                                className="block w-full px-4 py-3 pr-12 rounded-lg border border-brand-border text-brand-navy placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all duration-200"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword((current) => !current)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-brand-navy transition-colors"
+                                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                            >
+                                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                            </button>
+                        </div>
                     </div>
 
                     {password.length > 0 && (
