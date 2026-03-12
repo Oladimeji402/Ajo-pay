@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Users, Wallet, Calendar, Loader2, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Users, Wallet, Calendar, Loader2, Sparkles, ShieldCheck, ArrowUpRight } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { openPaystackInline } from '@/lib/paystack-inline';
 import { useToast } from '@/components/ui/Toast';
@@ -200,74 +200,83 @@ export default function GroupDetailsPage() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto space-y-5">
-            <Link href="/groups" className="inline-flex items-center gap-2 text-xs font-bold text-brand-gray hover:text-brand-navy">
+        <div className="max-w-5xl mx-auto space-y-6">
+            <Link href="/groups" className="inline-flex items-center gap-2 text-xs font-semibold text-brand-gray hover:text-brand-navy">
                 <ArrowLeft size={14} /> Back to Groups
             </Link>
 
-            <div className="bg-white border border-slate-100 rounded-2xl p-5">
-                <div className="flex items-start justify-between gap-4">
+            <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-linear-to-br from-brand-navy via-[#173069] to-brand-emerald text-white p-6">
+                <div className="absolute -right-10 -top-14 h-48 w-48 rounded-full bg-white/10 blur-3xl" />
+                <div className="absolute -left-10 -bottom-14 h-40 w-40 rounded-full bg-emerald-300/20 blur-3xl" />
+
+                <div className="relative flex items-start justify-between gap-4 flex-wrap">
                     <div>
-                        <h1 className="text-xl font-bold text-brand-navy">{group.name}</h1>
-                        <p className="text-xs text-brand-gray capitalize">{group.status} · {group.frequency}</p>
+                        <p className="text-[11px] uppercase tracking-[0.2em] text-white/70 font-semibold">Group Command Deck</p>
+                        <h1 className="text-2xl font-semibold mt-1">{group.name}</h1>
+                        <p className="text-sm text-white/80 capitalize mt-1">{group.status} · {group.frequency}</p>
                     </div>
-                    <div className="text-right">
-                        <p className="text-[11px] text-brand-gray">Invite code</p>
-                        <p className="font-mono font-bold text-brand-navy text-sm">{group.invite_code}</p>
+                    <div className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-right">
+                        <p className="text-[11px] text-white/70">Invite code</p>
+                        <p className="font-mono font-semibold text-white text-sm">{group.invite_code}</p>
                     </div>
                 </div>
 
-                <div className="grid sm:grid-cols-3 gap-3 mt-4">
-                    <div className="rounded-xl bg-slate-50 p-3">
-                        <p className="text-[11px] text-brand-gray flex items-center gap-1"><Wallet size={12} /> Per cycle</p>
-                        <p className="font-bold text-brand-navy">NGN {Number(group.contribution_amount).toLocaleString('en-NG')}</p>
+                <div className="grid sm:grid-cols-3 gap-3 mt-5">
+                    <div className="rounded-xl border border-white/20 bg-white/10 p-3">
+                        <p className="text-[11px] text-white/80 inline-flex items-center gap-1"><Wallet size={12} /> Per cycle</p>
+                        <p className="font-semibold text-white">NGN {Number(group.contribution_amount).toLocaleString('en-NG')}</p>
                     </div>
-                    <div className="rounded-xl bg-slate-50 p-3">
-                        <p className="text-[11px] text-brand-gray flex items-center gap-1"><Users size={12} /> Members</p>
-                        <p className="font-bold text-brand-navy">{group.members.length} / {group.max_members}</p>
+                    <div className="rounded-xl border border-white/20 bg-white/10 p-3">
+                        <p className="text-[11px] text-white/80 inline-flex items-center gap-1"><Users size={12} /> Members</p>
+                        <p className="font-semibold text-white">{group.members.length} / {group.max_members}</p>
                     </div>
-                    <div className="rounded-xl bg-slate-50 p-3">
-                        <p className="text-[11px] text-brand-gray flex items-center gap-1"><Calendar size={12} /> Cycle</p>
-                        <p className="font-bold text-brand-navy">{group.current_cycle} / {group.total_cycles}</p>
+                    <div className="rounded-xl border border-white/20 bg-white/10 p-3">
+                        <p className="text-[11px] text-white/80 inline-flex items-center gap-1"><Calendar size={12} /> Cycle</p>
+                        <p className="font-semibold text-white">{group.current_cycle} / {group.total_cycles}</p>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <div className="bg-white border border-slate-100 rounded-2xl p-5 space-y-4">
+            <section className="bg-white border border-slate-200 rounded-3xl p-5 space-y-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h2 className="font-bold text-brand-navy">Your Contribution</h2>
-                        <p className="text-xs text-brand-gray">Real-time payment via Paystack inline checkout</p>
+                        <h2 className="font-semibold text-brand-navy inline-flex items-center gap-2"><Sparkles size={15} /> Cycle Contribution</h2>
+                        <p className="text-xs text-brand-gray">Real-time payment via Paystack inline checkout.</p>
                     </div>
                     <button
                         onClick={handleContribution}
                         disabled={paying}
-                        className="px-4 py-2 rounded-xl bg-brand-emerald text-white text-sm font-bold disabled:opacity-60"
+                        className="px-4 py-2 rounded-xl bg-brand-emerald text-white text-sm font-semibold disabled:opacity-60 inline-flex items-center gap-1.5"
                     >
+                        <ArrowUpRight size={14} />
                         {paying ? 'Processing...' : 'Make Contribution'}
                     </button>
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-3 text-sm">
-                    <div className="rounded-xl bg-slate-50 p-3">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                         <p className="text-xs text-brand-gray">My Position</p>
-                        <p className="font-bold text-brand-navy">{userMember?.position ? `#${userMember.position}` : 'Not assigned'}</p>
+                        <p className="font-semibold text-brand-navy">{userMember?.position ? `#${userMember.position}` : 'Not assigned'}</p>
                     </div>
-                    <div className="rounded-xl bg-slate-50 p-3">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                         <p className="text-xs text-brand-gray">Total Contributed (This Group)</p>
-                        <p className="font-bold text-brand-navy">NGN {totalContributed.toLocaleString('en-NG')}</p>
+                        <p className="font-semibold text-brand-navy">NGN {totalContributed.toLocaleString('en-NG')}</p>
                     </div>
                 </div>
 
-                {error && <div className="rounded-xl border border-red-100 bg-red-50 text-red-600 text-xs font-semibold p-3">{error}</div>}
-            </div>
+                <div className="rounded-xl border border-emerald-100 bg-emerald-50 text-emerald-800 px-3 py-2 text-xs inline-flex items-center gap-1.5">
+                    <ShieldCheck size={13} /> Payments are verified server-side before contribution status is marked successful.
+                </div>
 
-            <div className="bg-white border border-slate-100 rounded-2xl p-5">
-                <h3 className="font-bold text-brand-navy mb-3">Members</h3>
+                {error && <div className="rounded-xl border border-red-100 bg-red-50 text-red-600 text-xs font-semibold p-3">{error}</div>}
+            </section>
+
+            <section className="bg-white border border-slate-200 rounded-3xl p-5">
+                <h3 className="font-semibold text-brand-navy mb-3">Members</h3>
                 <div className="space-y-2">
                     {group.members.map((member) => (
-                        <div key={member.id} className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 text-sm">
-                            <p className="font-semibold text-brand-navy">
+                        <div key={member.id} className="flex items-center justify-between px-3 py-2 rounded-xl border border-slate-200 bg-linear-to-r from-slate-50 to-white text-sm">
+                            <p className="font-medium text-brand-navy">
                                 {member.profiles?.name || member.profiles?.email || member.user_id}
                                 {member.user_id === currentUserId ? ' (You)' : ''}
                             </p>
@@ -275,7 +284,7 @@ export default function GroupDetailsPage() {
                         </div>
                     ))}
                 </div>
-            </div>
+            </section>
         </div>
     );
 }
