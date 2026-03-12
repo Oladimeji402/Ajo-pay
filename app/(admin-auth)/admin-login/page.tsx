@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { adminLogin } from '@/lib/admin-auth';
-import { ShieldAlert, Loader2, ArrowRight, Lock, Mail, Eye, EyeOff } from 'lucide-react';
+import { Loader2, ArrowRight, Lock, Mail, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';

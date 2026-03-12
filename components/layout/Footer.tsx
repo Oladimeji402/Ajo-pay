@@ -1,5 +1,4 @@
 import { Container } from '../ui/Container';
-import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { BrandLogo } from '../ui/BrandLogo';
 

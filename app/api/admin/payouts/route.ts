@@ -11,7 +11,7 @@ export async function GET(request: Request) {
 
     let query = auth.supabase
       .from("payouts")
-      .select("*, groups:group_id(id, name), profiles:user_id(id, name, email, phone, bank_account, bank_name)")
+      .select("*, groups:group_id(id, name, start_date, frequency, current_cycle), profiles:user_id(id, name, email, phone, bank_account, bank_name)")
       .order("created_at", { ascending: false });
 
     if (status) query = query.eq("status", status);
@@ -32,25 +32,46 @@ export async function PATCH(request: Request) {
 
     const body = await request.json();
     const payoutId = String(body.payoutId ?? "").trim();
-    const status = String(body.status ?? "").toLowerCase();
+    const hasStatus = body.status !== undefined;
+    const status = hasStatus ? String(body.status ?? "").toLowerCase() : "";
+    const hasScheduledFor = body.scheduledFor !== undefined;
     const allowedStatuses = new Set(["pending", "processing", "done", "failed"]);
 
-    if (!payoutId || !status) {
-      return badRequestResponse("payoutId and status are required.");
+    if (!payoutId) {
+      return badRequestResponse("payoutId is required.");
     }
 
-    if (!allowedStatuses.has(status)) {
+    if (!hasStatus && !hasScheduledFor) {
+      return badRequestResponse("Provide at least one field to update.");
+    }
+
+    if (hasStatus && !allowedStatuses.has(status)) {
       return badRequestResponse("Invalid status value.");
     }
 
     const updates: Record<string, unknown> = {
-      status,
       updated_at: new Date().toISOString(),
     };
+
+    if (hasStatus) {
+      updates.status = status;
+    }
+
+    if (hasScheduledFor) {
+      const scheduledFor = body.scheduledFor ? String(body.scheduledFor) : null;
+      if (scheduledFor && !/^\d{4}-\d{2}-\d{2}$/.test(scheduledFor)) {
+        return badRequestResponse("scheduledFor must be a valid YYYY-MM-DD date.");
+      }
+
+      updates.scheduled_for = scheduledFor;
+    }
 
     if (status === "done") {
       updates.marked_done_at = new Date().toISOString();
       updates.marked_done_by = auth.user.id;
+    } else if (hasStatus) {
+      updates.marked_done_at = null;
+      updates.marked_done_by = null;
     }
 
     const { data, error } = await auth.supabase

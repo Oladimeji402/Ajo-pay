@@ -18,6 +18,7 @@ import {
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError } from '@/lib/toast';
+import { formatScheduleDate, getCurrentCycleDueDate, getDueWindow } from '@/lib/ajo-schedule';
 
 type Profile = {
     name: string;
@@ -33,6 +34,7 @@ type Group = {
     status: string;
     current_cycle: number;
     total_cycles: number;
+    start_date: string | null;
 };
 
 type Contribution = {
@@ -128,7 +130,7 @@ export default function DashboardPage() {
     const activeGroups = useMemo(() => groups.filter((group) => group.status === 'active').length, [groups]);
 
     const currentCycleStatusByGroup = useMemo(() => {
-        const map = new Map<string, 'success' | 'pending' | 'failed' | 'due'>();
+        const map = new Map<string, 'success' | 'pending' | 'failed' | 'scheduled' | 'due' | 'overdue'>();
 
         for (const group of groups) {
             const currentCycleContributions = contributions
@@ -150,21 +152,25 @@ export default function DashboardPage() {
                 continue;
             }
 
-            map.set(group.id, 'due');
+            const dueWindow = getDueWindow(getCurrentCycleDueDate(group));
+            map.set(group.id, dueWindow.phase === 'overdue' ? 'overdue' : dueWindow.phase === 'scheduled' ? 'scheduled' : 'due');
         }
 
         return map;
     }, [contributions, groups]);
 
     const groupsAwaitingContribution = useMemo(() => {
-        return groups.filter((group) => currentCycleStatusByGroup.get(group.id) === 'due').length;
+        return groups.filter((group) => {
+            const status = currentCycleStatusByGroup.get(group.id);
+            return status === 'due' || status === 'overdue';
+        }).length;
     }, [groups, currentCycleStatusByGroup]);
 
     const actionQueue = useMemo(() => {
         return groups
             .filter((group) => {
                 const status = currentCycleStatusByGroup.get(group.id);
-                return status === 'due' || status === 'failed';
+                return status === 'due' || status === 'failed' || status === 'overdue';
             })
             .sort((a, b) => Number(a.current_cycle) - Number(b.current_cycle));
     }, [groups, currentCycleStatusByGroup]);
@@ -187,17 +193,21 @@ export default function DashboardPage() {
 
     const formatCurrency = (value: number) => `NGN ${Number(value).toLocaleString('en-NG')}`;
 
-    const getContributionStateLabel = (state: 'success' | 'pending' | 'failed' | 'due') => {
+    const getContributionStateLabel = (state: 'success' | 'pending' | 'failed' | 'scheduled' | 'due' | 'overdue') => {
         if (state === 'success') return 'Paid';
         if (state === 'pending') return 'Pending verification';
         if (state === 'failed') return 'Payment failed';
+        if (state === 'scheduled') return 'Upcoming';
+        if (state === 'overdue') return 'Overdue';
         return 'Due now';
     };
 
-    const getContributionStateStyle = (state: 'success' | 'pending' | 'failed' | 'due') => {
+    const getContributionStateStyle = (state: 'success' | 'pending' | 'failed' | 'scheduled' | 'due' | 'overdue') => {
         if (state === 'success') return 'bg-emerald-50 text-emerald-700 border-emerald-100';
         if (state === 'pending') return 'bg-amber-50 text-amber-700 border-amber-100';
         if (state === 'failed') return 'bg-rose-50 text-rose-700 border-rose-100';
+        if (state === 'scheduled') return 'bg-sky-50 text-sky-700 border-sky-100';
+        if (state === 'overdue') return 'bg-rose-50 text-rose-700 border-rose-100';
         return 'bg-blue-50 text-blue-700 border-blue-100';
     };
 
@@ -288,6 +298,8 @@ export default function DashboardPage() {
                     ) : (
                         actionQueue.map((group) => {
                             const state = currentCycleStatusByGroup.get(group.id) ?? 'due';
+                            const dueDate = getCurrentCycleDueDate(group);
+                            const dueWindow = getDueWindow(dueDate);
                             return (
                                 <div key={group.id} className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                                     <div className="min-w-0">
@@ -295,11 +307,15 @@ export default function DashboardPage() {
                                         <p className="text-xs text-brand-gray mt-0.5">
                                             Cycle {group.current_cycle} of {group.total_cycles} · {formatCurrency(group.contribution_amount)}
                                         </p>
+                                        <p className="text-[11px] text-brand-gray mt-1">
+                                            Collection date: {formatScheduleDate(dueDate)}
+                                            {state === 'overdue' ? ` · ${dueWindow.daysOverdue} day${dueWindow.daysOverdue === 1 ? '' : 's'} late` : ''}
+                                        </p>
                                     </div>
 
                                     <div className="flex flex-wrap items-center gap-2">
                                         <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${getContributionStateStyle(state)}`}>
-                                            {state === 'pending' ? <Clock3 size={12} /> : state === 'failed' ? <AlertTriangle size={12} /> : <CircleDashed size={12} />}
+                                            {state === 'pending' ? <Clock3 size={12} /> : state === 'failed' || state === 'overdue' ? <AlertTriangle size={12} /> : <CircleDashed size={12} />}
                                             {getContributionStateLabel(state)}
                                         </span>
                                         <Link href={`/groups/${group.id}`} className="inline-flex items-center justify-center rounded-lg bg-brand-navy px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-brand-primary">
@@ -327,6 +343,7 @@ export default function DashboardPage() {
                             const rawProgress = Number(group.current_cycle) / Math.max(Number(group.total_cycles), 1);
                             const progress = Math.max(0, Math.min(100, Math.round(rawProgress * 100)));
                             const state = currentCycleStatusByGroup.get(group.id) ?? 'due';
+                            const dueDate = getCurrentCycleDueDate(group);
 
                             return (
                                 <Link key={group.id} href={`/groups/${group.id}`} className="rounded-2xl border border-slate-200 p-4 hover:border-slate-300 transition-colors">
@@ -339,6 +356,8 @@ export default function DashboardPage() {
                                             {getContributionStateLabel(state)}
                                         </span>
                                     </div>
+
+                                    <p className="mt-2 text-[11px] text-brand-gray">Collection date: {formatScheduleDate(dueDate)}</p>
 
                                     <div className="mt-4 space-y-1.5">
                                         <div className="flex items-center justify-between text-[11px] text-brand-gray">
