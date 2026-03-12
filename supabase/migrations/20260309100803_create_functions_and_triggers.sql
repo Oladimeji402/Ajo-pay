@@ -50,7 +50,7 @@ begin
 		new.id,
 		coalesce(new.raw_user_meta_data ->> 'name', ''),
 		coalesce(new.email, ''),
-		new.phone
+		coalesce(new.raw_user_meta_data ->> 'phone', new.phone)
 	)
 	on conflict (id) do update
 	set email = excluded.email;

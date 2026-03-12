@@ -36,6 +36,7 @@ export default function OnboardingPage() {
     const [profileStepCompleted, setProfileStepCompleted] = useState(false);
 
     const [displayName, setDisplayName] = useState('');
+    const [phone, setPhone] = useState('');
     const [bankCode, setBankCode] = useState('');
     const [bankAccount, setBankAccount] = useState('');
     const [resolvedAccountName, setResolvedAccountName] = useState('');
@@ -60,15 +61,21 @@ export default function OnboardingPage() {
                 }
 
                 const [{ data: profile, error: profileError }, groupsRes] = await Promise.all([
-                    supabase.from('profiles').select('name, bank_account, bank_name, bank_account_name').eq('id', user.id).maybeSingle(),
+                    supabase.from('profiles').select('name, phone, bank_account, bank_name, bank_account_name').eq('id', user.id).maybeSingle(),
                     fetch('/api/groups?scope=all', { cache: 'no-store' }),
                 ]);
 
                 if (profileError) throw new Error(profileError.message);
 
                 if (profile?.name) setDisplayName(profile.name);
+                if (profile?.phone) setPhone(profile.phone);
                 if (profile?.bank_account) setBankAccount(profile.bank_account);
                 if (profile?.bank_account_name) setResolvedAccountName(profile.bank_account_name);
+
+                // If phone is not in database but is in auth metadata, use that
+                if (!profile?.phone && user.user_metadata?.phone) {
+                    setPhone(user.user_metadata.phone);
+                }
 
                 const groupsJson = await groupsRes.json();
                 if (!groupsRes.ok) throw new Error(groupsJson.error || 'Failed to load groups.');
@@ -201,6 +208,7 @@ export default function OnboardingPage() {
                     .from('profiles')
                     .update({
                         name: displayName.trim(),
+                        phone: phone.trim() || null,
                         bank_account: bankAccount.trim(),
                         bank_name: banks.find((bank) => bank.code === bankCode)?.name ?? null,
                         bank_account_name: resolvedAccountName,
