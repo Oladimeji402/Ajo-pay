@@ -78,7 +78,7 @@ export async function POST(request: Request) {
     if (auth.error) return auth.error;
 
     const body = await request.json();
-    if (!body.name || !body.contributionAmount || !body.frequency || !body.maxMembers || !body.totalCycles) {
+    if (!body.name || !body.contributionAmount || !body.frequency || !body.maxMembers || !body.totalCycles || !body.startDate) {
       return badRequestResponse("Missing required fields for group creation.");
     }
 
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
       frequency: String(body.frequency).toLowerCase(),
       max_members: Number(body.maxMembers),
       total_cycles: Number(body.totalCycles),
-      start_date: body.startDate ? String(body.startDate) : null,
+      start_date: String(body.startDate),
       whatsapp_group_phone: body.whatsappGroupPhone ? String(body.whatsappGroupPhone) : null,
       status: body.status ? String(body.status).toLowerCase() : "pending",
       color: body.color ? String(body.color) : "#3B82F6",

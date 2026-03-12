@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { notifySuccess } from '@/lib/toast';
+import { formatScheduleDate, getCurrentCycleDueDate } from '@/lib/ajo-schedule';
 
 type GroupMember = {
     id: string;
@@ -25,6 +26,7 @@ type GroupData = {
     frequency: string;
     current_cycle: number;
     total_cycles: number;
+    start_date: string | null;
     invite_code: string;
     members: GroupMember[];
 };
@@ -37,13 +39,16 @@ export default function AdminGroupDetailPage() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [group, setGroup] = useState<GroupData | null>(null);
+    const [startDate, setStartDate] = useState('');
     const { showToast } = useToast();
 
     const loadData = useCallback(async () => {
         const res = await fetch(`/api/groups/${id}`, { cache: 'no-store' });
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || 'Failed to load group.');
-        setGroup(json.data as GroupData);
+        const nextGroup = json.data as GroupData;
+        setGroup(nextGroup);
+        setStartDate(nextGroup.start_date ?? '');
     }, [id]);
 
     useEffect(() => {
@@ -85,8 +90,34 @@ export default function AdminGroupDetailPage() {
         }
     };
 
+    const updateSchedule = async () => {
+        if (!group || !startDate) return;
+        setSaving(true);
+        setError('');
+
+        try {
+            const res = await fetch(`/api/groups/${group.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ startDate }),
+            });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error || 'Failed to update collection date.');
+            notifySuccess(showToast, 'Collection date updated successfully.');
+            await loadData();
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Could not update collection date.';
+            setError(message);
+            showToast(message, { type: 'error' });
+        } finally {
+            setSaving(false);
+        }
+    };
+
     if (loading) return <div className="min-h-80 grid place-items-center"><Loader2 className="animate-spin" size={16} /></div>;
     if (!group) return <div className="text-sm text-red-600">Group not found.</div>;
+
+    const currentDueDate = getCurrentCycleDueDate(group);
 
     return (
         <div className="space-y-5">
@@ -95,6 +126,35 @@ export default function AdminGroupDetailPage() {
                 <h1 className="text-xl font-bold text-brand-navy">{group.name}</h1>
                 <p className="text-xs text-brand-gray">{group.category} · {group.frequency} · code {group.invite_code}</p>
                 <p className="text-sm mt-2">NGN {Number(group.contribution_amount).toLocaleString('en-NG')} per cycle · cycle {group.current_cycle}/{group.total_cycles}</p>
+                <div className="mt-3 grid gap-3 md:grid-cols-3">
+                    <div className="rounded-xl bg-slate-50 p-3 text-sm">
+                        <p className="text-xs text-brand-gray">First collection date</p>
+                        <p className="font-semibold text-brand-navy">{formatScheduleDate(group.start_date)}</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 p-3 text-sm">
+                        <p className="text-xs text-brand-gray">Current cycle due</p>
+                        <p className="font-semibold text-brand-navy">{formatScheduleDate(currentDueDate)}</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 p-3 text-sm">
+                        <p className="text-xs text-brand-gray">Members in rotation</p>
+                        <p className="font-semibold text-brand-navy">{group.members.length}</p>
+                    </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-end gap-3">
+                    <label className="grid gap-1 text-xs font-semibold text-brand-gray">
+                        <span>Collection date for cycle 1</span>
+                        <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-brand-navy"
+                        />
+                    </label>
+                    <button disabled={saving || !startDate} onClick={() => void updateSchedule()} className="rounded-lg bg-brand-emerald px-3 py-2 text-xs font-bold text-white disabled:opacity-60">
+                        {saving ? 'Saving...' : 'Save collection date'}
+                    </button>
+                </div>
 
                 <div className="flex items-center gap-2 mt-3">
                     {['pending', 'active', 'paused', 'completed'].map((s) => (

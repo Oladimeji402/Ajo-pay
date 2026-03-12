@@ -2,7 +2,6 @@
 
 import { ReactNode } from 'react';
 import { motion } from 'motion/react';
-import Link from 'next/link';
 import { Public_Sans, Space_Grotesk } from 'next/font/google';
 import { BrandLogo } from '../ui/BrandLogo';
 

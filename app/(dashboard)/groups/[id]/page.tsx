@@ -8,6 +8,7 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { openPaystackInline } from '@/lib/paystack-inline';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess, notifyWarning } from '@/lib/toast';
+import { formatScheduleDate, getCurrentCycleDueDate, getDueWindow } from '@/lib/ajo-schedule';
 
 type GroupMember = {
     id: string;
@@ -32,6 +33,7 @@ type GroupDetail = {
     current_cycle: number;
     total_cycles: number;
     status: string;
+    start_date: string | null;
     invite_code: string;
     members: GroupMember[];
 };
@@ -96,7 +98,7 @@ export default function GroupDetailsPage() {
         } finally {
             setLoading(false);
         }
-    }, [groupId]);
+    }, [groupId, showToast]);
 
     useEffect(() => {
         void loadData();
@@ -111,6 +113,37 @@ export default function GroupDetailsPage() {
         () => contributions.filter((item) => item.status === 'success').reduce((sum, item) => sum + Number(item.amount), 0),
         [contributions],
     );
+
+    const currentCyclePaymentState = useMemo(() => {
+        if (!group) {
+            return { state: 'due' as const, dueDate: null as string | null, dueWindow: getDueWindow(null) };
+        }
+
+        const currentCycleContributions = contributions
+            .filter((item) => item.cycle_number === group.current_cycle)
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+        const dueDate = getCurrentCycleDueDate(group);
+        const dueWindow = getDueWindow(dueDate);
+
+        if (currentCycleContributions.some((item) => item.status === 'success')) {
+            return { state: 'success' as const, dueDate, dueWindow };
+        }
+
+        if (currentCycleContributions.some((item) => item.status === 'pending')) {
+            return { state: 'pending' as const, dueDate, dueWindow };
+        }
+
+        if (currentCycleContributions.some((item) => item.status === 'failed')) {
+            return { state: 'failed' as const, dueDate, dueWindow };
+        }
+
+        return {
+            state: dueWindow.phase === 'overdue' ? 'overdue' as const : dueWindow.phase === 'scheduled' ? 'scheduled' as const : 'due' as const,
+            dueDate,
+            dueWindow,
+        };
+    }, [contributions, group]);
 
     const handleContribution = async () => {
         if (!group || !groupId) return;
@@ -235,6 +268,24 @@ export default function GroupDetailsPage() {
                         <p className="font-semibold text-white">{group.current_cycle} / {group.total_cycles}</p>
                     </div>
                 </div>
+
+                <div className="mt-4 rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-sm text-white/90">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-white/60">Collection timing</p>
+                    <p className="mt-1 font-semibold">Current cycle date: {formatScheduleDate(currentCyclePaymentState.dueDate)}</p>
+                    <p className="mt-1 text-xs text-white/75">
+                        {currentCyclePaymentState.state === 'overdue'
+                            ? `This contribution is ${currentCyclePaymentState.dueWindow.daysOverdue} day${currentCyclePaymentState.dueWindow.daysOverdue === 1 ? '' : 's'} overdue.`
+                            : currentCyclePaymentState.state === 'scheduled'
+                                ? `Collection day is in ${currentCyclePaymentState.dueWindow.daysUntilDue} day${currentCyclePaymentState.dueWindow.daysUntilDue === 1 ? '' : 's'}. You can still pay early.`
+                                : currentCyclePaymentState.state === 'success'
+                                    ? 'You have already covered this cycle.'
+                                    : currentCyclePaymentState.state === 'pending'
+                                        ? 'Your payment is pending verification.'
+                                        : currentCyclePaymentState.state === 'failed'
+                                            ? 'Your last payment attempt failed and needs another try.'
+                                            : 'This cycle is due now.'}
+                    </p>
+                </div>
             </section>
 
             <section className="bg-white border border-slate-200 rounded-3xl p-5 space-y-4">
@@ -261,6 +312,10 @@ export default function GroupDetailsPage() {
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                         <p className="text-xs text-brand-gray">Total Contributed (This Group)</p>
                         <p className="font-semibold text-brand-navy">NGN {totalContributed.toLocaleString('en-NG')}</p>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
+                        <p className="text-xs text-brand-gray">Current cycle status</p>
+                        <p className="font-semibold text-brand-navy capitalize">{currentCyclePaymentState.state}</p>
                     </div>
                 </div>
 

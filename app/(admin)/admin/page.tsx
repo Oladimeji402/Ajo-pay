@@ -142,7 +142,7 @@ export default function AdminOverviewPage() {
 
   useEffect(() => {
     const run = async () => {
-      if (dashboard) {
+      if (refreshTrigger > 0) {
         setRefreshing(true);
       } else {
         setLoading(true);

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Users, Search, Calendar, Wallet, ChevronRight, Loader2, Sparkles, Compass, Layers3 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
+import { formatScheduleDate, getCurrentCycleDueDate } from '@/lib/ajo-schedule';
 
 type GroupRow = {
     id: string;
@@ -15,6 +16,7 @@ type GroupRow = {
     max_members: number;
     current_cycle: number;
     total_cycles: number;
+    start_date: string | null;
     status: string;
     color: string;
 };
@@ -187,6 +189,7 @@ export default function GroupsPage() {
                     <div className="p-4 md:p-5 grid md:grid-cols-2 gap-4">
                         {joinedGroups.map((group) => {
                             const contributed = contributionByGroup.get(group.id) ?? 0;
+                            const currentDueDate = getCurrentCycleDueDate(group);
                             return (
                                 <Link
                                     key={group.id}
@@ -223,6 +226,7 @@ export default function GroupsPage() {
                                     <p className="text-xs text-brand-gray mt-3">
                                         Total contributed: <span className="font-semibold text-brand-navy">NGN {contributed.toLocaleString('en-NG')}</span>
                                     </p>
+                                    <p className="text-xs text-brand-gray mt-1">Current collection date: <span className="font-semibold text-brand-navy">{formatScheduleDate(currentDueDate)}</span></p>
                                 </Link>
                             );
                         })}
@@ -259,6 +263,7 @@ export default function GroupsPage() {
                                     <p className="text-[11px] text-brand-gray">
                                         Code: <span className="font-mono font-semibold text-brand-navy">{group.invite_code}</span> · NGN {Number(group.contribution_amount).toLocaleString('en-NG')} · {group.frequency}
                                     </p>
+                                    <p className="text-[11px] text-brand-gray mt-1">Current collection date: {formatScheduleDate(getCurrentCycleDueDate(group))}</p>
                                 </div>
                                 <button
                                     onClick={() => void handleJoinGroup(group.id)}

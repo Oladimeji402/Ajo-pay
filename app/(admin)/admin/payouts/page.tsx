@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Copy, Loader2 } from 'lucide-react';
 import { DataTable, DataTableColumn } from '@/components/admin/DataTable';
 import { DateRangeSelector, DateRangeValue } from '@/components/admin/DateRangeSelector';
@@ -10,6 +10,7 @@ import { AdminBarChart } from '@/components/admin/charts/BarChart';
 import { useRealtimeSubscription } from '@/lib/hooks/useRealtimeSubscription';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
+import { formatScheduleDate, getDefaultPayoutDate, getDueWindow, getEffectivePayoutDate } from '@/lib/ajo-schedule';
 
 const PAYOUTS_REALTIME_TABLES = ['payouts', 'profiles'];
 
@@ -20,8 +21,15 @@ type PayoutRow = {
   cycle_number: number;
   bank_account: string;
   bank_name: string;
+  scheduled_for?: string | null;
   created_at: string;
-  groups?: { id: string; name: string } | null;
+  groups?: {
+    id: string;
+    name: string;
+    start_date?: string | null;
+    frequency?: string;
+    current_cycle?: number;
+  } | null;
   profiles?: {
     id: string;
     name: string;
@@ -44,6 +52,7 @@ export default function AdminPayoutsPage() {
   const [range, setRange] = useState<DateRangeValue>('30');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [payouts, setPayouts] = useState<PayoutRow[]>([]);
+  const [payoutDateDrafts, setPayoutDateDrafts] = useState<Record<string, string>>({});
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
   const { showToast } = useToast();
   const { refreshTrigger, lastEvent } = useRealtimeSubscription({
@@ -57,13 +66,22 @@ export default function AdminPayoutsPage() {
     }
   }, [lastEvent]);
 
-  const loadPayouts = async () => {
+  const loadPayouts = useCallback(async () => {
     const res = await fetch('/api/admin/payouts', { cache: 'no-store' });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || 'Failed to load payouts.');
-    setPayouts(Array.isArray(json.data) ? json.data : []);
+    const nextPayouts = Array.isArray(json.data) ? json.data as PayoutRow[] : [];
+    setPayouts(nextPayouts);
+    setPayoutDateDrafts(
+      Object.fromEntries(
+        nextPayouts.map((payout) => [
+          payout.id,
+          payout.scheduled_for ?? getDefaultPayoutDate(payout.groups?.start_date ?? null, payout.groups?.frequency ?? '', payout.cycle_number) ?? '',
+        ]),
+      ),
+    );
     setLastSyncedAt(new Date().toISOString());
-  };
+  }, []);
 
   useEffect(() => {
     const run = async () => {
@@ -78,7 +96,7 @@ export default function AdminPayoutsPage() {
       }
     };
     void run();
-  }, [refreshTrigger]);
+  }, [loadPayouts, refreshTrigger]);
 
   const filtered = useMemo(() => {
     const now = Date.now();
@@ -119,7 +137,7 @@ export default function AdminPayoutsPage() {
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([, value]) => value);
 
-  const markDone = async (payoutId: string) => {
+  const markDone = useCallback(async (payoutId: string) => {
     setSavingId(payoutId);
     setError('');
 
@@ -138,7 +156,30 @@ export default function AdminPayoutsPage() {
     } finally {
       setSavingId('');
     }
-  };
+  }, [loadPayouts, showToast]);
+
+  const savePayoutDate = useCallback(async (payoutId: string) => {
+    const scheduledFor = payoutDateDrafts[payoutId] ?? '';
+
+    setSavingId(`date:${payoutId}`);
+    setError('');
+
+    try {
+      const res = await fetch('/api/admin/payouts', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payoutId, scheduledFor }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to update payout date.');
+      notifySuccess(showToast, 'Payout date updated.');
+      await loadPayouts();
+    } catch (err) {
+      notifyError(showToast, err, 'Unable to update payout date.');
+    } finally {
+      setSavingId('');
+    }
+  }, [loadPayouts, payoutDateDrafts, showToast]);
 
   const runBatchMarkDone = async () => {
     if (selectedIds.length === 0) return;
@@ -176,14 +217,14 @@ export default function AdminPayoutsPage() {
     }
   };
 
-  const copyToClipboard = async (value: string) => {
+  const copyToClipboard = useCallback(async (value: string) => {
     try {
       await navigator.clipboard.writeText(value);
       notifySuccess(showToast, 'Copied to clipboard.', { duration: 2200 });
     } catch (err) {
       notifyError(showToast, err, 'Could not copy to clipboard in this browser session.');
     }
-  };
+  }, [showToast]);
 
   const selectableRows = filtered.filter((payout) => payout.status !== 'done');
   const allSelected = selectableRows.length > 0 && selectableRows.every((row) => selectedIds.includes(row.id));
@@ -276,6 +317,59 @@ export default function AdminPayoutsPage() {
         },
       },
       {
+        key: 'schedule',
+        header: 'Scheduled',
+        render: (payout) => {
+          const payoutDate = getEffectivePayoutDate({
+            scheduledFor: payout.scheduled_for ?? null,
+            startDate: payout.groups?.start_date ?? null,
+            frequency: payout.groups?.frequency ?? '',
+            cycleNumber: payout.cycle_number,
+          });
+          const defaultPayoutDate = getDefaultPayoutDate(payout.groups?.start_date ?? null, payout.groups?.frequency ?? '', payout.cycle_number);
+          const dueWindow = getDueWindow(payoutDate);
+          const draftValue = payoutDateDrafts[payout.id] ?? defaultPayoutDate ?? '';
+          const isSavingDate = savingId === `date:${payout.id}`;
+
+          return (
+            <div className="space-y-2 text-xs text-slate-600">
+              <div>
+                <p className="font-semibold text-brand-navy">{formatScheduleDate(payoutDate)}</p>
+                <p className="mt-1">
+                {dueWindow.phase === 'overdue'
+                  ? `${dueWindow.daysOverdue} day${dueWindow.daysOverdue === 1 ? '' : 's'} past payout date`
+                  : dueWindow.phase === 'due'
+                    ? 'Payout date is today'
+                    : dueWindow.phase === 'scheduled'
+                      ? `In ${dueWindow.daysUntilDue} day${dueWindow.daysUntilDue === 1 ? '' : 's'}`
+                      : 'Schedule missing'}
+                </p>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  {payout.scheduled_for ? 'Admin-set payout date' : `Default payout date from cycle schedule: ${formatScheduleDate(defaultPayoutDate)}`}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-end gap-2">
+                <input
+                  type="date"
+                  value={draftValue}
+                  onChange={(event) => setPayoutDateDrafts((prev) => ({ ...prev, [payout.id]: event.target.value }))}
+                  className="rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-brand-navy"
+                />
+                <button
+                  type="button"
+                  disabled={isSavingDate || !draftValue}
+                  onClick={() => void savePayoutDate(payout.id)}
+                  className="rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold text-slate-700 disabled:opacity-50"
+                >
+                  {isSavingDate ? 'Saving...' : 'Save date'}
+                </button>
+              </div>
+            </div>
+          );
+        },
+      },
+      {
         key: 'amount',
         header: 'Amount',
         className: 'w-44',
@@ -305,7 +399,7 @@ export default function AdminPayoutsPage() {
         ),
       },
     ],
-    [selectedIds, savingId],
+    [copyToClipboard, markDone, payoutDateDrafts, savePayoutDate, selectedIds, savingId],
   );
 
   if (loading) return <div className="grid min-h-80 place-items-center"><Loader2 className="animate-spin" size={16} /></div>;
