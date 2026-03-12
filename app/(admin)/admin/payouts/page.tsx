@@ -336,13 +336,13 @@ export default function AdminPayoutsPage() {
               <div>
                 <p className="font-semibold text-brand-navy">{formatScheduleDate(payoutDate)}</p>
                 <p className="mt-1">
-                {dueWindow.phase === 'overdue'
-                  ? `${dueWindow.daysOverdue} day${dueWindow.daysOverdue === 1 ? '' : 's'} past payout date`
-                  : dueWindow.phase === 'due'
-                    ? 'Payout date is today'
-                    : dueWindow.phase === 'scheduled'
-                      ? `In ${dueWindow.daysUntilDue} day${dueWindow.daysUntilDue === 1 ? '' : 's'}`
-                      : 'Schedule missing'}
+                  {dueWindow.phase === 'overdue'
+                    ? `${dueWindow.daysOverdue} day${dueWindow.daysOverdue === 1 ? '' : 's'} past payout date`
+                    : dueWindow.phase === 'due'
+                      ? 'Payout date is today'
+                      : dueWindow.phase === 'scheduled'
+                        ? `In ${dueWindow.daysUntilDue} day${dueWindow.daysUntilDue === 1 ? '' : 's'}`
+                        : 'Schedule missing'}
                 </p>
                 <p className="mt-1 text-[11px] text-slate-500">
                   {payout.scheduled_for ? 'Admin-set payout date' : `Default payout date from cycle schedule: ${formatScheduleDate(defaultPayoutDate)}`}
