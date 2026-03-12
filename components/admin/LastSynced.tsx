@@ -27,7 +27,12 @@ function formatRelativeSync(value: string | null, nowMs: number) {
 }
 
 export function LastSynced({ timestamp, loading = false }: LastSyncedProps) {
-    const [nowMs, setNowMs] = useState(Date.now());
+    const [nowMs, setNowMs] = useState(() => {
+        if (!timestamp) return 0;
+
+        const ts = new Date(timestamp).getTime();
+        return Number.isFinite(ts) ? ts : 0;
+    });
 
     useEffect(() => {
         const id = window.setInterval(() => setNowMs(Date.now()), 1000);

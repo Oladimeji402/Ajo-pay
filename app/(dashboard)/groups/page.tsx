@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Users, Search, Calendar, Wallet, ChevronRight, Loader2 } from 'lucide-react';
+import { Users, Search, Calendar, Wallet, ChevronRight, Loader2, Sparkles, Compass, Layers3 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
 
@@ -149,13 +149,23 @@ export default function GroupsPage() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto space-y-5">
-            <div className="flex items-center justify-between gap-3">
-                <div>
-                    <h1 className="text-xl font-bold text-brand-navy">My Groups</h1>
-                    <p className="text-xs text-brand-gray">You joined {joinedCount} group{joinedCount === 1 ? '' : 's'}</p>
+        <div className="max-w-6xl mx-auto space-y-6">
+            <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-linear-to-br from-brand-navy via-[#182D63] to-brand-emerald text-white p-6 md:p-7">
+                <div className="absolute -top-20 -right-10 h-52 w-52 rounded-full bg-white/10 blur-3xl" />
+                <div className="absolute -bottom-14 -left-10 h-40 w-40 rounded-full bg-emerald-300/20 blur-3xl" />
+                <div className="relative flex flex-wrap items-end justify-between gap-4">
+                    <div>
+                        <p className="text-[11px] uppercase tracking-[0.2em] text-white/70 font-semibold">Group Workspace</p>
+                        <h1 className="text-2xl md:text-3xl font-semibold mt-1">Your savings circles, organized.</h1>
+                        <p className="text-sm text-white/80 mt-2">Track active memberships and discover new circles that match your contribution rhythm.</p>
+                    </div>
+
+                    <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 min-w-56">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-white/70 mb-2">Membership Pulse</p>
+                        <p className="text-sm inline-flex items-center gap-2"><Layers3 size={14} /> Joined Groups: <span className="font-semibold">{joinedCount}</span></p>
+                    </div>
                 </div>
-            </div>
+            </section>
 
             {!!error && (
                 <div className="rounded-xl border border-red-100 bg-red-50 text-red-600 text-xs font-semibold p-3">
@@ -163,70 +173,77 @@ export default function GroupsPage() {
                 </div>
             )}
 
-            {joinedGroups.length === 0 ? (
-                <div className="bg-white border border-slate-100 rounded-2xl p-6 text-sm text-brand-gray">
-                    You are not in any groups yet.
+            <section className="rounded-3xl border border-slate-200 bg-white overflow-hidden">
+                <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+                    <div>
+                        <h2 className="text-base font-semibold text-brand-navy inline-flex items-center gap-2"><Sparkles size={15} /> My Active Circles</h2>
+                        <p className="text-xs text-brand-gray mt-1">Your joined groups with quick contribution and cycle context.</p>
+                    </div>
                 </div>
-            ) : (
-                <div className="grid md:grid-cols-2 gap-4">
-                    {joinedGroups.map((group) => {
-                        const contributed = contributionByGroup.get(group.id) ?? 0;
-                        return (
-                            <Link
-                                key={group.id}
-                                href={`/groups/${group.id}`}
-                                className="bg-white rounded-2xl border border-slate-100 p-4 hover:shadow-md transition-shadow"
-                            >
-                                <div className="flex items-start justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div
-                                            className="h-10 w-10 rounded-xl grid place-items-center"
-                                            style={{ backgroundColor: `${group.color}20`, color: group.color }}
-                                        >
-                                            <Users size={18} />
+
+                {joinedGroups.length === 0 ? (
+                    <div className="p-6 text-sm text-brand-gray">You are not in any groups yet.</div>
+                ) : (
+                    <div className="p-4 md:p-5 grid md:grid-cols-2 gap-4">
+                        {joinedGroups.map((group) => {
+                            const contributed = contributionByGroup.get(group.id) ?? 0;
+                            return (
+                                <Link
+                                    key={group.id}
+                                    href={`/groups/${group.id}`}
+                                    className="rounded-2xl border border-slate-200 bg-linear-to-b from-white to-slate-50/70 p-4 hover:border-slate-300 transition-colors"
+                                >
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div
+                                                className="h-11 w-11 rounded-xl grid place-items-center border border-white shadow-sm"
+                                                style={{ backgroundColor: `${group.color}24`, color: group.color }}
+                                            >
+                                                <Users size={18} />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="font-semibold text-brand-navy text-sm truncate">{group.name}</p>
+                                                <p className="text-[11px] text-brand-gray capitalize">{group.status}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="font-bold text-brand-navy text-sm">{group.name}</p>
-                                            <p className="text-[11px] text-brand-gray capitalize">{group.status}</p>
+                                        <ChevronRight size={16} className="text-slate-400" />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3 mt-4 text-xs">
+                                        <div className="rounded-xl border border-slate-200 bg-white p-2.5">
+                                            <p className="text-brand-gray mb-1 inline-flex items-center gap-1"><Wallet size={12} /> Per Cycle</p>
+                                            <p className="font-semibold text-brand-navy">NGN {Number(group.contribution_amount).toLocaleString('en-NG')}</p>
+                                        </div>
+                                        <div className="rounded-xl border border-slate-200 bg-white p-2.5">
+                                            <p className="text-brand-gray mb-1 inline-flex items-center gap-1"><Calendar size={12} /> Frequency</p>
+                                            <p className="font-semibold text-brand-navy capitalize">{group.frequency}</p>
                                         </div>
                                     </div>
-                                    <ChevronRight size={16} className="text-slate-400" />
-                                </div>
 
-                                <div className="grid grid-cols-2 gap-3 mt-4 text-xs">
-                                    <div className="rounded-xl bg-slate-50 p-2.5">
-                                        <p className="text-brand-gray mb-1 flex items-center gap-1"><Wallet size={12} /> Per Cycle</p>
-                                        <p className="font-bold text-brand-navy">NGN {Number(group.contribution_amount).toLocaleString('en-NG')}</p>
-                                    </div>
-                                    <div className="rounded-xl bg-slate-50 p-2.5">
-                                        <p className="text-brand-gray mb-1 flex items-center gap-1"><Calendar size={12} /> Frequency</p>
-                                        <p className="font-bold text-brand-navy capitalize">{group.frequency}</p>
-                                    </div>
-                                </div>
+                                    <p className="text-xs text-brand-gray mt-3">
+                                        Total contributed: <span className="font-semibold text-brand-navy">NGN {contributed.toLocaleString('en-NG')}</span>
+                                    </p>
+                                </Link>
+                            );
+                        })}
+                    </div>
+                )}
+            </section>
 
-                                <p className="text-xs text-brand-gray mt-3">
-                                    Total contributed: <span className="font-bold text-brand-navy">NGN {contributed.toLocaleString('en-NG')}</span>
-                                </p>
-                            </Link>
-                        );
-                    })}
-                </div>
-            )}
-
-            <div className="bg-white border border-slate-100 rounded-2xl p-4 space-y-4">
+            <section className="rounded-3xl border border-slate-200 bg-white p-4 md:p-5 space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h2 className="font-bold text-brand-navy">Join Group</h2>
+                        <h2 className="font-semibold text-brand-navy inline-flex items-center gap-2"><Compass size={15} /> Discover and Join</h2>
                         <p className="text-xs text-brand-gray">Search by group name or invite code.</p>
                     </div>
-                    <div className="relative w-72 max-w-full">
+                    <div className="relative w-80 max-w-full">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                         <input
                             type="text"
                             value={joinSearch}
                             onChange={(e) => setJoinSearch(e.target.value)}
-                            placeholder="Search by name or code"
-                            className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
+                            placeholder="Find by group name or code"
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
                         />
                     </div>
                 </div>
@@ -236,9 +253,9 @@ export default function GroupsPage() {
                 ) : (
                     <div className="space-y-2">
                         {filteredDiscoverGroups.map((group) => (
-                            <div key={group.id} className="flex flex-col gap-2 rounded-xl bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div key={group.id} className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-linear-to-r from-slate-50 to-white p-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
-                                    <p className="text-sm font-bold text-brand-navy">{group.name}</p>
+                                    <p className="text-sm font-semibold text-brand-navy">{group.name}</p>
                                     <p className="text-[11px] text-brand-gray">
                                         Code: <span className="font-mono font-semibold text-brand-navy">{group.invite_code}</span> · NGN {Number(group.contribution_amount).toLocaleString('en-NG')} · {group.frequency}
                                     </p>
@@ -254,7 +271,7 @@ export default function GroupsPage() {
                         ))}
                     </div>
                 )}
-            </div>
+            </section>
         </div>
     );
 }
