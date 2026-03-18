@@ -13,7 +13,7 @@ export async function GET(request: Request) {
 
     let query = auth.supabase
       .from("groups")
-      .select("*, group_members(count)")
+      .select("*, group_members(count), contributions(user_id, cycle_number, status)")
       .order("created_at", { ascending: false });
 
     if (status) query = query.eq("status", status);

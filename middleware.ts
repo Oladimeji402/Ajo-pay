@@ -14,10 +14,21 @@ export async function middleware(request: NextRequest) {
     request,
   });
 
+  const pathname = request.nextUrl.pathname;
+  const isAdminRoute = pathname === ADMIN_PROTECTED_PATH || pathname.startsWith(`${ADMIN_PROTECTED_PATH}/`);
+  const isUserProtectedRoute = startsWithPath(pathname, USER_PROTECTED_PATHS);
+  const isAuthPage = startsWithPath(pathname, AUTH_PAGES);
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
+    if (isAdminRoute || isUserProtectedRoute) {
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = isAdminRoute ? "/admin-login" : "/login";
+      loginUrl.searchParams.set("next", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
     return response;
   }
 
@@ -34,11 +45,6 @@ export async function middleware(request: NextRequest) {
       },
     },
   });
-
-  const pathname = request.nextUrl.pathname;
-  const isAdminRoute = pathname === ADMIN_PROTECTED_PATH || pathname.startsWith(`${ADMIN_PROTECTED_PATH}/`);
-  const isUserProtectedRoute = startsWithPath(pathname, USER_PROTECTED_PATHS);
-  const isAuthPage = startsWithPath(pathname, AUTH_PAGES);
 
   const {
     data: { user },

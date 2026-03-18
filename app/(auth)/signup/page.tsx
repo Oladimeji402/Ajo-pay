@@ -6,16 +6,18 @@ import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { motion } from 'motion/react';
-import { Loader2, Check, X } from 'lucide-react';
+import { AlertCircle, Check, CheckCircle2, Eye, EyeOff, Loader2, X } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { notifySuccess } from '@/lib/toast';
+import { mapAuthError } from '@/lib/auth-errors';
 
 export default function SignUpPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
     const [isVerified, setIsVerified] = useState(false);
     const [isResending, setIsResending] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const [password, setPassword] = useState('');
     const [agreedToTerms, setAgreedToTerms] = useState(false);
     const [firstName, setFirstName] = useState('');
@@ -51,7 +53,7 @@ export default function SignUpPage() {
         });
 
         if (signUpError) {
-            const message = signUpError.message || 'Unable to create account right now.';
+            const message = mapAuthError(signUpError, 'Unable to create account right now.');
             setError(message);
             showToast(message, { type: 'error' });
             setIsLoading(false);
@@ -94,7 +96,7 @@ export default function SignUpPage() {
         });
 
         if (verifyError) {
-            const message = verifyError.message || 'OTP verification failed.';
+            const message = mapAuthError(verifyError, 'OTP verification failed.');
             setError(message);
             showToast(message, { type: 'error' });
             setIsVerifying(false);
@@ -119,7 +121,7 @@ export default function SignUpPage() {
         });
 
         if (resendError) {
-            const message = resendError.message || 'Failed to resend OTP.';
+            const message = mapAuthError(resendError, 'Failed to resend OTP.');
             setError(message);
             showToast(message, { type: 'error' });
             setIsResending(false);
@@ -145,22 +147,36 @@ export default function SignUpPage() {
 
     if (verificationMode) {
         return (
-            <div className="space-y-5">
+            <section aria-labelledby="verify-title" className="space-y-6">
                 <div>
-                    <h2 className="text-2xl font-bold text-brand-navy mb-2">Verify your email</h2>
-                    <p className="text-[13px] text-brand-gray leading-relaxed">
-                        Enter the 6-digit OTP sent to <span className="font-semibold text-brand-navy">{pendingEmail}</span>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0f766e]">Step 2 of 2</p>
+                    <h2 id="verify-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>Check your inbox.</h2>
+                    <p className="mt-1 text-sm text-slate-500">
+                        We sent a 6-digit code to{' '}
+                        <span className="font-semibold text-brand-navy">{pendingEmail}</span>.
                     </p>
                 </div>
 
+                {notice && (
+                    <div role="status" aria-live="polite" className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                        {notice}
+                    </div>
+                )}
+
+                {error && (
+                    <div role="alert" aria-live="assertive" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                        <p className="inline-flex items-center gap-2 font-medium"><AlertCircle size={16} />{error}</p>
+                    </div>
+                )}
+
                 <form onSubmit={handleVerifyOtp} className="space-y-4">
                     <Input
-                        label="6-digit OTP"
+                        label="Verification code"
                         type="text"
                         inputMode="numeric"
                         pattern="[0-9]{6}"
                         maxLength={6}
-                        placeholder="123456"
+                        placeholder="— — — — — —"
                         value={otp}
                         onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                         required
@@ -170,98 +186,95 @@ export default function SignUpPage() {
                         {isVerifying || isVerified ? (
                             <span className="flex items-center gap-2">
                                 <Loader2 size={16} className="animate-spin" />
-                                {isVerified ? 'Verified. Redirecting...' : 'Verifying OTP...'}
+                                {isVerified ? 'Verified — redirecting...' : 'Verifying...'}
                             </span>
-                        ) : 'Verify & Continue'}
+                        ) : 'Verify & continue'}
                     </Button>
 
                     <button
                         type="button"
                         onClick={handleResendOtp}
                         disabled={isResending || isVerified}
-                        className="w-full text-sm font-semibold text-brand-primary hover:text-brand-primary-hover disabled:opacity-60"
+                        className="w-full text-sm font-medium text-slate-500 hover:text-brand-navy transition-colors disabled:opacity-50"
                     >
-                        {isResending ? 'Resending OTP...' : 'Resend OTP'}
+                        {isResending ? 'Sending...' : "Didn't receive a code? Resend"}
                     </button>
                 </form>
 
-                <p className="text-center text-[13px] text-brand-gray">
-                    Wrong email?{' '}
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setVerificationMode(false);
-                            setIsVerified(false);
-                            setOtp('');
-                            setError('');
-                            setNotice('');
-                        }}
-                        className="font-semibold text-brand-emerald hover:text-brand-emerald-hover transition-colors"
-                    >
-                        Edit registration
-                    </button>
-                </p>
-            </div>
+                <div className="border-t border-slate-100 pt-5">
+                    <p className="text-center text-sm text-slate-500">
+                        Wrong email?{' '}
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setVerificationMode(false);
+                                setIsVerified(false);
+                                setOtp('');
+                                setError('');
+                                setNotice('');
+                            }}
+                            className="font-semibold text-brand-navy hover:text-[#0f766e] transition-colors"
+                        >
+                            Go back and edit
+                        </button>
+                    </p>
+                </div>
+            </section>
         );
     }
 
     return (
-        <>
-            <div className="mb-8">
-                <h2 className="text-2xl font-bold text-brand-navy mb-2">Create your account</h2>
-                <p className="text-[13px] text-brand-gray leading-relaxed">Join 10,000+ Nigerians saving smarter with Ajopay</p>
+        <section aria-labelledby="signup-title" className="space-y-5">
+            <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0f766e]">Step 1 of 2</p>
+                <h2 id="signup-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>Join your circle.</h2>
+                <p className="mt-1 text-sm text-slate-500">Create your AjoPay account.</p>
             </div>
 
-            {/* Social Login */}
-            <div className="grid grid-cols-2 gap-3 mb-6">
-                <button className="flex items-center justify-center gap-2.5 py-2.5 px-4 bg-white border border-slate-200 rounded-xl text-[13px] font-semibold text-brand-navy hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
-                    <svg width="18" height="18" viewBox="0 0 24 24">
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                    </svg>
-                    Google
-                </button>
-                <button className="flex items-center justify-center gap-2.5 py-2.5 px-4 bg-brand-navy border border-brand-navy rounded-xl text-[13px] font-semibold text-white hover:bg-[#0a1120] transition-all shadow-sm">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
-                    </svg>
-                    Apple
-                </button>
-            </div>
-
-            {/* Divider */}
-            <div className="relative mb-6">
-                <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-slate-200"></div>
+            {notice && (
+                <div role="status" aria-live="polite" className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                    {notice}
                 </div>
-                <div className="relative flex justify-center text-xs">
-                    <span className="px-3 bg-brand-light text-slate-400 font-medium">or sign up with email</span>
-                </div>
-            </div>
+            )}
 
-            {/* Form */}
-            <form className="space-y-4" onSubmit={handleSubmit}>
+            {error && (
+                <div role="alert" aria-live="assertive" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    <p className="inline-flex items-center gap-2 font-medium"><AlertCircle size={16} />{error}</p>
+                </div>
+            )}
+
+            <form className="space-y-4" onSubmit={handleSubmit} noValidate>
                 <div className="grid grid-cols-2 gap-3">
-                    <Input label="First Name" type="text" placeholder="John" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
-                    <Input label="Last Name" type="text" placeholder="Doe" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+                    <Input label="First name" type="text" autoComplete="given-name" placeholder="John" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+                    <Input label="Last name" type="text" autoComplete="family-name" placeholder="Doe" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
                 </div>
 
-                <Input label="Email Address" type="email" placeholder="name@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                <Input label="Phone Number" type="tel" placeholder="+234 800 000 0000" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+                <Input label="Email address" type="email" autoComplete="email" placeholder="name@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                <Input label="Phone number" type="tel" autoComplete="tel" placeholder="+234 800 000 0000" value={phone} onChange={(e) => setPhone(e.target.value)} required />
 
                 <div>
                     <div className="space-y-1 w-full">
-                        <label className="block text-sm font-semibold text-brand-navy">Password</label>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="Create a strong password"
-                            required
-                            className="block w-full px-4 py-3 rounded-lg border border-brand-border text-brand-navy placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all duration-200"
-                        />
+                        <label htmlFor="signup-password" className="block text-sm font-semibold text-brand-navy">Password</label>
+                        <div className="relative">
+                            <input
+                                id="signup-password"
+                                type={showPassword ? 'text' : 'password'}
+                                autoComplete="new-password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="Create a strong password"
+                                required
+                                className="block w-full px-4 py-3 pr-12 rounded-lg border border-brand-border text-brand-navy placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all duration-200"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword((current) => !current)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-brand-navy transition-colors"
+                                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                            >
+                                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                            </button>
+                        </div>
                     </div>
 
                     {password.length > 0 && (
@@ -312,7 +325,7 @@ export default function SignUpPage() {
                             className="sr-only peer"
                             required
                         />
-                        <div className="w-4.5 h-4.5 rounded border-2 border-slate-300 peer-checked:border-brand-emerald peer-checked:bg-brand-emerald transition-all flex items-center justify-center shrink-0">
+                        <div className="h-5 w-5 rounded border-2 border-slate-300 peer-checked:border-brand-emerald peer-checked:bg-brand-emerald transition-all flex items-center justify-center shrink-0">
                             {agreedToTerms && (
                                 <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
                                     <path d="M2 6L5 9L10 3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -320,18 +333,18 @@ export default function SignUpPage() {
                             )}
                         </div>
                     </label>
-                    <span className="text-[12px] text-brand-gray leading-relaxed">
+                    <span className="text-sm text-slate-600 leading-relaxed">
                         I agree to Ajopay&apos;s{' '}
-                        <a href="#" className="font-semibold text-brand-navy hover:text-brand-primary underline decoration-dotted transition-colors">Terms of Service</a>
+                        <a href="#" className="font-semibold text-brand-navy underline decoration-dotted underline-offset-4 hover:text-brand-primary transition-colors">Terms of Service</a>
                         {' '}and{' '}
-                        <a href="#" className="font-semibold text-brand-navy hover:text-brand-primary underline decoration-dotted transition-colors">Privacy Policy</a>
+                        <a href="#" className="font-semibold text-brand-navy underline decoration-dotted underline-offset-4 hover:text-brand-primary transition-colors">Privacy Policy</a>
                     </span>
                 </div>
 
                 <Button
                     type="submit"
                     className="w-full"
-                    disabled={isLoading}
+                    disabled={isLoading || !agreedToTerms}
                 >
                     {isLoading ? (
                         <span className="flex items-center gap-2">
@@ -341,16 +354,25 @@ export default function SignUpPage() {
                     ) : 'Create account'}
                 </Button>
 
-                <p className="text-center text-[13px] text-brand-gray">
+            </form>
+
+            <div className="border-t border-slate-100 pt-5">
+                <p className="text-center text-sm text-slate-500">
                     Already have an account?{' '}
                     <Link
                         href="/login"
-                        className="font-semibold text-brand-emerald hover:text-brand-emerald-hover transition-colors"
+                        className="font-semibold text-brand-navy hover:text-[#0f766e] transition-colors"
                     >
                         Sign in
                     </Link>
                 </p>
-            </form>
-        </>
+            </div>
+            {isVerified && (
+                <p className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                    <CheckCircle2 size={16} />
+                    Email verified successfully. Redirecting to onboarding.
+                </p>
+            )}
+        </section>
     );
 }

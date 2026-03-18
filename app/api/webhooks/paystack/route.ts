@@ -43,6 +43,6 @@ export async function POST(request: Request) {
       whatsapp: result.whatsapp,
     });
   } catch (error) {
-    return serverErrorResponse(error instanceof Error ? error.message : undefined);
+    return serverErrorResponse(error);
   }
 }

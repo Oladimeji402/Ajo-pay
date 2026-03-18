@@ -28,6 +28,7 @@ export const StatCard = ({
 }: StatCardProps) => {
     return (
         <motion.div
+            key={cardKey}
             initial={{ opacity: 0, y: 12 }}
             animate={pulseOnChange ? {
                 opacity: 1,

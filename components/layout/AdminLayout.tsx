@@ -17,6 +17,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { adminLogout, getAdminEmail } from '@/lib/admin-auth';
 import { useRealtimeSubscription } from '@/lib/hooks/useRealtimeSubscription';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 
 const LAYOUT_REALTIME_TABLES = ['payouts', 'profiles'];
 
@@ -96,10 +97,8 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
         <>
             {/* Logo */}
             <div className="p-6 border-b border-white/5">
-                <Link href="/admin" className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-linear-to-br from-red-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-red-500/20">
-                        <span className="text-white font-bold text-xl">A</span>
-                    </div>
+                <div className="flex items-center gap-3">
+                    <BrandLogo href="/admin" size="sm" showWordmark={false} />
                     <div>
                         <span className="text-xl font-bold text-white tracking-tight block">Ajopay</span>
                         <div className="flex items-center gap-1.5">
@@ -107,7 +106,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
                             <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest">Admin Panel</span>
                         </div>
                     </div>
-                </Link>
+                </div>
             </div>
 
             {/* Nav Items */}

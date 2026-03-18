@@ -14,8 +14,7 @@ import {
     ArrowDownLeft,
     LayoutGrid,
     ChevronRight,
-    Play,
-    Sparkles,
+    Star,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -159,144 +158,240 @@ const PhoneMockup = () => (
 // ─── Hero Section ────────────────────────────────────────────────────────────
 export const Hero = () => {
     return (
-        <section className="relative min-h-screen flex items-center overflow-hidden bg-[#F8FAFC]">
-            {/* Background */}
+        <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-[#030d1f]">
+
+            {/* ─── Background orbs + grid ─── */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                <div className="absolute top-[-15%] left-[-10%] w-[50%] h-[50%] bg-brand-primary/[0.04] rounded-full blur-[100px]" />
-                <div className="absolute bottom-[-15%] right-[-10%] w-[50%] h-[50%] bg-brand-emerald/[0.04] rounded-full blur-[100px]" />
-                {/* Grid pattern */}
-                <div className="absolute inset-0 opacity-[0.03]" style={{
-                    backgroundImage: 'radial-gradient(circle, #1B2F6B 0.5px, transparent 0.5px)',
-                    backgroundSize: '32px 32px'
-                }} />
+                <div className="absolute -top-[20%] -right-[8%] w-[60%] h-[70%] rounded-full bg-brand-emerald/[0.09] blur-[130px]" />
+                <div className="absolute -bottom-[25%] -left-[8%] w-[55%] h-[65%] rounded-full bg-brand-primary/[0.12] blur-[130px]" />
+                <div
+                    className="absolute inset-0"
+                    style={{
+                        backgroundImage: 'radial-gradient(rgba(255,255,255,0.07) 0.5px, transparent 0.5px)',
+                        backgroundSize: '28px 28px',
+                    }}
+                />
             </div>
 
-            <Container className="relative z-10 pt-28 pb-12 lg:pt-32">
-                <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            <Container className="relative z-10 w-full pt-20 pb-28 lg:pt-24 lg:pb-36">
+                <div className="grid lg:grid-cols-2 gap-14 lg:gap-20 items-center">
 
-                    {/* Left Copy */}
+                    {/* ─── LEFT — Copy ─── */}
                     <motion.div
-                        initial={{ opacity: 0, y: 24 }}
+                        initial={{ opacity: 0, y: 36 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6 }}
+                        transition={{ duration: 0.7, ease: [0.21, 0.45, 0.27, 0.9] }}
                     >
-                        {/* Trust Badge */}
+                        {/* Live badge */}
                         <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.1 }}
-                            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-emerald/[0.08] border border-brand-emerald/15 mb-6"
+                            initial={{ opacity: 0, x: -16 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.15 }}
+                            className="inline-flex items-center gap-2.5 px-3.5 py-2 rounded-full bg-brand-emerald/[0.10] border border-brand-emerald/[0.18] mb-8"
                         >
-                            <Sparkles size={13} className="text-brand-emerald" />
-                            <span className="text-[12px] font-bold text-brand-emerald">Trusted by 50,000+ Nigerians</span>
+                            <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-emerald opacity-75" />
+                                <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-emerald" />
+                            </span>
+                            <span className="text-[12.5px] font-semibold text-brand-emerald">
+                                Over ₦2 Billion saved across Nigeria
+                            </span>
                         </motion.div>
 
-                        <h1 className="text-[2.5rem] sm:text-5xl lg:text-[3.5rem] xl:text-6xl font-bold text-brand-navy leading-[1.08] mb-5 tracking-tight">
-                            Modern Savings<br />
-                            for{' '}
-                            <span className="relative">
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-primary to-brand-emerald">Modern Africans.</span>
-                                <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: '100%' }}
-                                    transition={{ delay: 0.8, duration: 0.6, ease: 'easeOut' }}
-                                    className="absolute bottom-1 left-0 h-[3px] bg-gradient-to-r from-brand-primary/30 to-brand-emerald/30 rounded-full"
-                                />
+                        {/* Headline */}
+                        <motion.h1
+                            initial={{ opacity: 0, y: 24 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2, duration: 0.65 }}
+                            className="text-[2.75rem] sm:text-[3.2rem] lg:text-[3.75rem] xl:text-[4.2rem] font-extrabold leading-[1.06] tracking-[-0.028em] mb-6"
+                        >
+                            <span className="text-white">Save Together</span>
+                            <span className="text-white/20">.</span>
+                            <br />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-emerald via-emerald-400 to-cyan-400">
+                                Grow Together
                             </span>
-                        </h1>
+                            <span className="text-white/20">.</span>
+                        </motion.h1>
 
-                        <p className="text-[15px] sm:text-base text-brand-gray mb-8 leading-relaxed max-w-lg">
-                            Join secure Ajo groups, automate your contributions, and reach your financial goals faster with Africa&apos;s most trusted digital savings platform.
-                        </p>
+                        {/* Subtitle */}
+                        <motion.p
+                            initial={{ opacity: 0, y: 18 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.28 }}
+                            className="text-slate-400 text-[16px] sm:text-[17px] leading-[1.75] mb-10 max-w-[500px]"
+                        >
+                            The modern platform for Nigeria&apos;s trusted{' '}
+                            <span className="text-white font-medium">Ajo savings tradition</span>.
+                            Automate contributions, track every naira, and receive payouts reliably — all from your phone.
+                        </motion.p>
 
                         {/* CTAs */}
-                        <div className="flex flex-col sm:flex-row gap-3 mb-10">
-                            <Link href="/signup">
+                        <motion.div
+                            initial={{ opacity: 0, y: 16 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.35 }}
+                            className="flex flex-col sm:flex-row gap-3 mb-12"
+                        >
+                            <Link href="/signup" className="w-full sm:w-auto">
                                 <Button
                                     size="lg"
-                                    className="text-[15px] px-7 py-4 rounded-2xl shadow-xl shadow-brand-primary/15 flex items-center gap-2 group"
+                                    className="w-full sm:w-auto text-[15px] rounded-2xl bg-brand-emerald hover:bg-brand-emerald-hover shadow-xl shadow-brand-emerald/30 border-0 group justify-center"
                                 >
-                                    Start Saving Free
-                                    <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+                                    Start Saving — It&apos;s Free
+                                    <ArrowRight size={16} className="ml-2 group-hover:translate-x-0.5 transition-transform" />
                                 </Button>
                             </Link>
-                            <button className="flex items-center gap-3 px-6 py-4 text-[15px] font-semibold text-brand-navy hover:text-brand-primary transition-colors group">
-                                <div className="w-10 h-10 bg-white rounded-full shadow-lg shadow-slate-900/10 flex items-center justify-center group-hover:shadow-brand-primary/20 transition-shadow">
-                                    <Play size={14} className="text-brand-primary ml-0.5" fill="currentColor" />
-                                </div>
-                                Watch Demo
-                            </button>
-                        </div>
+                            <a href="#how-it-works" className="w-full sm:w-auto">
+                                <button className="w-full inline-flex items-center justify-center text-[15px] font-semibold px-8 py-4 rounded-2xl text-white/80 hover:text-white bg-white/[0.06] hover:bg-white/[0.10] border border-white/[0.10] transition-all">
+                                    See How It Works
+                                </button>
+                            </a>
+                        </motion.div>
 
-                        {/* Stats Row */}
-                        <div className="grid grid-cols-3 gap-6">
-                            {[
-                                { value: '₦2.5B+', label: 'Total Saved' },
-                                { value: '99.9%', label: 'Success Rate' },
-                                { value: '24/7', label: 'Active Support' },
-                            ].map((stat, i) => (
-                                <motion.div
-                                    key={stat.label}
-                                    initial={{ opacity: 0, y: 12 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.4 + i * 0.1 }}
-                                    className="relative"
-                                >
-                                    {i > 0 && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-px h-8 bg-slate-200" />}
-                                    <div className={i > 0 ? 'pl-6' : ''}>
-                                        <p className="text-xl sm:text-2xl font-bold text-brand-navy">{stat.value}</p>
-                                        <p className="text-[11px] font-medium text-brand-gray mt-0.5">{stat.label}</p>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </div>
-                    </motion.div>
-
-                    {/* Right Phone */}
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.93, y: 24 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        transition={{ duration: 0.8, delay: 0.2 }}
-                        className="relative flex justify-center"
-                    >
-                        {/* Floating Badge — Payout */}
+                        {/* Social proof */}
                         <motion.div
-                            animate={{ y: [0, -8, 0] }}
-                            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                            className="absolute top-4 -right-2 lg:right-4 bg-white p-3 rounded-2xl shadow-xl shadow-slate-900/10 border border-slate-100 flex items-center gap-3 z-20"
+                            initial={{ opacity: 0, y: 12 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.43 }}
+                            className="flex items-center gap-4"
                         >
-                            <div className="w-9 h-9 bg-brand-emerald/10 text-brand-emerald rounded-xl flex items-center justify-center">
-                                <TrendingUp size={18} />
+                            <div className="flex -space-x-2.5">
+                                {[
+                                    { initials: 'OJ', color: '#1B2F6B' },
+                                    { initials: 'CE', color: '#0F766E' },
+                                    { initials: 'IK', color: '#7c3aed' },
+                                    { initials: 'AU', color: '#0e7490' },
+                                    { initials: 'BT', color: '#b45309' },
+                                ].map((u, i) => (
+                                    <div
+                                        key={i}
+                                        className="w-8 h-8 rounded-full border-2 border-[#030d1f] flex items-center justify-center text-[9px] font-black text-white"
+                                        style={{ backgroundColor: u.color }}
+                                    >
+                                        {u.initials}
+                                    </div>
+                                ))}
                             </div>
                             <div>
-                                <p className="text-[9px] text-brand-gray font-bold uppercase tracking-wider">Total Payout</p>
-                                <p className="text-sm font-bold text-brand-navy">₦1,200,000</p>
+                                <div className="flex items-center gap-0.5 mb-0.5">
+                                    {[...Array(5)].map((_, i) => (
+                                        <Star key={i} size={11} className="fill-amber-400 text-amber-400" />
+                                    ))}
+                                    <span className="text-[12px] font-bold text-white ml-1">4.9</span>
+                                </div>
+                                <p className="text-[12px] text-slate-500">Trusted by 50,000+ Nigerian savers</p>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+
+                    {/* ─── RIGHT — Phone + Floating Cards ─── */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 36 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.7, delay: 0.22 }}
+                        className="relative flex justify-center items-center min-h-[540px] lg:min-h-[600px]"
+                    >
+                        {/* Glow behind phone */}
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div className="w-80 h-80 rounded-full bg-brand-emerald/[0.18] blur-[90px]" />
+                            <div className="absolute w-56 h-56 rounded-full bg-brand-primary/[0.18] blur-[80px]" />
+                        </div>
+
+                        {/* Floating card — Payout received */}
+                        <motion.div
+                            initial={{ opacity: 0, x: -28, y: 10 }}
+                            animate={{ opacity: 1, x: 0, y: 0 }}
+                            transition={{ delay: 0.9, duration: 0.55 }}
+                            style={{ animation: 'float-y 5s ease-in-out infinite' }}
+                            className="absolute top-[6%] -left-2 lg:-left-10 z-20 bg-white rounded-2xl p-3.5 shadow-2xl shadow-black/50 w-52"
+                        >
+                            <div className="flex items-center gap-2.5 mb-2">
+                                <div className="w-9 h-9 bg-brand-emerald/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <TrendingUp size={16} className="text-brand-emerald" />
+                                </div>
+                                <div>
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Payout Received</p>
+                                    <p className="text-[15px] font-extrabold text-slate-900 leading-tight">+₦450,000</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-1.5 h-1.5 rounded-full bg-brand-emerald animate-pulse flex-shrink-0" />
+                                <p className="text-[10px] text-slate-400">Family Savings · Just now</p>
                             </div>
                         </motion.div>
 
-                        {/* Floating Badge — Members */}
+                        {/* Floating card — Group progress */}
                         <motion.div
-                            animate={{ y: [0, 8, 0] }}
-                            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-                            className="absolute bottom-8 -left-2 lg:left-4 bg-white p-3 rounded-2xl shadow-xl shadow-slate-900/10 border border-slate-100 flex items-center gap-3 z-20"
+                            initial={{ opacity: 0, x: 28, y: 10 }}
+                            animate={{ opacity: 1, x: 0, y: 0 }}
+                            transition={{ delay: 1.1, duration: 0.55 }}
+                            style={{ animation: 'float-y 6s ease-in-out infinite 1.5s' }}
+                            className="absolute bottom-[16%] -right-2 lg:-right-8 z-20 bg-white rounded-2xl p-3.5 shadow-2xl shadow-black/50 w-[200px]"
                         >
-                            <div className="w-9 h-9 bg-brand-soft-blue text-brand-primary rounded-xl flex items-center justify-center">
-                                <Users size={18} />
+                            <div className="flex items-center gap-2.5 mb-2.5">
+                                <div className="w-9 h-9 bg-brand-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <Users size={16} className="text-brand-primary" />
+                                </div>
+                                <div>
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Lagos Techies</p>
+                                    <p className="text-[12px] font-extrabold text-slate-900 leading-tight">8 / 10 paid ✓</p>
+                                </div>
+                            </div>
+                            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: '80%' }}
+                                    transition={{ delay: 1.6, duration: 1, ease: 'easeOut' }}
+                                    className="h-full bg-gradient-to-r from-brand-primary to-brand-emerald rounded-full"
+                                />
+                            </div>
+                        </motion.div>
+
+                        {/* Floating chip — Security */}
+                        <motion.div
+                            initial={{ opacity: 0, x: -22 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 1.3, duration: 0.5 }}
+                            className="absolute top-[50%] -left-2 lg:-left-10 z-20 bg-white rounded-2xl p-2.5 shadow-xl shadow-black/30 flex items-center gap-2 border border-slate-100"
+                        >
+                            <div className="w-7 h-7 bg-amber-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <ShieldCheck size={13} className="text-amber-500" />
                             </div>
                             <div>
-                                <p className="text-[9px] text-brand-gray font-bold uppercase tracking-wider">Active Members</p>
-                                <p className="text-sm font-bold text-brand-navy">12,402</p>
+                                <p className="text-[11px] font-bold text-slate-900 leading-tight">Bank-Grade Security</p>
+                                <p className="text-[9px] text-slate-400">256-bit SSL · Always on</p>
                             </div>
                         </motion.div>
 
                         <PhoneMockup />
-
-                        {/* Glow */}
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-gradient-radial from-brand-primary/[0.06] to-transparent rounded-full -z-10" />
                     </motion.div>
 
                 </div>
             </Container>
+
+            {/* ─── Stats bar at the bottom ─── */}
+            <div className="absolute bottom-0 left-0 right-0 border-t border-white/[0.07]">
+                <Container>
+                    <div className="grid grid-cols-2 md:grid-cols-4">
+                        {[
+                            { value: '₦2B+', label: 'Total Saved' },
+                            { value: '50K+', label: 'Active Savers' },
+                            { value: '200+', label: 'Active Groups' },
+                            { value: '4.9★', label: 'App Rating' },
+                        ].map((stat, i) => (
+                            <div
+                                key={i}
+                                className={`flex flex-col items-center py-5 ${i < 3 ? 'border-r border-white/[0.07]' : ''}`}
+                            >
+                                <span className="text-[1.35rem] lg:text-[1.5rem] font-extrabold text-white tracking-tight">{stat.value}</span>
+                                <span className="text-[11px] text-slate-500 mt-0.5">{stat.label}</span>
+                            </div>
+                        ))}
+                    </div>
+                </Container>
+            </div>
+
         </section>
     );
 };
