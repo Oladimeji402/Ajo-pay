@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 type RealtimeEvent = {
@@ -19,6 +19,8 @@ type UseRealtimeSubscriptionOptions = {
 };
 
 const DEFAULT_TABLES = ['contributions', 'payment_records', 'payouts', 'profiles', 'groups'];
+const BACKOFF_BASE_MS = 1_000;
+const BACKOFF_MAX_MS = 30_000;
 
 export function useRealtimeSubscription(options?: UseRealtimeSubscriptionOptions) {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -31,8 +33,12 @@ export function useRealtimeSubscription(options?: UseRealtimeSubscriptionOptions
 
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 
+  const retryCountRef = useRef(0);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activeChannelRef = useRef<RealtimeChannel | null>(null);
+
   useEffect(() => {
-    const channel = supabase.channel(channelName);
+    let mounted = true;
 
     const onChange = (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
       setRefreshTrigger((value) => value + 1);
@@ -43,40 +49,67 @@ export function useRealtimeSubscription(options?: UseRealtimeSubscriptionOptions
       });
     };
 
-    for (const table of tables) {
-      channel.on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema,
-          table,
-        },
-        onChange,
-      );
-    }
+    const connect = () => {
+      const ch = supabase.channel(channelName);
+      activeChannelRef.current = ch;
 
-    channel.subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        setConnectionStatus('subscribed');
-        return;
+      for (const table of tables) {
+        ch.on(
+          'postgres_changes',
+          { event: '*', schema, table },
+          onChange,
+        );
       }
 
-      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        setConnectionStatus('errored');
-        return;
-      }
+      ch.subscribe((status) => {
+        if (!mounted) return;
 
-      if (status === 'CLOSED') {
-        setConnectionStatus('closed');
-        return;
-      }
+        if (status === 'SUBSCRIBED') {
+          retryCountRef.current = 0;
+          setConnectionStatus('subscribed');
+          return;
+        }
 
-      setConnectionStatus('connecting');
-    });
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          setConnectionStatus('errored');
+          // Exponential backoff: 1 s → 2 s → 4 s … capped at 30 s.
+          const delay = Math.min(BACKOFF_BASE_MS * (2 ** retryCountRef.current), BACKOFF_MAX_MS);
+          retryCountRef.current += 1;
+          retryTimerRef.current = setTimeout(() => {
+            retryTimerRef.current = null;
+            if (!mounted) return;
+            void supabase.removeChannel(ch).then(() => {
+              if (!mounted) return;
+              setConnectionStatus('connecting');
+              connect();
+            });
+          }, delay);
+          return;
+        }
+
+        if (status === 'CLOSED') {
+          setConnectionStatus('closed');
+          return;
+        }
+
+        setConnectionStatus('connecting');
+      });
+    };
+
+    connect();
 
     return () => {
+      mounted = false;
+      if (retryTimerRef.current !== null) {
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
+      }
+      retryCountRef.current = 0;
       setConnectionStatus('closed');
-      void supabase.removeChannel(channel);
+      if (activeChannelRef.current) {
+        void supabase.removeChannel(activeChannelRef.current);
+        activeChannelRef.current = null;
+      }
     };
   }, [channelName, schema, supabase, tables]);
 

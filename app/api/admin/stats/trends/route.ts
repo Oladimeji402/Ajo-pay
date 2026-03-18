@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireAdmin, serverErrorResponse } from "@/lib/api/auth";
 
+export const revalidate = 60;
+
 type TrendPoint = {
   date: string;
   amount: number;

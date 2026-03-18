@@ -1,6 +1,15 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { badRequestResponse, requireAdmin, serverErrorResponse } from "@/lib/api/auth";
 import { logAdminAction } from "@/lib/admin-audit";
+
+const updatePayoutSchema = z.object({
+  payoutId: z.string().min(1, "payoutId is required"),
+  status: z.enum(["pending", "processing", "done", "failed"]).optional(),
+  scheduledFor: z.string().optional().nullable(),
+  proofUrl: z.string().optional().nullable(),
+  proofNote: z.string().max(500, "proofNote cannot exceed 500 characters").optional().nullable(),
+});
 
 export async function GET(request: Request) {
   try {
@@ -31,18 +40,27 @@ export async function PATCH(request: Request) {
     const auth = await requireAdmin();
     if (auth.error || !auth.user) return auth.error;
 
-    const body = await request.json();
-    const payoutId = String(body.payoutId ?? "").trim();
+    let rawBody: unknown;
+    try {
+      rawBody = await request.json();
+    } catch {
+      return badRequestResponse("Invalid JSON body.");
+    }
+
+    const parsed = updatePayoutSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? "Validation failed.";
+      return badRequestResponse(message);
+    }
+
+    const body = parsed.data;
+    const payoutId = body.payoutId.trim();
     const hasStatus = body.status !== undefined;
-    const status = hasStatus ? String(body.status ?? "").toLowerCase() : "";
+    const status = hasStatus ? (body.status ?? "") : "";
     const hasScheduledFor = body.scheduledFor !== undefined;
     const hasProofUrl = body.proofUrl !== undefined;
     const hasProofNote = body.proofNote !== undefined;
     const allowedStatuses = new Set(["pending", "processing", "done", "failed"]);
-
-    if (!payoutId) {
-      return badRequestResponse("payoutId is required.");
-    }
 
     if (!hasStatus && !hasScheduledFor && !hasProofUrl && !hasProofNote) {
       return badRequestResponse("Provide at least one field to update.");
@@ -91,16 +109,16 @@ export async function PATCH(request: Request) {
     }
 
     if (hasScheduledFor) {
-      const scheduledFor = body.scheduledFor ? String(body.scheduledFor) : null;
+      const scheduledFor = body.scheduledFor ? body.scheduledFor : null;
       if (scheduledFor) {
-        const parsed = new Date(`${scheduledFor}T00:00:00.000Z`);
-        if (Number.isNaN(parsed.getTime())) {
+        const parsedDate = new Date(`${scheduledFor}T00:00:00.000Z`);
+        if (Number.isNaN(parsedDate.getTime())) {
           return badRequestResponse("scheduledFor must be a valid date.");
         }
 
         const today = new Date();
         today.setUTCHours(0, 0, 0, 0);
-        if (parsed.getTime() < today.getTime()) {
+        if (parsedDate.getTime() < today.getTime()) {
           return badRequestResponse("scheduledFor cannot be in the past.");
         }
       }
@@ -109,7 +127,7 @@ export async function PATCH(request: Request) {
     }
 
     if (hasProofUrl) {
-      const proofUrlValue = String(body.proofUrl ?? "").trim();
+      const proofUrlValue = (body.proofUrl ?? "").trim();
 
       if (proofUrlValue) {
         let parsedUrl: URL;
@@ -134,11 +152,7 @@ export async function PATCH(request: Request) {
     }
 
     if (hasProofNote) {
-      const proofNote = String(body.proofNote ?? "").trim();
-      if (proofNote.length > 500) {
-        return badRequestResponse("proofNote cannot exceed 500 characters.");
-      }
-
+      const proofNote = (body.proofNote ?? "").trim();
       updates.proof_note = proofNote || null;
     }
 

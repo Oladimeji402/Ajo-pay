@@ -1,6 +1,15 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { badRequestResponse, requireAdmin, serverErrorResponse } from "@/lib/api/auth";
 import { logAdminAction } from "@/lib/admin-audit";
+
+const updateUserSchema = z.object({
+  name: z.string().min(1).optional(),
+  phone: z.string().optional().nullable(),
+  status: z.enum(["active", "suspended"]).optional(),
+  kycLevel: z.number().int().min(0).optional(),
+  role: z.enum(["user", "admin"]).optional(),
+});
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -94,31 +103,29 @@ export async function PATCH(request: Request, context: Context) {
     const auth = await requireAdmin();
     if (auth.error || !auth.user) return auth.error;
     const { id } = await context.params;
-    const body = await request.json();
-    const allowedStatuses = new Set(["active", "suspended"]);
-    const allowedRoles = new Set(["user", "admin"]);
 
-    const updates: Record<string, unknown> = {
-      updated_at: new Date().toISOString(),
-    };
+    let rawBody: unknown;
+    try {
+      rawBody = await request.json();
+    } catch {
+      return badRequestResponse("Invalid JSON body.");
+    }
 
-    if (body.name !== undefined) updates.name = String(body.name);
-    if (body.phone !== undefined) updates.phone = body.phone ? String(body.phone) : null;
-    if (body.status !== undefined) {
-      const normalizedStatus = String(body.status).toLowerCase();
-      if (!allowedStatuses.has(normalizedStatus)) {
-        return badRequestResponse("Invalid status value.");
-      }
-      updates.status = normalizedStatus;
+    const parsed = updateUserSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? "Validation failed.";
+      return badRequestResponse(message);
     }
-    if (body.kycLevel !== undefined) updates.kyc_level = Number(body.kycLevel);
-    if (body.role !== undefined) {
-      const normalizedRole = String(body.role).toLowerCase();
-      if (!allowedRoles.has(normalizedRole)) {
-        return badRequestResponse("Invalid role value.");
-      }
-      updates.role = normalizedRole;
-    }
+
+    const body = parsed.data;
+
+    const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+
+    if (body.name !== undefined) updates.name = body.name!.trim();
+    if (body.phone !== undefined) updates.phone = body.phone ?? null;
+    if (body.status !== undefined) updates.status = body.status;
+    if (body.kycLevel !== undefined) updates.kyc_level = body.kycLevel;
+    if (body.role !== undefined) updates.role = body.role;
 
     const { data: beforeUser, error: beforeUserError } = await auth.supabase
       .from("profiles")

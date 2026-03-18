@@ -1,5 +1,20 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { badRequestResponse, requireAdmin, requireUser, serverErrorResponse } from "@/lib/api/auth";
+
+const createGroupSchema = z.object({
+  name: z.string().min(1, "name is required"),
+  contributionAmount: z.number({ error: "contributionAmount must be a number" }).positive("contributionAmount must be positive"),
+  frequency: z.enum(["daily", "weekly", "biweekly", "monthly"], { error: "Invalid frequency value" }),
+  maxMembers: z.number().int().min(2, "maxMembers must be at least 2").max(100),
+  totalCycles: z.number().int().min(1, "totalCycles must be at least 1"),
+  startDate: z.string().min(1, "startDate is required"),
+  category: z.string().optional(),
+  whatsappGroupPhone: z.string().optional().nullable(),
+  status: z.string().optional(),
+  color: z.string().optional(),
+  inviteCode: z.string().optional(),
+});
 
 export async function GET(request: Request) {
   try {
@@ -95,23 +110,32 @@ export async function POST(request: Request) {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
 
-    const body = await request.json();
-    if (!body.name || !body.contributionAmount || !body.frequency || !body.maxMembers || !body.totalCycles || !body.startDate) {
-      return badRequestResponse("Missing required fields for group creation.");
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return badRequestResponse("Invalid JSON body.");
     }
 
+    const parsed = createGroupSchema.safeParse(body);
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? "Validation failed.";
+      return badRequestResponse(message);
+    }
+
+    const d = parsed.data;
     const payload = {
-      name: String(body.name),
-      category: body.category ? String(body.category) : "ajo",
-      contribution_amount: Number(body.contributionAmount),
-      frequency: String(body.frequency).toLowerCase(),
-      max_members: Number(body.maxMembers),
-      total_cycles: Number(body.totalCycles),
-      start_date: String(body.startDate),
-      whatsapp_group_phone: body.whatsappGroupPhone ? String(body.whatsappGroupPhone) : null,
-      status: body.status ? String(body.status).toLowerCase() : "pending",
-      color: body.color ? String(body.color) : "#3B82F6",
-      invite_code: body.inviteCode ? String(body.inviteCode).toUpperCase() : undefined,
+      name: d.name.trim(),
+      category: d.category ? String(d.category) : "ajo",
+      contribution_amount: d.contributionAmount,
+      frequency: d.frequency.toLowerCase(),
+      max_members: d.maxMembers,
+      total_cycles: d.totalCycles,
+      start_date: d.startDate,
+      whatsapp_group_phone: d.whatsappGroupPhone ?? null,
+      status: d.status ? String(d.status).toLowerCase() : "pending",
+      color: d.color ?? "#3B82F6",
+      invite_code: d.inviteCode ? d.inviteCode.toUpperCase() : undefined,
       created_by: auth.user?.id,
     };
 

@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { badRequestResponse, requireUser, serverErrorResponse } from "@/lib/api/auth";
 import { initializePaystackTransaction } from "@/lib/paystack";
+
+const initPaymentSchema = z.object({
+  groupId: z.string().min(1, "groupId is required"),
+  cycleNumber: z.number({ error: "cycleNumber must be a number" }).int().positive("cycleNumber must be a positive integer"),
+  amount: z.number().positive().optional(),
+});
 
 function generateReference() {
   const randomPart = Math.random().toString(36).slice(2, 10).toUpperCase();
@@ -12,13 +19,21 @@ export async function POST(request: Request) {
     const auth = await requireUser();
     if (auth.error || !auth.user) return auth.error;
 
-    const body = await request.json();
-    const groupId = String(body.groupId ?? "").trim();
-    const cycleNumber = Number(body.cycleNumber);
-
-    if (!groupId || !cycleNumber) {
-      return badRequestResponse("groupId and cycleNumber are required.");
+    let rawBody: unknown;
+    try {
+      rawBody = await request.json();
+    } catch {
+      return badRequestResponse("Invalid JSON body.");
     }
+
+    const parsed = initPaymentSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? "Validation failed.";
+      return badRequestResponse(message);
+    }
+
+    const groupId = parsed.data.groupId.trim();
+    const cycleNumber = parsed.data.cycleNumber;
 
     const { data: member, error: memberError } = await auth.supabase
       .from("group_members")
@@ -42,7 +57,7 @@ export async function POST(request: Request) {
     }
 
     const expectedAmount = Number(group.contribution_amount);
-    const requestedAmount = Number(body.amount ?? expectedAmount);
+    const requestedAmount = Number(parsed.data.amount ?? expectedAmount);
     if (!requestedAmount || requestedAmount !== expectedAmount) {
       return badRequestResponse("Amount must match the group's fixed contribution amount.");
     }
