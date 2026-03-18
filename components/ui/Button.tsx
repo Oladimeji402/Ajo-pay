@@ -19,7 +19,7 @@ export const Button = ({
     className = '',
     ...props
 }: ButtonProps) => {
-    const baseStyles = 'inline-flex items-center justify-center font-semibold transition-all duration-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:bg-brand-disabled disabled:text-brand-gray disabled:cursor-not-allowed';
+    const baseStyles = 'inline-flex items-center justify-center font-semibold transition-all duration-200 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:bg-brand-disabled disabled:text-brand-gray disabled:cursor-not-allowed disabled:opacity-70';
 
     const variants = {
         primary: 'bg-brand-primary text-white hover:bg-brand-primary-hover focus:ring-brand-primary',

@@ -6,6 +6,7 @@ import { Button } from '../ui/Button';
 import { Menu, X, ChevronRight, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'motion/react';
+import { BrandLogo } from '../ui/BrandLogo';
 
 export const Navbar = () => {
     const [isScrolled, setIsScrolled] = useState(false);
@@ -27,30 +28,26 @@ export const Navbar = () => {
     return (
         <nav
             className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled
-                    ? 'bg-white/80 backdrop-blur-2xl border-b border-slate-100/80 py-3 shadow-sm shadow-slate-900/5'
-                    : 'bg-transparent py-5'
+                ? 'bg-white/80 backdrop-blur-2xl border-b border-slate-100/80 py-3 shadow-sm shadow-slate-900/5'
+                : 'bg-transparent py-5'
                 }`}
         >
             <Container className="flex items-center justify-between">
 
                 {/* Logo */}
-                <Link href="/" className="flex items-center gap-2.5 group">
-                    <div className="w-9 h-9 bg-gradient-to-br from-brand-emerald to-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-brand-emerald/25 group-hover:shadow-brand-emerald/40 transition-shadow">
-                        <span className="text-white font-bold text-lg leading-none">A</span>
-                    </div>
-                    <span className={`text-xl font-bold tracking-tight transition-colors ${isScrolled ? 'text-brand-navy' : 'text-brand-navy'}`}>
-                        Ajopay
-                    </span>
-                </Link>
+                <BrandLogo size="md" dark={isScrolled} />
 
                 {/* Center Nav */}
                 <div className="hidden md:flex items-center">
-                    <div className={`flex items-center gap-1 px-2 py-1.5 rounded-full transition-all ${isScrolled ? 'bg-slate-50' : 'bg-white/60 backdrop-blur-sm'}`}>
+                    <div className={`flex items-center gap-1 px-2 py-1.5 rounded-full transition-all ${isScrolled ? 'bg-slate-50' : 'bg-white/[0.07] backdrop-blur-sm'}`}>
                         {navLinks.map((link) => (
                             <a
                                 key={link.name}
                                 href={link.href}
-                                className="text-[13px] font-semibold text-brand-navy/70 hover:text-brand-navy hover:bg-white px-4 py-2 rounded-full transition-all"
+                                className={`text-[13px] font-semibold px-4 py-2 rounded-full transition-all ${isScrolled
+                                    ? 'text-brand-navy/70 hover:text-brand-navy hover:bg-white'
+                                    : 'text-white/70 hover:text-white hover:bg-white/[0.10]'
+                                    }`}
                             >
                                 {link.name}
                             </a>
@@ -61,7 +58,8 @@ export const Navbar = () => {
                 {/* Right — Auth + Mobile Toggle */}
                 <div className="flex items-center gap-3">
                     <Link href="/login" className="hidden md:block">
-                        <span className="text-[13px] font-bold text-brand-navy hover:text-brand-primary transition-colors px-4 py-2">
+                        <span className={`text-[13px] font-bold transition-colors px-4 py-2 ${isScrolled ? 'text-brand-navy hover:text-brand-primary' : 'text-white/80 hover:text-white'
+                            }`}>
                             Log in
                         </span>
                     </Link>
@@ -73,7 +71,7 @@ export const Navbar = () => {
                     </Link>
 
                     <button
-                        className="md:hidden p-2 text-brand-navy relative z-[60]"
+                        className={`md:hidden p-2 relative z-[60] transition-colors ${isScrolled ? 'text-brand-navy' : 'text-white'}`}
                         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                     >
                         {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -102,12 +100,9 @@ export const Navbar = () => {
                         >
                             {/* Mobile Header */}
                             <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
-                                <Link href="/" className="flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
-                                    <div className="w-8 h-8 bg-gradient-to-br from-brand-emerald to-emerald-500 rounded-lg flex items-center justify-center">
-                                        <span className="text-white font-bold text-base">A</span>
-                                    </div>
-                                    <span className="text-lg font-bold text-brand-navy">Ajopay</span>
-                                </Link>
+                                <div onClick={() => setIsMobileMenuOpen(false)}>
+                                    <BrandLogo size="sm" dark />
+                                </div>
                             </div>
 
                             {/* Links */}

@@ -9,6 +9,7 @@ import { AdminPieChart } from '@/components/admin/charts/PieChart';
 import { useRealtimeSubscription } from '@/lib/hooks/useRealtimeSubscription';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
+import { formatScheduleDate, getCurrentCycleDueDate, getDueWindow, getTodayDateInputValue } from '@/lib/ajo-schedule';
 
 const GROUPS_REALTIME_TABLES = ['groups', 'group_members'];
 
@@ -21,9 +22,11 @@ type GroupRow = {
   max_members: number;
   current_cycle: number;
   total_cycles: number;
+  start_date: string | null;
   status: string;
   invite_code: string;
   group_members?: Array<{ count: number }>;
+  contributions?: Array<{ user_id: string; cycle_number: number; status: string }>;
 };
 
 function asMemberCount(group: GroupRow) {
@@ -60,6 +63,7 @@ export default function AdminGroupsPage() {
     frequency: 'monthly',
     maxMembers: '10',
     totalCycles: '10',
+    startDate: getTodayDateInputValue(),
     status: 'pending',
   });
 
@@ -102,6 +106,7 @@ export default function AdminGroupsPage() {
           frequency: form.frequency,
           maxMembers: Number(form.maxMembers),
           totalCycles: Number(form.totalCycles),
+          startDate: form.startDate,
           status: form.status,
         }),
       });
@@ -110,7 +115,7 @@ export default function AdminGroupsPage() {
       if (!res.ok) throw new Error(json.error || 'Failed to create group.');
 
       notifySuccess(showToast, 'Group created successfully.');
-      setForm((prev) => ({ ...prev, name: '' }));
+      setForm((prev) => ({ ...prev, name: '', startDate: getTodayDateInputValue() }));
       await loadGroups();
     } catch (err) {
       notifyError(showToast, err, 'Could not create group.');
@@ -215,6 +220,7 @@ export default function AdminGroupsPage() {
         </select>
         <input value={form.maxMembers} onChange={(e) => setForm((s) => ({ ...s, maxMembers: e.target.value }))} type="number" min={2} className="rounded-xl border border-slate-200 px-3 py-2 text-sm" />
         <input value={form.totalCycles} onChange={(e) => setForm((s) => ({ ...s, totalCycles: e.target.value }))} type="number" min={1} className="rounded-xl border border-slate-200 px-3 py-2 text-sm" />
+        <input value={form.startDate} onChange={(e) => setForm((s) => ({ ...s, startDate: e.target.value }))} type="date" className="rounded-xl border border-slate-200 px-3 py-2 text-sm" required />
         <select value={form.status} onChange={(e) => setForm((s) => ({ ...s, status: e.target.value }))} className="rounded-xl border border-slate-200 px-3 py-2 text-sm">
           <option value="pending">pending</option><option value="active">active</option><option value="paused">paused</option><option value="completed">completed</option>
         </select>
@@ -230,6 +236,22 @@ export default function AdminGroupsPage() {
             const cycleProgress = group.total_cycles > 0 ? Math.min(100, (group.current_cycle / group.total_cycles) * 100) : 0;
             const fillProgress = group.max_members > 0 ? Math.min(100, (memberCount / group.max_members) * 100) : 0;
             const isSyncing = syncingGroupId === group.id;
+            const dueDate = getCurrentCycleDueDate(group);
+            const dueWindow = getDueWindow(dueDate);
+            const successfulContributions = (group.contributions ?? []).filter(
+              (contribution) => contribution.cycle_number === group.current_cycle && contribution.status === 'success',
+            ).length;
+            const pendingContributions = Math.max(memberCount - successfulContributions, 0);
+            const overdueCount = dueWindow.phase === 'overdue' ? pendingContributions : 0;
+            const payoutReadiness = memberCount === 0
+              ? 'Waiting for members'
+              : dueWindow.phase === 'scheduled'
+                ? `Collection opens in ${dueWindow.daysUntilDue} day${dueWindow.daysUntilDue === 1 ? '' : 's'}`
+                : pendingContributions === 0
+                  ? 'Ready for payout'
+                  : dueWindow.phase === 'overdue'
+                    ? `${overdueCount} overdue payment${overdueCount === 1 ? '' : 's'}`
+                    : `Awaiting ${pendingContributions} payment${pendingContributions === 1 ? '' : 's'}`;
 
             return (
               <div key={group.id} className="rounded-xl border border-slate-100 p-4 hover:bg-slate-50">
@@ -250,6 +272,7 @@ export default function AdminGroupsPage() {
                     <div>
                       <p className="font-bold text-brand-navy">{group.name}</p>
                       <p className="text-xs text-slate-500">{group.category} . {group.frequency} . code {group.invite_code}</p>
+                      <p className="mt-1 text-xs text-slate-500">Current collection date: {formatScheduleDate(dueDate)}</p>
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-brand-navy">NGN {Number(group.contribution_amount).toLocaleString('en-NG')}</p>
@@ -266,6 +289,22 @@ export default function AdminGroupsPage() {
                       <div className="mb-1 flex items-center justify-between text-xs text-slate-600"><span>Member Fill Rate</span><span>{memberCount}/{group.max_members}</span></div>
                       <div className="h-2 rounded-full bg-slate-100"><div className="h-2 rounded-full bg-emerald-500" style={{ width: `${fillProgress}%` }} /></div>
                     </div>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px]">
+                    <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 font-semibold text-slate-600">Paid {successfulContributions}/{memberCount || 0}</span>
+                    <span className={`rounded-full border px-2.5 py-1 font-semibold ${dueWindow.phase === 'overdue' ? 'border-rose-200 bg-rose-50 text-rose-700' : dueWindow.phase === 'due' ? 'border-amber-200 bg-amber-50 text-amber-700' : dueWindow.phase === 'scheduled' ? 'border-sky-200 bg-sky-50 text-sky-700' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
+                      {dueWindow.phase === 'overdue'
+                        ? `Overdue by ${dueWindow.daysOverdue} day${dueWindow.daysOverdue === 1 ? '' : 's'}`
+                        : dueWindow.phase === 'due'
+                          ? 'Due today'
+                          : dueWindow.phase === 'scheduled'
+                            ? `Due in ${dueWindow.daysUntilDue} day${dueWindow.daysUntilDue === 1 ? '' : 's'}`
+                            : 'Schedule needed'}
+                    </span>
+                    <span className={`rounded-full border px-2.5 py-1 font-semibold ${pendingContributions === 0 && memberCount > 0 && dueWindow.phase !== 'scheduled' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-600'}`}>
+                      {payoutReadiness}
+                    </span>
                   </div>
                 </Link>
               </div>

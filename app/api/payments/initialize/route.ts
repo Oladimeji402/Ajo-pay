@@ -65,6 +65,26 @@ export async function POST(request: Request) {
 
     const reference = generateReference();
 
+    const appUrl = process.env.APP_URL;
+    if (!appUrl && process.env.NODE_ENV === "production") {
+      throw new Error("APP_URL environment variable is required in production.");
+    }
+
+    const callbackUrlBase = appUrl ?? "http://localhost:3000";
+    const callbackUrl = `${callbackUrlBase}/dashboard`;
+
+    const paystackData = await initializePaystackTransaction({
+      email: auth.user.email ?? "no-reply@ajopay.local",
+      amountKobo: requestedAmount * 100,
+      reference,
+      callbackUrl,
+      metadata: {
+        userId: auth.user.id,
+        groupId,
+        cycleNumber,
+      },
+    });
+
     let contributionId = existingContribution?.id ?? null;
 
     if (contributionId) {
@@ -146,6 +166,6 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    return serverErrorResponse(error instanceof Error ? error.message : undefined);
+    return serverErrorResponse(error);
   }
 }

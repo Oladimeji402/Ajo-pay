@@ -2,139 +2,128 @@
 
 import { ReactNode } from 'react';
 import { motion } from 'motion/react';
-import Link from 'next/link';
-import { Shield, Users, TrendingUp, Sparkles } from 'lucide-react';
+import { Public_Sans, Space_Grotesk } from 'next/font/google';
+import { BrandLogo } from '../ui/BrandLogo';
 
 interface AuthLayoutProps {
     children: ReactNode;
-    title?: string;
-    subtitle?: string;
 }
 
-export const AuthLayout = ({ children, title = "AjoPay", subtitle = "Secure community savings" }: AuthLayoutProps) => {
+const headingFont = Space_Grotesk({
+    subsets: ['latin'],
+    variable: '--font-auth-heading',
+    weight: ['500', '600', '700'],
+});
+
+const bodyFont = Public_Sans({
+    subsets: ['latin'],
+    variable: '--font-auth-body',
+    weight: ['400', '500', '600', '700'],
+});
+
+export const AuthLayout = ({ children }: AuthLayoutProps) => {
     return (
-        <div className="min-h-screen flex">
+        <div className={`${headingFont.variable} ${bodyFont.variable} min-h-screen bg-[#F0F4F8]`} style={{ fontFamily: 'var(--font-auth-body)' }}>
+            <a href="#auth-main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-white focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-brand-navy">
+                Skip to authentication form
+            </a>
 
-            {/* ─── Left Panel: Brand & Trust (Desktop Only) ─── */}
-            <div className="hidden lg:flex lg:w-[480px] xl:w-[540px] relative overflow-hidden">
-                {/* Gradient Background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-brand-navy via-[#1e3a7d] to-brand-primary"></div>
+            <div className="flex min-h-screen">
+                {/* Left brand panel */}
+                <aside className="relative hidden w-[42%] min-w-95 overflow-hidden lg:flex lg:flex-col" aria-hidden="true">
+                    {/* Deep navy base */}
+                    <div className="absolute inset-0 bg-[#0B1F3A]" />
+                    {/* Subtle warm accent — bottom right only */}
+                    <div className="absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-[#C5843A]/20 blur-3xl" />
+                    {/* Faint circle motif — abstract ajo ring */}
+                    <svg className="absolute inset-0 h-full w-full opacity-[0.07]" viewBox="0 0 480 640" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="240" cy="320" r="210" stroke="white" strokeWidth="1.5" />
+                        <circle cx="240" cy="320" r="155" stroke="white" strokeWidth="1" />
+                        <circle cx="240" cy="320" r="100" stroke="white" strokeWidth="0.75" />
+                        <circle cx="240" cy="110" r="6" fill="white" />
+                        <circle cx="408" cy="215" r="5" fill="white" />
+                        <circle cx="408" cy="425" r="5" fill="white" />
+                        <circle cx="240" cy="530" r="6" fill="white" />
+                        <circle cx="72" cy="425" r="5" fill="white" />
+                        <circle cx="72" cy="215" r="5" fill="white" />
+                        <line x1="240" y1="110" x2="408" y2="215" stroke="white" strokeWidth="0.5" />
+                        <line x1="408" y1="215" x2="408" y2="425" stroke="white" strokeWidth="0.5" />
+                        <line x1="408" y1="425" x2="240" y2="530" stroke="white" strokeWidth="0.5" />
+                        <line x1="240" y1="530" x2="72" y2="425" stroke="white" strokeWidth="0.5" />
+                        <line x1="72" y1="425" x2="72" y2="215" stroke="white" strokeWidth="0.5" />
+                        <line x1="72" y1="215" x2="240" y2="110" stroke="white" strokeWidth="0.5" />
+                    </svg>
 
-                {/* Geometric Patterns */}
-                <div className="absolute inset-0 opacity-[0.06]">
-                    <div className="absolute top-20 -left-16 w-72 h-72 rounded-full border-[40px] border-white"></div>
-                    <div className="absolute bottom-32 right-0 w-56 h-56 rounded-full border-[30px] border-white -mr-20"></div>
-                    <div className="absolute top-1/2 left-1/3 w-24 h-24 rounded-full border-[10px] border-white"></div>
-                    <div className="absolute bottom-16 left-16 w-16 h-16 rounded-full border-[6px] border-white"></div>
-                </div>
+                    <div className="relative z-10 flex h-full flex-col px-10 py-10">
+                        {/* Logo */}
+                        <BrandLogo className="self-start" size="sm" />
 
-                {/* Dot Grid Pattern */}
-                <div className="absolute inset-0 opacity-[0.03]" style={{
-                    backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
-                    backgroundSize: '24px 24px'
-                }}></div>
-
-                {/* Content */}
-                <div className="relative z-10 flex flex-col justify-between p-10 w-full">
-                    {/* Logo */}
-                    <Link href="/" className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 bg-gradient-to-br from-brand-emerald to-emerald-400 rounded-xl flex items-center justify-center shadow-lg shadow-brand-emerald/30">
-                            <span className="text-white font-bold text-lg">A</span>
-                        </div>
-                        <span className="text-xl font-bold text-white tracking-tight">Ajopay</span>
-                    </Link>
-
-                    {/* Main Message */}
-                    <div>
+                        {/* Central statement */}
                         <motion.div
-                            initial={{ opacity: 0, y: 20 }}
+                            initial={{ opacity: 0, y: 24 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.2 }}
+                            transition={{ delay: 0.15, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                            className="mt-auto"
                         >
-                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-full mb-6">
-                                <Sparkles size={12} className="text-emerald-300" />
-                                <span className="text-[11px] font-bold text-white/80">Trusted by 10,000+ savers</span>
-                            </div>
-                            <h1 className="text-[2.25rem] font-bold text-white leading-[1.15] mb-4">
-                                Save together,<br />
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-emerald-400">grow together.</span>
+                            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#0f766e]">
+                                Ajo — the way it should be
+                            </p>
+                            <h1 className="mt-4 text-[2.6rem] font-semibold leading-[1.08] tracking-[-0.02em] text-white" style={{ fontFamily: 'var(--font-auth-heading)' }}>
+                                Your circle<br />saves together.
                             </h1>
-                            <p className="text-[14px] text-white/50 leading-relaxed max-w-sm">
-                                Ajopay digitises the trusted Ajo tradition — making your community savings safe, transparent, and always on time.
+                            <p className="mt-4 max-w-70 leading-relaxed text-white/55" style={{ fontSize: '15px' }}>
+                                The traditional Ajo savings system — now digital, verified, and always on time.
                             </p>
                         </motion.div>
 
-                        {/* Trust Indicators */}
+                        {/* Social proof strip */}
                         <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.4 }}
-                            className="mt-8 space-y-3"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.5, duration: 0.6 }}
+                            className="mt-auto pt-12"
                         >
-                            {[
-                                { icon: <Shield size={16} />, text: 'Bank-grade encryption on every transaction' },
-                                { icon: <Users size={16} />, text: 'Join or create savings circles with anyone' },
-                                { icon: <TrendingUp size={16} />, text: 'Track contributions and payouts in real time' },
-                            ].map((item, i) => (
-                                <div key={i} className="flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-white/8 rounded-lg flex items-center justify-center text-emerald-300 flex-shrink-0">
-                                        {item.icon}
-                                    </div>
-                                    <span className="text-[13px] text-white/60">{item.text}</span>
+                            <div className="border-t border-white/10 pt-6">
+                                <div className="grid grid-cols-3 gap-4">
+                                    {[
+                                        { value: '₦0', label: 'Missed payouts' },
+                                        { value: '100%', label: 'Verified accounts' },
+                                        { value: 'Live', label: 'Real-time tracking' },
+                                    ].map((stat) => (
+                                        <div key={stat.label}>
+                                            <p className="text-xl font-semibold text-white" style={{ fontFamily: 'var(--font-auth-heading)' }}>{stat.value}</p>
+                                            <p className="mt-0.5 text-xs text-white/40">{stat.label}</p>
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
+                            </div>
                         </motion.div>
                     </div>
+                </aside>
 
-                    {/* Footer */}
-                    <div className="flex items-center gap-4 text-[11px] text-white/30">
-                        <span>© 2024 Ajopay</span>
-                        <span className="w-0.5 h-0.5 bg-white/20 rounded-full"></span>
-                        <a href="#" className="hover:text-white/50 transition-colors">Privacy</a>
-                        <span className="w-0.5 h-0.5 bg-white/20 rounded-full"></span>
-                        <a href="#" className="hover:text-white/50 transition-colors">Terms</a>
-                    </div>
-                </div>
-            </div>
-
-            {/* ─── Right Panel: Form ─── */}
-            <div className="flex-1 flex flex-col min-h-screen bg-[#F8FAFC]">
-                {/* Mobile Logo */}
-                <div className="lg:hidden flex items-center justify-center pt-8 pb-4">
-                    <Link href="/" className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 bg-gradient-to-br from-brand-emerald to-emerald-400 rounded-xl flex items-center justify-center shadow-lg shadow-brand-emerald/20">
-                            <span className="text-white font-bold text-lg">A</span>
+                {/* Right form panel */}
+                <main id="auth-main" className="flex flex-1 flex-col bg-[#F0F4F8]">
+                    <div className="mx-auto flex w-full max-w-130 flex-1 flex-col justify-center px-5 py-10 sm:px-8">
+                        {/* Mobile logo */}
+                        <div className="mb-8 flex items-center justify-between lg:hidden">
+                            <BrandLogo size="sm" dark />
                         </div>
-                        <span className="text-xl font-bold text-brand-navy tracking-tight">Ajopay</span>
-                    </Link>
-                </div>
 
-                {/* Form Container */}
-                <div className="flex-1 flex flex-col justify-center px-4 sm:px-8 lg:px-16 xl:px-20 py-8">
-                    <div className="w-full max-w-[420px] mx-auto">
+                        {/* Card */}
                         <motion.div
                             initial={{ opacity: 0, y: 16 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.4 }}
+                            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                            className="rounded-2xl border border-slate-200/70 bg-white p-7 shadow-[0_2px_24px_rgba(15,23,42,0.07)] sm:p-8"
                         >
-                            {/* Title (Optional) */}
-                            {(title || subtitle) && (
-                                <div className="mb-8">
-                                    {title && <h2 className="text-2xl font-bold text-brand-navy mb-2">{title}</h2>}
-                                    {subtitle && <p className="text-[13px] text-brand-gray leading-relaxed">{subtitle}</p>}
-                                </div>
-                            )}
-
-                            {/* Form Content */}
                             {children}
                         </motion.div>
-                    </div>
-                </div>
 
-                {/* Mobile Footer */}
-                <div className="lg:hidden text-center pb-6">
-                    <p className="text-[11px] text-slate-400">© 2026 Ajopay </p>
-                </div>
+                        <p className="mt-6 text-center text-[11px] text-slate-400">
+                            &copy; 2026 AjoPay &middot; All rights reserved
+                        </p>
+                    </div>
+                </main>
             </div>
         </div>
     );
