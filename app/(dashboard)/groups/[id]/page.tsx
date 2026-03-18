@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Users, Wallet, Calendar, Loader2, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Users, Wallet, Calendar, Loader2, CheckCircle2, LogOut } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { openPaystackInline } from '@/lib/paystack-inline';
 import { useToast } from '@/components/ui/Toast';
@@ -46,10 +46,12 @@ type ContributionRow = {
 
 export default function GroupDetailsPage() {
     const params = useParams<{ id: string }>();
+    const router = useRouter();
     const groupId = params.id;
 
     const [loading, setLoading] = useState(true);
     const [paying, setPaying] = useState(false);
+    const [leaving, setLeaving] = useState(false);
     const [error, setError] = useState('');
 
     const [group, setGroup] = useState<GroupDetail | null>(null);
@@ -183,6 +185,32 @@ export default function GroupDetailsPage() {
         }
     };
 
+    const handleLeaveGroup = async () => {
+        if (!groupId) return;
+
+        setLeaving(true);
+        setError('');
+
+        try {
+            const response = await fetch(`/api/groups/${groupId}/leave`, {
+                method: 'POST',
+            });
+
+            const payload = await response.json();
+            if (!response.ok) {
+                throw new Error(payload.error || 'Failed to leave group.');
+            }
+
+            notifySuccess(showToast, 'You left the group successfully.');
+            router.push('/groups');
+            router.refresh();
+        } catch (err) {
+            notifyError(showToast, err, 'Unable to leave this group.');
+        } finally {
+            setLeaving(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-80 grid place-items-center text-brand-gray">
@@ -238,13 +266,23 @@ export default function GroupDetailsPage() {
                         <h2 className="font-bold text-brand-navy">Your Contribution</h2>
                         <p className="text-xs text-brand-gray">Real-time payment via Paystack inline checkout</p>
                     </div>
-                    <button
-                        onClick={handleContribution}
-                        disabled={paying}
-                        className="px-4 py-2 rounded-xl bg-brand-emerald text-white text-sm font-bold disabled:opacity-60"
-                    >
-                        {paying ? 'Processing...' : 'Make Contribution'}
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <button
+                            onClick={handleLeaveGroup}
+                            disabled={leaving}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 text-sm font-bold hover:bg-rose-100 disabled:opacity-60"
+                        >
+                            <LogOut size={14} />
+                            {leaving ? 'Leaving...' : 'Leave Group'}
+                        </button>
+                        <button
+                            onClick={handleContribution}
+                            disabled={paying}
+                            className="px-4 py-2 rounded-xl bg-brand-emerald text-white text-sm font-bold disabled:opacity-60"
+                        >
+                            {paying ? 'Processing...' : 'Make Contribution'}
+                        </button>
+                    </div>
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-3 text-sm">
