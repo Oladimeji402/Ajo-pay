@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Activity, ArrowDownLeft, ArrowUpRight, Filter, Loader2, Search, Waves } from 'lucide-react';
+import { Activity, ArrowDownLeft, ArrowUpRight, ChevronLeft, ChevronRight, Filter, Search, Waves } from 'lucide-react';
+
+const PAGE_SIZE = 20;
 
 type TransactionRow = {
     id: string;
@@ -22,6 +24,13 @@ export default function ActivityPage() {
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState<'all' | 'contribution' | 'payout'>('all');
     const [transactions, setTransactions] = useState<TransactionRow[]>([]);
+    const [page, setPage] = useState(1);
+    const [total, setTotal] = useState(0);
+
+    // Reset to page 1 when filter or search changes
+    useEffect(() => {
+        setPage(1);
+    }, [filter, search]);
 
     useEffect(() => {
         const run = async () => {
@@ -29,7 +38,8 @@ export default function ActivityPage() {
             setError('');
 
             try {
-                const res = await fetch('/api/transactions?page=1&pageSize=100', { cache: 'no-store' });
+                const typeParam = filter !== 'all' ? `&type=${filter}` : '';
+                const res = await fetch(`/api/transactions?page=${page}&pageSize=${PAGE_SIZE}${typeParam}`, { cache: 'no-store' });
                 const json = await res.json();
 
                 if (!res.ok) {
@@ -37,6 +47,7 @@ export default function ActivityPage() {
                 }
 
                 setTransactions(Array.isArray(json.data) ? json.data : []);
+                setTotal(json.pagination?.total ?? 0);
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Unable to load activity.');
             } finally {
@@ -45,19 +56,18 @@ export default function ActivityPage() {
         };
 
         void run();
-    }, []);
+    }, [page, filter]);
+
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
     const filtered = useMemo(() => {
         const query = search.toLowerCase().trim();
+        if (!query) return transactions;
         return transactions.filter((tx) => {
-            const typeMatch = filter === 'all' || tx.type === filter;
-            const searchMatch =
-                !query
-                || tx.reference.toLowerCase().includes(query)
+            return tx.reference.toLowerCase().includes(query)
                 || (tx.groups?.name ?? '').toLowerCase().includes(query);
-            return typeMatch && searchMatch;
         });
-    }, [transactions, filter, search]);
+    }, [transactions, search]);
 
     return (
         <div className="max-w-5xl mx-auto space-y-6">
@@ -71,8 +81,8 @@ export default function ActivityPage() {
                         <p className="text-sm text-white/80 mt-2">Review contribution and payout movement in one continuous feed.</p>
                     </div>
                     <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3">
-                        <p className="text-[11px] uppercase tracking-[0.18em] text-white/70 mb-1">Visible Records</p>
-                        <p className="font-semibold text-lg">{filtered.length}</p>
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-white/70 mb-1">Total Records</p>
+                        <p className="font-semibold text-lg">{total}</p>
                     </div>
                 </div>
             </section>
@@ -106,11 +116,10 @@ export default function ActivityPage() {
                 </div>
 
                 {loading ? (
-                    <div className="min-h-80 grid place-items-center text-brand-gray">
-                        <div className="flex items-center gap-2 text-sm font-semibold">
-                            <Loader2 className="animate-spin" size={16} />
-                            Loading activity...
-                        </div>
+                    <div className="space-y-2 animate-pulse">
+                        {[0, 1, 2, 3, 4].map((i) => (
+                            <div key={i} className="rounded-2xl border border-slate-100 bg-slate-100 h-[4.5rem]" />
+                        ))}
                     </div>
                 ) : error ? (
                     <div className="rounded-xl border border-red-100 bg-red-50 text-red-600 p-3 text-sm font-semibold">{error}</div>
@@ -142,6 +151,30 @@ export default function ActivityPage() {
                                 </div>
                             );
                         })}
+                    </div>
+                )}
+
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                        <p className="text-xs text-brand-gray">
+                            Page {page} of {totalPages} &middot; {total} records
+                        </p>
+                        <div className="flex items-center gap-1">
+                            <button
+                                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                disabled={page === 1 || loading}
+                                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-brand-navy hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                <ChevronLeft size={13} /> Prev
+                            </button>
+                            <button
+                                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                disabled={page === totalPages || loading}
+                                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-brand-navy hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                Next <ChevronRight size={13} />
+                            </button>
+                        </div>
                     </div>
                 )}
             </section>

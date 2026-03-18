@@ -364,7 +364,11 @@ export default function AdminPayoutsPage() {
               <div className="rounded-lg bg-slate-50 px-2 py-1.5 text-xs">
                 <p className="font-semibold text-slate-700">Account Number</p>
                 <div className="mt-0.5 flex items-center justify-between gap-2">
-                  <span className="font-mono tracking-wide text-slate-600">{payoutBankAccount || 'Not set'}</span>
+                  <span className="font-mono tracking-wide text-slate-600">
+                    {payoutBankAccount
+                      ? `••••••${payoutBankAccount.slice(-4)}`
+                      : 'Not set'}
+                  </span>
                   {payoutBankAccount ? (
                     <button
                       type="button"

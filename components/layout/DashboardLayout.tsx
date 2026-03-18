@@ -140,7 +140,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                         <p className="mt-4 text-[10px] uppercase tracking-[0.2em] text-slate-300 font-semibold">Member Workspace</p>
                     </div>
 
-                    <nav className="relative grow px-4">
+                    <nav className="relative flex-1 overflow-y-auto px-4">
                         <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] mb-2">Navigate</p>
                         <div className="space-y-1.5">
                             {navItems.map((item) => {
@@ -182,7 +182,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                         </div>
                     </nav>
 
-                    <div className="relative p-4 pt-5">
+                    <div className="relative p-4 pt-5 mt-auto">
                         <div className="rounded-2xl border border-white/10 bg-white/8 p-3.5">
                             <div className="flex items-center gap-3 mb-3">
                                 <div className="h-10 w-10 rounded-full bg-linear-to-br from-brand-emerald to-emerald-400 text-white font-bold text-sm grid place-items-center">
@@ -236,10 +236,13 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                                 <Bell size={16} />
                                 {unreadNotifications > 0 && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-brand-emerald" />}
                             </Link>
-                            <Link href="/groups" className="inline-flex items-center gap-1.5 rounded-lg bg-brand-emerald px-2.5 py-2 text-xs font-semibold text-white">
-                                <Plus size={14} />
-                                Join
-                            </Link>
+                            <button
+                                onClick={handleSignOut}
+                                className="inline-flex items-center justify-center h-9 w-9 rounded-lg border border-slate-200 bg-white text-brand-gray hover:text-red-600 hover:border-red-200 transition-colors"
+                                title="Sign Out"
+                            >
+                                <LogOut size={16} />
+                            </button>
                         </div>
                     </div>
                 </header>

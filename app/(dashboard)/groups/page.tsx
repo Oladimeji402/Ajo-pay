@@ -19,7 +19,12 @@ type GroupRow = {
     start_date: string | null;
     status: string;
     color: string;
+    member_count?: number;
 };
+
+function getMemberCount(group: GroupRow): number {
+    return group.member_count ?? 0;
+}
 
 type ContributionRow = {
     id: string;
@@ -141,10 +146,24 @@ export default function GroupsPage() {
 
     if (loading) {
         return (
-            <div className="min-h-80 grid place-items-center text-brand-gray">
-                <div className="flex items-center gap-2 text-sm font-semibold">
-                    <Loader2 className="animate-spin" size={16} />
-                    Loading your groups...
+            <div className="max-w-6xl mx-auto space-y-6 animate-pulse">
+                <div className="rounded-3xl bg-slate-200 h-32" />
+                <div className="rounded-3xl border border-slate-100 bg-white overflow-hidden">
+                    <div className="border-b border-slate-100 px-5 py-4">
+                        <div className="h-5 w-40 rounded bg-slate-200" />
+                        <div className="h-3 w-56 rounded bg-slate-100 mt-2" />
+                    </div>
+                    <div className="p-4 grid md:grid-cols-2 gap-4">
+                        {[0, 1].map((i) => (
+                            <div key={i} className="rounded-2xl border border-slate-100 bg-slate-50 h-40" />
+                        ))}
+                    </div>
+                </div>
+                <div className="rounded-3xl border border-slate-100 bg-white p-4 md:p-5 space-y-3">
+                    <div className="h-5 w-40 rounded bg-slate-200" />
+                    {[0, 1, 2].map((i) => (
+                        <div key={i} className="rounded-xl border border-slate-100 bg-slate-50 h-16" />
+                    ))}
                 </div>
             </div>
         );
@@ -190,6 +209,8 @@ export default function GroupsPage() {
                         {joinedGroups.map((group) => {
                             const contributed = contributionByGroup.get(group.id) ?? 0;
                             const currentDueDate = getCurrentCycleDueDate(group);
+                            const memberCount = getMemberCount(group);
+                            const capacityPct = group.max_members > 0 ? Math.min(100, Math.round((memberCount / group.max_members) * 100)) : 0;
                             return (
                                 <Link
                                     key={group.id}
@@ -209,10 +230,20 @@ export default function GroupsPage() {
                                                 <p className="text-[11px] text-brand-gray capitalize">{group.status}</p>
                                             </div>
                                         </div>
-                                        <ChevronRight size={16} className="text-slate-400" />
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            <span className="text-[11px] font-semibold text-brand-gray">{memberCount}/{group.max_members}</span>
+                                            <ChevronRight size={16} className="text-slate-400" />
+                                        </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-3 mt-4 text-xs">
+                                    <div className="mt-3 space-y-1">
+                                        <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                                            <div className="h-full rounded-full bg-linear-to-r from-brand-primary to-brand-emerald transition-all" style={{ width: `${capacityPct}%` }} />
+                                        </div>
+                                        <p className="text-[10px] text-brand-gray">{memberCount} of {group.max_members} members</p>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3 mt-3 text-xs">
                                         <div className="rounded-xl border border-slate-200 bg-white p-2.5">
                                             <p className="text-brand-gray mb-1 inline-flex items-center gap-1"><Wallet size={12} /> Per Cycle</p>
                                             <p className="font-semibold text-brand-navy">NGN {Number(group.contribution_amount).toLocaleString('en-NG')}</p>
@@ -256,24 +287,33 @@ export default function GroupsPage() {
                     <p className="text-sm text-brand-gray">No available groups match your search.</p>
                 ) : (
                     <div className="space-y-2">
-                        {filteredDiscoverGroups.map((group) => (
-                            <div key={group.id} className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-linear-to-r from-slate-50 to-white p-3 sm:flex-row sm:items-center sm:justify-between">
-                                <div>
-                                    <p className="text-sm font-semibold text-brand-navy">{group.name}</p>
-                                    <p className="text-[11px] text-brand-gray">
-                                        Code: <span className="font-mono font-semibold text-brand-navy">{group.invite_code}</span> · NGN {Number(group.contribution_amount).toLocaleString('en-NG')} · {group.frequency}
-                                    </p>
-                                    <p className="text-[11px] text-brand-gray mt-1">Current collection date: {formatScheduleDate(getCurrentCycleDueDate(group))}</p>
+                        {filteredDiscoverGroups.map((group) => {
+                            const memberCount = getMemberCount(group);
+                            const spotsLeft = Math.max(group.max_members - memberCount, 0);
+                            return (
+                                <div key={group.id} className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-linear-to-r from-slate-50 to-white p-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <p className="text-sm font-semibold text-brand-navy">{group.name}</p>
+                                            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${spotsLeft === 0 ? 'border-red-100 bg-red-50 text-red-600' : spotsLeft <= 2 ? 'border-amber-100 bg-amber-50 text-amber-700' : 'border-slate-200 bg-white text-slate-600'}`}>
+                                                <Users size={10} /> {memberCount}/{group.max_members}
+                                            </span>
+                                        </div>
+                                        <p className="text-[11px] text-brand-gray mt-0.5">
+                                            Code: <span className="font-mono font-semibold text-brand-navy">{group.invite_code}</span> · NGN {Number(group.contribution_amount).toLocaleString('en-NG')} · {group.frequency}
+                                        </p>
+                                        <p className="text-[11px] text-brand-gray mt-0.5">Current collection date: {formatScheduleDate(getCurrentCycleDueDate(group))}</p>
+                                    </div>
+                                    <button
+                                        onClick={() => void handleJoinGroup(group.id)}
+                                        disabled={joining === group.id || spotsLeft === 0}
+                                        className="inline-flex items-center justify-center rounded-xl bg-brand-emerald px-3 py-2 text-xs font-bold text-white hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        {joining === group.id ? 'Joining...' : spotsLeft === 0 ? 'Group full' : 'Join Group'}
+                                    </button>
                                 </div>
-                                <button
-                                    onClick={() => void handleJoinGroup(group.id)}
-                                    disabled={joining === group.id}
-                                    className="inline-flex items-center justify-center rounded-xl bg-brand-emerald px-3 py-2 text-xs font-bold text-white hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                    {joining === group.id ? 'Joining...' : 'Join Group'}
-                                </button>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </section>

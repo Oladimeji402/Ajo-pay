@@ -217,6 +217,19 @@ export default function OnboardingPage() {
         return <div className="min-h-screen grid place-items-center"><Loader2 className="animate-spin text-slate-400" size={20} /></div>;
     }
 
+    const onboardingStep = (() => {
+        if (selectedGroup) return 3;
+        if (bankAccount.trim().length === 10 && !!bankCode && !!resolvedAccountName) return 2;
+        if (displayName.trim().length > 1) return 1;
+        return 0;
+    })();
+
+    const steps = [
+        { label: 'Your name', note: 'How your circle will see you.' },
+        { label: 'Bank account', note: 'Where your payout lands.' },
+        { label: 'Join a group', note: 'Pick your savings circle.' },
+    ];
+
     return (
         <main className="min-h-screen bg-[#F0F4F8]">
             <div className="mx-auto grid max-w-6xl min-h-screen items-start gap-0 lg:grid-cols-[2fr_3fr]">
@@ -289,6 +302,42 @@ export default function OnboardingPage() {
                     <div className="mb-8 flex items-center gap-2 lg:hidden">
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0f766e] text-xs font-bold text-white">A</div>
                         <span className="text-sm font-semibold tracking-widest text-brand-navy">AJOPAY</span>
+                    </div>
+
+                    {/* Mobile step-progress banner */}
+                    <div className="mb-8 lg:hidden">
+                        <div className="flex items-center gap-2 mb-3">
+                            {steps.map((step, idx) => {
+                                const stepNum = idx + 1;
+                                const done = onboardingStep >= stepNum;
+                                const active = onboardingStep === idx;
+                                return (
+                                    <React.Fragment key={step.label}>
+                                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                                            <div className={`h-6 w-6 shrink-0 rounded-full flex items-center justify-center text-[11px] font-bold border transition-colors ${done ? 'bg-[#0f766e] border-[#0f766e] text-white' : active ? 'border-[#0f766e] text-[#0f766e] bg-white' : 'border-slate-200 text-slate-400 bg-white'}`}>
+                                                {done ? '✓' : stepNum}
+                                            </div>
+                                            <p className={`text-xs font-semibold truncate leading-tight ${done || active ? 'text-brand-navy' : 'text-slate-400'}`}>{step.label}</p>
+                                        </div>
+                                        {idx < steps.length - 1 && (
+                                            <div className={`h-px flex-1 rounded-full transition-colors ${onboardingStep > idx ? 'bg-[#0f766e]' : 'bg-slate-200'}`} />
+                                        )}
+                                    </React.Fragment>
+                                );
+                            })}
+                        </div>
+                        <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                            <div
+                                className="h-full rounded-full bg-linear-to-r from-[#0f766e] to-[#34d399] transition-all duration-500"
+                                style={{ width: `${Math.max(4, Math.round((onboardingStep / steps.length) * 100))}%` }}
+                            />
+                        </div>
+                        <p className="mt-1.5 text-[11px] text-slate-400">
+                            {onboardingStep === 0 && 'Start by entering your display name.'}
+                            {onboardingStep === 1 && 'Great! Now add your bank details.'}
+                            {onboardingStep === 2 && 'Almost there — choose your savings group.'}
+                            {onboardingStep >= 3 && 'All set! Review and complete onboarding.'}
+                        </p>
                     </div>
 
                     <div className="w-full max-w-120">
