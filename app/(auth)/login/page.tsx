@@ -38,7 +38,7 @@ function LoginContent() {
         setFormError('');
         setIsLoading(true);
 
-        const supabase = createSupabaseBrowserClient();
+        const supabase = createSupabaseBrowserClient({ persistSession: rememberMe });
         const { error: signInError } = await supabase.auth.signInWithPassword({
             email,
             password,
@@ -52,7 +52,7 @@ function LoginContent() {
             return;
         }
 
-        notifySuccess(showToast, 'Signed in successfully. Redirecting...');
+        notifySuccess(showToast, rememberMe ? 'Signed in successfully. Redirecting...' : 'Signed in for this browser session only. Redirecting...');
         const redirect = getSafeRedirect(searchParams.get('next'));
         router.push(redirect);
         router.refresh();
