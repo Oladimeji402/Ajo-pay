@@ -1,7 +1,20 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { badRequestResponse, requireAdmin, requireUser, serverErrorResponse } from "@/lib/api/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { logAdminAction } from "@/lib/admin-audit";
+
+const updateGroupSchema = z.object({
+  name: z.string().min(1).optional(),
+  category: z.string().optional().nullable(),
+  contributionAmount: z.number().positive().optional(),
+  frequency: z.enum(["daily", "weekly", "biweekly", "monthly"]).optional(),
+  maxMembers: z.number().int().min(2).optional(),
+  totalCycles: z.number().int().min(1).optional(),
+  startDate: z.string().optional().nullable(),
+  status: z.string().optional(),
+  color: z.string().optional(),
+});
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -62,20 +75,31 @@ export async function PATCH(request: Request, context: Context) {
     if (auth.error || !auth.user) return auth.error;
     const { id } = await context.params;
 
-    const body = await request.json();
-    const updates: Record<string, unknown> = {
-      updated_at: new Date().toISOString(),
-    };
+    let rawBody: unknown;
+    try {
+      rawBody = await request.json();
+    } catch {
+      return badRequestResponse("Invalid JSON body.");
+    }
 
-    if (body.name !== undefined) updates.name = String(body.name);
-    if (body.category !== undefined) updates.category = body.category ? String(body.category) : null;
-    if (body.contributionAmount !== undefined) updates.contribution_amount = Number(body.contributionAmount);
-    if (body.frequency !== undefined) updates.frequency = String(body.frequency).toLowerCase();
-    if (body.maxMembers !== undefined) updates.max_members = Number(body.maxMembers);
-    if (body.totalCycles !== undefined) updates.total_cycles = Number(body.totalCycles);
-    if (body.startDate !== undefined) updates.start_date = body.startDate ? String(body.startDate) : null;
-    if (body.status !== undefined) updates.status = String(body.status).toLowerCase();
-    if (body.color !== undefined) updates.color = String(body.color);
+    const parsed = updateGroupSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? "Validation failed.";
+      return badRequestResponse(message);
+    }
+
+    const body = parsed.data;
+    const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+
+    if (body.name !== undefined) updates.name = body.name!.trim();
+    if (body.category !== undefined) updates.category = body.category ?? null;
+    if (body.contributionAmount !== undefined) updates.contribution_amount = body.contributionAmount;
+    if (body.frequency !== undefined) updates.frequency = body.frequency!.toLowerCase();
+    if (body.maxMembers !== undefined) updates.max_members = body.maxMembers;
+    if (body.totalCycles !== undefined) updates.total_cycles = body.totalCycles;
+    if (body.startDate !== undefined) updates.start_date = body.startDate ?? null;
+    if (body.status !== undefined) updates.status = body.status!.toLowerCase();
+    if (body.color !== undefined) updates.color = body.color;
 
     const { data: beforeGroup, error: beforeGroupError } = await auth.supabase
       .from("groups")

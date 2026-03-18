@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireAdmin, serverErrorResponse } from "@/lib/api/auth";
 
+export const revalidate = 60;
+
 export async function GET() {
   try {
     const auth = await requireAdmin();

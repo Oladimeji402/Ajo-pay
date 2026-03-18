@@ -12,70 +12,37 @@ export async function POST(_request: Request, context: Context) {
     const { id: groupId } = await context.params;
     const adminSupabase = createSupabaseAdminClient();
 
-    const { data: membership, error: membershipError } = await adminSupabase
-      .from("group_members")
-      .select("id")
-      .eq("group_id", groupId)
-      .eq("user_id", auth.user.id)
-      .maybeSingle();
+    // Atomic join: a Postgres function acquires a row-level lock on the group,
+    // counts current members, checks capacity, and inserts — all in one transaction.
+    const { data: member, error: rpcError } = await adminSupabase
+      .rpc("join_group", { p_group_id: groupId, p_user_id: auth.user.id });
 
-    if (membershipError) {
-      return serverErrorResponse(membershipError);
+    if (rpcError) {
+      const msg = rpcError.message ?? "";
+      if (msg.includes("ALREADY_MEMBER")) return badRequestResponse("User is already a member of this group.");
+      if (msg.includes("GROUP_NOT_FOUND")) return NextResponse.json({ error: "Group not found" }, { status: 404 });
+      if (msg.includes("GROUP_FULL")) return badRequestResponse("Group has reached maximum member capacity.");
+      return serverErrorResponse(rpcError);
     }
 
-    if (membership) {
-      return badRequestResponse("User is already a member of this group.");
-    }
-
-    const { data: group, error: groupError } = await auth.supabase
+    const { data: group } = await auth.supabase
       .from("groups")
-      .select("id, name, category, max_members")
+      .select("name, category")
       .eq("id", groupId)
       .maybeSingle();
 
-    if (groupError || !group) {
-      return NextResponse.json({ error: "Group not found" }, { status: 404 });
-    }
-
-    const { count, error: countError } = await adminSupabase
-      .from("group_members")
-      .select("id", { count: "exact", head: true })
-      .eq("group_id", groupId);
-
-    if (countError) return badRequestResponse(countError.message);
-    if ((count ?? 0) >= group.max_members) {
-      return badRequestResponse("Group has reached maximum member capacity.");
-    }
-
-    const position = (count ?? 0) + 1;
-    const { data, error } = await adminSupabase
-      .from("group_members")
-      .insert({
-        group_id: groupId,
-        user_id: auth.user.id,
-        position,
-        contribution_status: "pending",
-        payout_status: "upcoming",
-      })
-      .select("*")
-      .single();
-
-    if (error) return badRequestResponse(error.message);
-
     void appendGroupMemberJoinToGoogleSheet({
       groupId,
-      groupName: group.name,
-      groupCategory: group.category,
+      groupName: group?.name ?? "",
+      groupCategory: group?.category ?? "",
       userId: auth.user.id,
       userName: auth.user.user_metadata?.name ?? "",
       userEmail: auth.user.email ?? "",
-      position,
+      position: (member as { position: number }).position,
       joinedAt: new Date().toISOString(),
-    }).catch(() => {
-      // Non-blocking integration.
-    });
+    }).catch(() => {});
 
-    return NextResponse.json({ data }, { status: 201 });
+    return NextResponse.json({ data: member }, { status: 201 });
   } catch {
     return serverErrorResponse();
   }

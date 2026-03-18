@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
-import { notifyError, notifySuccess, notifyWarning } from '@/lib/toast';
+import { notifyError, notifySuccess } from '@/lib/toast';
 
 type GroupRow = {
     id: string;
@@ -33,7 +33,6 @@ export default function OnboardingPage() {
     const [isVerifyingAccount, setIsVerifyingAccount] = useState(false);
     const [error, setError] = useState('');
     const [verificationError, setVerificationError] = useState('');
-    const [profileStepCompleted, setProfileStepCompleted] = useState(false);
 
     const [displayName, setDisplayName] = useState('');
     const [phone, setPhone] = useState('');
@@ -188,50 +187,26 @@ export default function OnboardingPage() {
         setSaving(true);
         setError('');
 
-        let profileSavedForThisAttempt = profileStepCompleted;
-        let joinCompleted = false;
-
         try {
-            const supabase = createSupabaseBrowserClient();
-            const {
-                data: { user },
-            } = await supabase.auth.getUser();
-
-            if (!user) {
-                notifyWarning(showToast, 'Your session has expired. Please log in again.');
-                router.push('/login');
-                return;
-            }
-
-            if (!profileStepCompleted) {
-                const { error: updateError } = await supabase
-                    .from('profiles')
-                    .update({
-                        name: displayName.trim(),
-                        phone: phone.trim() || null,
-                        bank_account: bankAccount.trim(),
-                        bank_name: banks.find((bank) => bank.code === bankCode)?.name ?? null,
-                        bank_account_name: resolvedAccountName,
-                    })
-                    .eq('id', user.id);
-
-                if (updateError) throw new Error(updateError.message);
-                profileSavedForThisAttempt = true;
-                setProfileStepCompleted(true);
-            }
-
-            const joinRes = await fetch(`/api/groups/${selectedGroup}/join`, { method: 'POST' });
-            const joinJson = await joinRes.json();
-            if (!joinRes.ok) throw new Error(joinJson.error || 'Failed to join selected group.');
-            joinCompleted = true;
+            const res = await fetch('/api/user/onboard', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: displayName.trim(),
+                    phone: phone.trim() || null,
+                    bankAccount: bankAccount.trim(),
+                    bankName: banks.find((bank) => bank.code === bankCode)?.name ?? '',
+                    bankAccountName: resolvedAccountName,
+                    groupId: selectedGroup,
+                }),
+            });
+            const json = await res.json();
+            if (!res.ok) throw new Error((json as { error?: string }).error || 'Unable to complete onboarding.');
 
             notifySuccess(showToast, 'Onboarding completed. Welcome to your dashboard.');
             setTimeout(() => router.push('/dashboard'), 800);
         } catch (err) {
-            const fallback = profileSavedForThisAttempt && !joinCompleted
-                ? 'Profile saved. Failed to join group — please try again.'
-                : 'Unable to complete onboarding.';
-            const message = notifyError(showToast, err, fallback);
+            const message = notifyError(showToast, err, 'Unable to complete onboarding.');
             setError(message);
         } finally {
             setSaving(false);
