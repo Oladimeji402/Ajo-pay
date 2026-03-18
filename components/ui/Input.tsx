@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -15,17 +15,23 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 export const Input = ({ label, error, className = '', type = 'text', ...props }: InputProps) => {
     const [showPassword, setShowPassword] = useState(false);
+    const generatedId = useId();
+    const inputId = props.id || generatedId;
+    const errorId = `${inputId}-error`;
     const isPassword = type === 'password';
     const inputType = isPassword ? (showPassword ? 'text' : 'password') : type;
 
     return (
         <div className="space-y-1 w-full">
-            <label className="block text-sm font-semibold text-brand-navy">
+            <label htmlFor={inputId} className="block text-sm font-semibold text-brand-navy">
                 {label}
             </label>
             <div className="relative">
                 <input
+                    id={inputId}
                     type={inputType}
+                    aria-invalid={error ? 'true' : 'false'}
+                    aria-describedby={error ? errorId : props['aria-describedby']}
                     className={`block w-full px-4 py-3 rounded-lg border border-brand-border text-brand-navy placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all duration-200 ${error ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500' : ''
                         } ${isPassword ? 'pr-12' : ''} ${className}`}
                     {...props}
@@ -41,7 +47,7 @@ export const Input = ({ label, error, className = '', type = 'text', ...props }:
                     </button>
                 )}
             </div>
-            {error && <p className="text-xs font-medium text-red-500 mt-1">{error}</p>}
+            {error && <p id={errorId} className="text-xs font-medium text-red-500 mt-1">{error}</p>}
         </div>
     );
 };

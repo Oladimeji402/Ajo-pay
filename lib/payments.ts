@@ -53,34 +53,34 @@ export async function markContributionPaymentSuccess(params: MarkPaymentSuccessP
     providerPayload: params.providerPayload ?? null,
   };
 
-  const { error: paymentUpdateError } = await supabase
-    .from("payment_records")
-    .update({
-      status: "success",
-      paid_at: paidAtIso,
-      metadata,
-      channel: String((params.providerPayload?.channel as string | undefined) ?? "unknown"),
-      provider_reference: String((params.providerPayload?.reference as string | undefined) ?? params.reference),
-    })
-    .eq("id", paymentRecord.id);
+  const { data: rpcStatus, error: rpcError } = await supabase.rpc("mark_contribution_payment_success", {
+    p_payment_record_id: paymentRecord.id,
+    p_contribution_id: paymentRecord.contribution_id,
+    p_paid_at: paidAtIso,
+    p_paystack_reference: params.reference,
+    p_metadata: metadata,
+    p_channel: String((params.providerPayload?.channel as string | undefined) ?? "unknown"),
+    p_provider_reference: String((params.providerPayload?.reference as string | undefined) ?? params.reference),
+  });
 
-  if (paymentUpdateError) {
-    throw new Error(paymentUpdateError.message);
+  if (rpcError) {
+    throw new Error(rpcError.message);
   }
 
-  if (paymentRecord.contribution_id) {
-    const { error: contributionError } = await supabase
-      .from("contributions")
-      .update({
-        status: "success",
-        paid_at: paidAtIso,
-        paystack_reference: params.reference,
-      })
-      .eq("id", paymentRecord.contribution_id);
+  if (rpcStatus === "not_found") {
+    return {
+      ok: false,
+      notFound: true,
+      whatsapp: { configured: isWhatsappConfigured(), deliveryMode: "fire-and-forget", queuedTo: [] },
+    };
+  }
 
-    if (contributionError) {
-      throw new Error(contributionError.message);
-    }
+  if (rpcStatus === "already_success") {
+    return {
+      ok: true,
+      idempotent: true,
+      whatsapp: { configured: isWhatsappConfigured(), deliveryMode: "fire-and-forget", queuedTo: [] },
+    };
   }
 
   const { data: profile } = await supabase

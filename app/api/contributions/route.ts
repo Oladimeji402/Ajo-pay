@@ -53,6 +53,42 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "You are not a member of this group." }, { status: 403 });
     }
 
+    const { data: group, error: groupError } = await auth.supabase
+      .from("groups")
+      .select("contribution_amount")
+      .eq("id", groupId)
+      .maybeSingle();
+
+    if (groupError) {
+      return badRequestResponse(groupError.message);
+    }
+
+    if (!group) {
+      return NextResponse.json({ error: "Group not found." }, { status: 404 });
+    }
+
+    const expectedAmount = Number(group.contribution_amount);
+    if (amount !== expectedAmount) {
+      return badRequestResponse("Amount must match the group's fixed contribution amount.");
+    }
+
+    const { data: existingPaidContribution, error: existingPaidContributionError } = await auth.supabase
+      .from("contributions")
+      .select("id")
+      .eq("user_id", auth.user.id)
+      .eq("group_id", groupId)
+      .eq("cycle_number", cycleNumber)
+      .eq("status", "success")
+      .maybeSingle();
+
+    if (existingPaidContributionError) {
+      return badRequestResponse(existingPaidContributionError.message);
+    }
+
+    if (existingPaidContribution) {
+      return NextResponse.json({ error: "Already paid for this cycle." }, { status: 409 });
+    }
+
     const { data, error } = await auth.supabase
       .from("contributions")
       .insert({

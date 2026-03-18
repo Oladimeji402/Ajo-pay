@@ -8,6 +8,7 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { openPaystackInline } from '@/lib/paystack-inline';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess, notifyWarning } from '@/lib/toast';
+import { formatScheduleDate, getCurrentCycleDueDate, getDueWindow } from '@/lib/ajo-schedule';
 
 type GroupMember = {
     id: string;
@@ -32,6 +33,7 @@ type GroupDetail = {
     current_cycle: number;
     total_cycles: number;
     status: string;
+    start_date: string | null;
     invite_code: string;
     members: GroupMember[];
 };
@@ -102,10 +104,11 @@ export default function GroupDetailsPage() {
             setContributions(Array.isArray(contributionsJson.data) ? contributionsJson.data : []);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Unable to load group details.');
+            notifyError(showToast, err, 'Failed to load group details. Please refresh.');
         } finally {
             setLoading(false);
         }
-    }, [groupId]);
+    }, [groupId, showToast]);
 
     useEffect(() => {
         void loadData();
@@ -120,6 +123,37 @@ export default function GroupDetailsPage() {
         () => contributions.filter((item) => item.status === 'success').reduce((sum, item) => sum + Number(item.amount), 0),
         [contributions],
     );
+
+    const currentCyclePaymentState = useMemo(() => {
+        if (!group) {
+            return { state: 'due' as const, dueDate: null as string | null, dueWindow: getDueWindow(null) };
+        }
+
+        const currentCycleContributions = contributions
+            .filter((item) => item.cycle_number === group.current_cycle)
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+        const dueDate = getCurrentCycleDueDate(group);
+        const dueWindow = getDueWindow(dueDate);
+
+        if (currentCycleContributions.some((item) => item.status === 'success')) {
+            return { state: 'success' as const, dueDate, dueWindow };
+        }
+
+        if (currentCycleContributions.some((item) => item.status === 'pending')) {
+            return { state: 'pending' as const, dueDate, dueWindow };
+        }
+
+        if (currentCycleContributions.some((item) => item.status === 'failed')) {
+            return { state: 'failed' as const, dueDate, dueWindow };
+        }
+
+        return {
+            state: dueWindow.phase === 'overdue' ? 'overdue' as const : dueWindow.phase === 'scheduled' ? 'scheduled' as const : 'due' as const,
+            dueDate,
+            dueWindow,
+        };
+    }, [contributions, group]);
 
     const handleContribution = async () => {
         if (!group || !groupId) return;
@@ -260,39 +294,61 @@ export default function GroupDetailsPage() {
                 <ArrowLeft size={14} /> Back to Groups
             </Link>
 
-            <div className="bg-white border border-slate-100 rounded-2xl p-5">
-                <div className="flex items-start justify-between gap-4">
+            <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-linear-to-br from-brand-navy via-[#173069] to-brand-emerald text-white p-6">
+                <div className="absolute -right-10 -top-14 h-48 w-48 rounded-full bg-white/10 blur-3xl" />
+                <div className="absolute -left-10 -bottom-14 h-40 w-40 rounded-full bg-emerald-300/20 blur-3xl" />
+
+                <div className="relative flex items-start justify-between gap-4 flex-wrap">
                     <div>
-                        <h1 className="text-xl font-bold text-brand-navy">{group.name}</h1>
-                        <p className="text-xs text-brand-gray capitalize">{group.status} · {group.frequency}</p>
+                        <p className="text-[11px] uppercase tracking-[0.2em] text-white/70 font-semibold">Group Command Deck</p>
+                        <h1 className="text-2xl font-semibold mt-1">{group.name}</h1>
+                        <p className="text-sm text-white/80 capitalize mt-1">{group.status} · {group.frequency}</p>
                     </div>
-                    <div className="text-right">
-                        <p className="text-[11px] text-brand-gray">Invite code</p>
-                        <p className="font-mono font-bold text-brand-navy text-sm">{group.invite_code}</p>
+                    <div className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-right">
+                        <p className="text-[11px] text-white/70">Invite code</p>
+                        <p className="font-mono font-semibold text-white text-sm">{group.invite_code}</p>
                     </div>
                 </div>
 
-                <div className="grid sm:grid-cols-3 gap-3 mt-4">
-                    <div className="rounded-xl bg-slate-50 p-3">
-                        <p className="text-[11px] text-brand-gray flex items-center gap-1"><Wallet size={12} /> Per cycle</p>
-                        <p className="font-bold text-brand-navy">NGN {Number(group.contribution_amount).toLocaleString('en-NG')}</p>
+                <div className="grid sm:grid-cols-3 gap-3 mt-5">
+                    <div className="rounded-xl border border-white/20 bg-white/10 p-3">
+                        <p className="text-[11px] text-white/80 inline-flex items-center gap-1"><Wallet size={12} /> Per cycle</p>
+                        <p className="font-semibold text-white">NGN {Number(group.contribution_amount).toLocaleString('en-NG')}</p>
                     </div>
-                    <div className="rounded-xl bg-slate-50 p-3">
-                        <p className="text-[11px] text-brand-gray flex items-center gap-1"><Users size={12} /> Members</p>
-                        <p className="font-bold text-brand-navy">{group.members.length} / {group.max_members}</p>
+                    <div className="rounded-xl border border-white/20 bg-white/10 p-3">
+                        <p className="text-[11px] text-white/80 inline-flex items-center gap-1"><Users size={12} /> Members</p>
+                        <p className="font-semibold text-white">{group.members.length} / {group.max_members}</p>
                     </div>
-                    <div className="rounded-xl bg-slate-50 p-3">
-                        <p className="text-[11px] text-brand-gray flex items-center gap-1"><Calendar size={12} /> Cycle</p>
-                        <p className="font-bold text-brand-navy">{group.current_cycle} / {group.total_cycles}</p>
+                    <div className="rounded-xl border border-white/20 bg-white/10 p-3">
+                        <p className="text-[11px] text-white/80 inline-flex items-center gap-1"><Calendar size={12} /> Cycle</p>
+                        <p className="font-semibold text-white">{group.current_cycle} / {group.total_cycles}</p>
                     </div>
                 </div>
-            </div>
 
-            <div className="bg-white border border-slate-100 rounded-2xl p-5 space-y-4">
+                <div className="mt-4 rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-sm text-white/90">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-white/60">Collection timing</p>
+                    <p className="mt-1 font-semibold">Current cycle date: {formatScheduleDate(currentCyclePaymentState.dueDate)}</p>
+                    <p className="mt-1 text-xs text-white/75">
+                        {currentCyclePaymentState.state === 'overdue'
+                            ? `This contribution is ${currentCyclePaymentState.dueWindow.daysOverdue} day${currentCyclePaymentState.dueWindow.daysOverdue === 1 ? '' : 's'} overdue.`
+                            : currentCyclePaymentState.state === 'scheduled'
+                                ? `Collection day is in ${currentCyclePaymentState.dueWindow.daysUntilDue} day${currentCyclePaymentState.dueWindow.daysUntilDue === 1 ? '' : 's'}. You can still pay early.`
+                                : currentCyclePaymentState.state === 'success'
+                                    ? 'You have already covered this cycle.'
+                                    : currentCyclePaymentState.state === 'pending'
+                                        ? 'Your payment is pending verification.'
+                                        : currentCyclePaymentState.state === 'failed'
+                                            ? 'Your last payment attempt failed and needs another try.'
+                                            : 'This cycle is due now.'}
+                    </p>
+                </div>
+            </section>
+
+            <section className="bg-white border border-slate-200 rounded-3xl p-5 space-y-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h2 className="font-bold text-brand-navy">Your Contribution</h2>
-                        <p className="text-xs text-brand-gray">Real-time payment via Paystack inline checkout</p>
+                        <h2 className="font-semibold text-brand-navy inline-flex items-center gap-2"><Sparkles size={15} /> Cycle Contribution</h2>
+                        <p className="text-xs text-brand-gray">Real-time payment via Paystack inline checkout.</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                         <button
@@ -314,25 +370,33 @@ export default function GroupDetailsPage() {
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-3 text-sm">
-                    <div className="rounded-xl bg-slate-50 p-3">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                         <p className="text-xs text-brand-gray">My Position</p>
-                        <p className="font-bold text-brand-navy">{userMember?.position ? `#${userMember.position}` : 'Not assigned'}</p>
+                        <p className="font-semibold text-brand-navy">{userMember?.position ? `#${userMember.position}` : 'Not assigned'}</p>
                     </div>
-                    <div className="rounded-xl bg-slate-50 p-3">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                         <p className="text-xs text-brand-gray">Total Contributed (This Group)</p>
-                        <p className="font-bold text-brand-navy">NGN {totalContributed.toLocaleString('en-NG')}</p>
+                        <p className="font-semibold text-brand-navy">NGN {totalContributed.toLocaleString('en-NG')}</p>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
+                        <p className="text-xs text-brand-gray">Current cycle status</p>
+                        <p className="font-semibold text-brand-navy capitalize">{currentCyclePaymentState.state}</p>
                     </div>
                 </div>
 
-                {error && <div className="rounded-xl border border-red-100 bg-red-50 text-red-600 text-xs font-semibold p-3">{error}</div>}
-            </div>
+                <div className="rounded-xl border border-emerald-100 bg-emerald-50 text-emerald-800 px-3 py-2 text-xs inline-flex items-center gap-1.5">
+                    <ShieldCheck size={13} /> Payments are verified server-side before contribution status is marked successful.
+                </div>
 
-            <div className="bg-white border border-slate-100 rounded-2xl p-5">
-                <h3 className="font-bold text-brand-navy mb-3">Members</h3>
+                {error && <div className="rounded-xl border border-red-100 bg-red-50 text-red-600 text-xs font-semibold p-3">{error}</div>}
+            </section>
+
+            <section className="bg-white border border-slate-200 rounded-3xl p-5">
+                <h3 className="font-semibold text-brand-navy mb-3">Members</h3>
                 <div className="space-y-2">
                     {group.members.map((member) => (
-                        <div key={member.id} className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 text-sm">
-                            <p className="font-semibold text-brand-navy">
+                        <div key={member.id} className="flex items-center justify-between px-3 py-2 rounded-xl border border-slate-200 bg-linear-to-r from-slate-50 to-white text-sm">
+                            <p className="font-medium text-brand-navy">
                                 {member.profiles?.name || member.profiles?.email || member.user_id}
                                 {member.user_id === currentUserId ? ' (You)' : ''}
                             </p>
@@ -340,7 +404,7 @@ export default function GroupDetailsPage() {
                         </div>
                     ))}
                 </div>
-            </div>
+            </section>
         </div>
     );
 }

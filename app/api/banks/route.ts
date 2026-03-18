@@ -16,7 +16,7 @@ export async function GET() {
       })),
     });
   } catch (error) {
-    return serverErrorResponse(error instanceof Error ? error.message : undefined);
+    return serverErrorResponse(error);
   }
 }
 
@@ -46,6 +46,6 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    return serverErrorResponse(error instanceof Error ? error.message : undefined);
+    return serverErrorResponse(error);
   }
 }
