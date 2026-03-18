@@ -17,7 +17,7 @@ export async function GET(request: Request) {
 
     const { data: paymentRecord, error: paymentRecordError } = await auth.supabase
       .from("payment_records")
-      .select("id, user_id, amount, currency")
+      .select("id, user_id, group_id, amount, currency")
       .eq("reference", reference)
       .maybeSingle();
 
@@ -81,6 +81,26 @@ export async function GET(request: Request) {
     if (result.notFound) {
       return NextResponse.json({ error: "Payment record not found." }, { status: 404 });
     }
+
+    const { data: group } = await auth.supabase
+      .from("groups")
+      .select("name")
+      .eq("id", paymentRecord.group_id)
+      .maybeSingle();
+
+    await auth.supabase
+      .from("notifications")
+      .insert({
+        user_id: auth.user.id,
+        type: "payment_success",
+        title: "Contribution confirmed",
+        body: `Your payment for ${group?.name ?? "your group"} was verified successfully. Reference: ${reference}.`,
+        metadata: {
+          reference,
+          amount: paymentRecord.amount,
+          groupId: paymentRecord.group_id,
+        },
+      });
 
     return NextResponse.json({
       data: {

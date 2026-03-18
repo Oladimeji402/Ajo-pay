@@ -23,6 +23,21 @@ export async function POST(_request: Request, context: Context) {
       return NextResponse.json({ error: "You are not a member of this group." }, { status: 404 });
     }
 
+    const { data: group } = await auth.supabase
+      .from("groups")
+      .select("name")
+      .eq("id", groupId)
+      .maybeSingle();
+
+    await auth.supabase
+      .from("notifications")
+      .insert({
+        user_id: auth.user.id,
+        type: "group_leave",
+        title: "You left a group",
+        body: `You left ${group?.name ?? "your group"}. You can rejoin later if space is still available.`,
+      });
+
     return NextResponse.json({ success: true });
   } catch {
     return serverErrorResponse();

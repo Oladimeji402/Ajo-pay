@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Users, Wallet, Calendar, Loader2, Sparkles, ShieldCheck, ArrowUpRight } from 'lucide-react';
+import { ArrowLeft, Users, Wallet, Calendar, Loader2, Sparkles, ShieldCheck, ArrowUpRight, CheckCircle2, LogOut, TriangleAlert } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { openPaystackInline } from '@/lib/paystack-inline';
 import { useToast } from '@/components/ui/Toast';
@@ -46,6 +46,13 @@ type ContributionRow = {
     created_at: string;
 };
 
+type PaymentReceipt = {
+    reference: string;
+    amount: number;
+    paidAt: string;
+    groupName: string;
+};
+
 export default function GroupDetailsPage() {
     const params = useParams<{ id: string }>();
     const groupId = params.id;
@@ -57,7 +64,10 @@ export default function GroupDetailsPage() {
     const [group, setGroup] = useState<GroupDetail | null>(null);
     const [contributions, setContributions] = useState<ContributionRow[]>([]);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-    const [currentUserEmail, setCurrentUserEmail] = useState<string>('customer@ajopay.local');
+    const [currentUserEmail, setCurrentUserEmail] = useState<string>('');
+    const [receipt, setReceipt] = useState<PaymentReceipt | null>(null);
+    const [showLeaveModal, setShowLeaveModal] = useState(false);
+    const [leavingGroup, setLeavingGroup] = useState(false);
     const { showToast } = useToast();
 
     const loadData = useCallback(async () => {
@@ -207,6 +217,12 @@ export default function GroupDetailsPage() {
                                 throw new Error(verifyJson.error || 'Payment verification failed.');
                             }
 
+                            setReceipt({
+                                reference: response.reference,
+                                amount: Number(group.contribution_amount),
+                                paidAt: new Date().toISOString(),
+                                groupName: group.name,
+                            });
                             notifySuccess(showToast, 'Contribution verified successfully.');
                             await loadData();
                         } catch (err) {
@@ -222,6 +238,32 @@ export default function GroupDetailsPage() {
             notifyError(showToast, err, 'Unable to process contribution.');
         } finally {
             setPaying(false);
+        }
+    };
+
+    const handleLeaveGroup = async () => {
+        if (!group || !groupId || !userMember) return;
+
+        setLeavingGroup(true);
+
+        try {
+            const response = await fetch(`/api/groups/${groupId}/leave`, {
+                method: 'POST',
+                cache: 'no-store',
+            });
+            const payload = await response.json();
+
+            if (!response.ok) {
+                throw new Error(payload.error || 'Unable to leave this group.');
+            }
+
+            setShowLeaveModal(false);
+            notifySuccess(showToast, `You have left ${group.name}.`);
+            window.location.href = '/groups';
+        } catch (err) {
+            notifyError(showToast, err, 'Unable to leave this group right now.');
+        } finally {
+            setLeavingGroup(false);
         }
     };
 
@@ -294,6 +336,17 @@ export default function GroupDetailsPage() {
                                             : 'This cycle is due now.'}
                     </p>
                 </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                    <Link href={`/groups/${group.id}/payout-schedule`} className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm font-semibold text-white hover:bg-white/15 transition-colors">
+                        <Calendar size={14} /> View payout schedule
+                    </Link>
+                    {userMember && group.status !== 'completed' && (
+                        <button onClick={() => setShowLeaveModal(true)} className="inline-flex items-center gap-2 rounded-xl border border-red-200/30 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-50 hover:bg-red-500/20 transition-colors">
+                            <LogOut size={14} /> Leave group
+                        </button>
+                    )}
+                </div>
             </section>
 
             <section className="bg-white border border-slate-200 rounded-3xl p-5 space-y-4">
@@ -348,6 +401,97 @@ export default function GroupDetailsPage() {
                     ))}
                 </div>
             </section>
+
+            {receipt && (
+                <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/55 px-4">
+                    <div className="w-full max-w-md rounded-3xl border border-emerald-200 bg-white p-6 shadow-2xl shadow-slate-900/20">
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-600">Payment confirmed</p>
+                                <h2 className="mt-2 text-2xl font-semibold text-brand-navy">Receipt ready</h2>
+                            </div>
+                            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-50 text-emerald-600">
+                                <CheckCircle2 size={22} />
+                            </div>
+                        </div>
+
+                        <div className="mt-5 space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm">
+                            <div className="flex items-center justify-between gap-4">
+                                <span className="text-slate-500">Group</span>
+                                <span className="font-semibold text-brand-navy">{receipt.groupName}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-4">
+                                <span className="text-slate-500">Amount</span>
+                                <span className="font-semibold text-brand-navy">NGN {receipt.amount.toLocaleString('en-NG')}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-4">
+                                <span className="text-slate-500">Reference</span>
+                                <span className="font-mono text-xs font-semibold text-brand-navy">{receipt.reference}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-4">
+                                <span className="text-slate-500">Paid at</span>
+                                <span className="font-semibold text-brand-navy">{new Date(receipt.paidAt).toLocaleString('en-NG')}</span>
+                            </div>
+                        </div>
+
+                        <div className="mt-5 flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                onClick={() => window.print()}
+                                className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-navy hover:bg-slate-50"
+                            >
+                                Download / print receipt
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setReceipt(null)}
+                                className="flex-1 rounded-xl bg-brand-navy px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-primary"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showLeaveModal && group && (
+                <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/55 px-4">
+                    <div className="w-full max-w-md rounded-3xl border border-red-200 bg-white p-6 shadow-2xl shadow-slate-900/20">
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-red-600">Leave group</p>
+                                <h2 className="mt-2 text-2xl font-semibold text-brand-navy">Leave {group.name}?</h2>
+                            </div>
+                            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-red-50 text-red-600">
+                                <TriangleAlert size={22} />
+                            </div>
+                        </div>
+
+                        <p className="mt-4 text-sm leading-relaxed text-slate-600">
+                            You will lose your active membership in this circle. You can only join again later if there is still space available.
+                        </p>
+
+                        <div className="mt-5 flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setShowLeaveModal(false)}
+                                disabled={leavingGroup}
+                                className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-navy hover:bg-slate-50 disabled:opacity-60"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleLeaveGroup}
+                                disabled={leavingGroup}
+                                className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+                            >
+                                {leavingGroup ? 'Leaving...' : 'Confirm leave'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -335,9 +335,9 @@ export default function SignUpPage() {
                     </label>
                     <span className="text-sm text-slate-600 leading-relaxed">
                         I agree to Ajopay&apos;s{' '}
-                        <a href="#" className="font-semibold text-brand-navy underline decoration-dotted underline-offset-4 hover:text-brand-primary transition-colors">Terms of Service</a>
+                        <Link href="/terms" className="font-semibold text-brand-navy underline decoration-dotted underline-offset-4 hover:text-brand-primary transition-colors">Terms of Service</Link>
                         {' '}and{' '}
-                        <a href="#" className="font-semibold text-brand-navy underline decoration-dotted underline-offset-4 hover:text-brand-primary transition-colors">Privacy Policy</a>
+                        <Link href="/privacy" className="font-semibold text-brand-navy underline decoration-dotted underline-offset-4 hover:text-brand-primary transition-colors">Privacy Policy</Link>
                     </span>
                 </div>
 

@@ -28,6 +28,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     const router = useRouter();
     const [userName, setUserName] = useState('Member');
     const [userEmail, setUserEmail] = useState('member@ajopay.com');
+    const [unreadNotifications, setUnreadNotifications] = useState(0);
     const { showToast } = useToast();
 
     useEffect(() => {
@@ -56,13 +57,41 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         void loadUser();
     }, []);
 
+    useEffect(() => {
+        const loadNotifications = async () => {
+            try {
+                const response = await fetch('/api/notifications?limit=10', { cache: 'no-store' });
+                const payload = await response.json();
+                if (!response.ok) {
+                    return;
+                }
+
+                setUnreadNotifications(Number(payload.unreadCount ?? 0));
+            } catch {
+                // Keep layout resilient if notifications fail to load.
+            }
+        };
+
+        void loadNotifications();
+    }, [pathname]);
+
     const userInitial = useMemo(() => userName.trim().charAt(0).toUpperCase() || 'M', [userName]);
 
     const navItems = [
         { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/dashboard' },
         { name: 'Groups', icon: <Users size={20} />, path: '/groups' },
         { name: 'Activity', icon: <History size={20} />, path: '/activity' },
+        { name: 'Notifications', icon: <Bell size={20} />, path: '/notifications' },
         { name: 'Settings', icon: <Settings size={20} />, path: '/settings' },
+    ];
+
+    // Mobile order keeps Join (Groups) in the center slot for easier thumb reach.
+    const mobileNavItems = [
+        { name: 'Dashboard', mobileLabel: 'Home', icon: <LayoutDashboard size={18} />, path: '/dashboard' },
+        { name: 'Activity', mobileLabel: 'Activity', icon: <History size={18} />, path: '/activity' },
+        { name: 'Groups', mobileLabel: 'Join', icon: <Users size={18} />, path: '/groups' },
+        { name: 'Notifications', mobileLabel: 'Alerts', icon: <Bell size={18} />, path: '/notifications' },
+        { name: 'Settings', mobileLabel: 'Settings', icon: <Settings size={18} />, path: '/settings' },
     ];
 
     const isPathActive = (path: string) => {
@@ -80,6 +109,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             Dashboard: 'Dashboard Command Center',
             Groups: 'Groups Workspace',
             Activity: 'Activity Timeline',
+            Notifications: 'Notifications Inbox',
             Settings: 'Account Settings',
         };
 
@@ -180,10 +210,14 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <button className="relative inline-flex items-center justify-center h-10 w-10 rounded-xl border border-slate-200 bg-white text-brand-gray hover:text-brand-navy hover:bg-slate-50 transition-colors">
+                        <Link href="/notifications" className="relative inline-flex items-center justify-center h-10 w-10 rounded-xl border border-slate-200 bg-white text-brand-gray hover:text-brand-navy hover:bg-slate-50 transition-colors">
                             <Bell size={18} />
-                            <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-brand-emerald" />
-                        </button>
+                            {unreadNotifications > 0 && (
+                                <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-brand-emerald px-1.5 py-0.5 text-center text-[10px] font-bold text-white">
+                                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                                </span>
+                            )}
+                        </Link>
                         <Link href="/groups" className="inline-flex items-center gap-2 rounded-xl bg-brand-navy px-3.5 py-2.5 text-sm font-semibold text-white hover:bg-brand-primary transition-colors">
                             <Plus size={15} />
                             Join Group
@@ -198,10 +232,10 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                             <p className="text-sm font-semibold text-brand-navy truncate">{sectionHeading}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                            <button className="relative inline-flex items-center justify-center h-9 w-9 rounded-lg border border-slate-200 bg-white text-brand-gray">
+                            <Link href="/notifications" className="relative inline-flex items-center justify-center h-9 w-9 rounded-lg border border-slate-200 bg-white text-brand-gray">
                                 <Bell size={16} />
-                                <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-brand-emerald" />
-                            </button>
+                                {unreadNotifications > 0 && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-brand-emerald" />}
+                            </Link>
                             <Link href="/groups" className="inline-flex items-center gap-1.5 rounded-lg bg-brand-emerald px-2.5 py-2 text-xs font-semibold text-white">
                                 <Plus size={14} />
                                 Join
@@ -217,8 +251,8 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
             <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 p-3 pb-[calc(env(safe-area-inset-bottom)+12px)]">
                 <div className="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white/95 backdrop-blur-xl shadow-xl shadow-slate-300/30 px-2 py-2">
-                    <div className="grid grid-cols-4 items-end gap-1">
-                        {navItems.map((item) => {
+                    <div className="grid grid-cols-5 items-end gap-1">
+                        {mobileNavItems.map((item) => {
                             const isActive = isPathActive(item.path);
                             const isPrimary = item.path === '/groups';
 
@@ -227,13 +261,13 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                                     <Link
                                         key={item.name}
                                         href={item.path}
-                                        className={`-mt-5 flex flex-col items-center gap-0.5 rounded-xl px-2 py-2.5 text-[10px] font-bold transition-all ${isActive
+                                        className={`-mt-5 flex flex-col items-center gap-0.5 rounded-xl px-1.5 py-2 text-[9px] font-bold transition-all ${isActive
                                             ? 'bg-linear-to-b from-brand-emerald to-emerald-500 text-white shadow-lg shadow-brand-emerald/35'
                                             : 'bg-linear-to-b from-brand-navy to-brand-primary text-white shadow-md shadow-slate-400/35'
                                             }`}
                                     >
                                         <Plus size={16} />
-                                        <span className="uppercase tracking-[0.08em]">Join</span>
+                                        <span className="uppercase tracking-[0.05em] leading-none whitespace-nowrap">{item.mobileLabel}</span>
                                     </Link>
                                 );
                             }
@@ -242,10 +276,13 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                                 <Link
                                     key={item.name}
                                     href={item.path}
-                                    className={`flex flex-col items-center gap-0.5 rounded-lg px-2 py-1.5 text-[10px] font-semibold transition-colors ${isActive ? 'text-brand-navy' : 'text-slate-400'}`}
+                                    className={`relative flex flex-col items-center gap-0.5 rounded-lg px-1 py-1.5 text-[9px] font-semibold transition-colors ${isActive ? 'text-brand-navy' : 'text-slate-400'}`}
                                 >
                                     {item.icon}
-                                    <span className="uppercase tracking-[0.08em]">{item.name}</span>
+                                    {item.path === '/notifications' && unreadNotifications > 0 && (
+                                        <span className="absolute right-1 top-0 h-1.5 w-1.5 rounded-full bg-brand-emerald" />
+                                    )}
+                                    <span className="uppercase tracking-[0.04em] leading-none whitespace-nowrap">{item.mobileLabel}</span>
                                     {isActive && <span className="h-1 w-1 rounded-full bg-brand-emerald" />}
                                 </Link>
                             );
