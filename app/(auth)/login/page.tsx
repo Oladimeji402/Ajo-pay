@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { Suspense, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { AlertCircle, Loader2 } from 'lucide-react';
@@ -11,13 +11,26 @@ import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
 import { mapAuthError } from '@/lib/auth-errors';
 
-export default function LoginPage() {
+/** Only redirect to same-origin paths to prevent open-redirect attacks. */
+function getSafeRedirect(raw: string | null): string {
+    if (!raw) return '/dashboard';
+    try {
+        const url = new URL(raw, window.location.origin);
+        if (url.origin === window.location.origin) return url.pathname + url.search;
+    } catch {
+        // not a valid URL — ignore
+    }
+    return '/dashboard';
+}
+
+function LoginContent() {
     const [isLoading, setIsLoading] = useState(false);
     const [rememberMe, setRememberMe] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [formError, setFormError] = useState('');
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { showToast } = useToast();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -39,13 +52,15 @@ export default function LoginPage() {
             return;
         }
 
-        notifySuccess(showToast, 'Signed in successfully. Redirecting to your dashboard...');
-        router.push('/dashboard');
+        notifySuccess(showToast, 'Signed in successfully. Redirecting...');
+        const redirect = getSafeRedirect(searchParams.get('next'));
+        router.push(redirect);
         router.refresh();
     };
 
     return (
         <section aria-labelledby="login-title" className="space-y-6">
+
             <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0f766e]">Sign in</p>
                 <h2 id="login-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>
@@ -141,5 +156,21 @@ export default function LoginPage() {
                 </p>
             </div>
         </section>
+    );
+}
+export default function LoginPage() {
+    return (
+        <Suspense fallback={
+            <section aria-labelledby="login-title" className="space-y-6">
+                <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0f766e]">Sign in</p>
+                    <h2 id="login-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy">
+                        Welcome back.
+                    </h2>
+                </div>
+            </section>
+        }>
+            <LoginContent />
+        </Suspense>
     );
 }
