@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { badRequestResponse, requireAdmin, requireUser, serverErrorResponse } from "@/lib/api/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { logAdminAction } from "@/lib/admin-audit";
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -58,7 +59,7 @@ export async function GET(_request: Request, context: Context) {
 export async function PATCH(request: Request, context: Context) {
   try {
     const auth = await requireAdmin();
-    if (auth.error) return auth.error;
+    if (auth.error || !auth.user) return auth.error;
     const { id } = await context.params;
 
     const body = await request.json();
@@ -76,8 +77,40 @@ export async function PATCH(request: Request, context: Context) {
     if (body.status !== undefined) updates.status = String(body.status).toLowerCase();
     if (body.color !== undefined) updates.color = String(body.color);
 
+    const { data: beforeGroup, error: beforeGroupError } = await auth.supabase
+      .from("groups")
+      .select("id, name, category, contribution_amount, frequency, max_members, total_cycles, start_date, status, color")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (beforeGroupError) return badRequestResponse(beforeGroupError.message);
+    if (!beforeGroup) return NextResponse.json({ error: "Group not found" }, { status: 404 });
+
     const { data, error } = await auth.supabase.from("groups").update(updates).eq("id", id).select("*").single();
     if (error) return badRequestResponse(error.message);
+
+    await logAdminAction({
+      adminId: auth.user.id,
+      action: "group_updated",
+      targetType: "group",
+      targetId: id,
+      before: beforeGroup as unknown as Record<string, unknown>,
+      after: {
+        id: data.id,
+        name: data.name,
+        category: data.category,
+        contribution_amount: data.contribution_amount,
+        frequency: data.frequency,
+        max_members: data.max_members,
+        total_cycles: data.total_cycles,
+        start_date: data.start_date,
+        status: data.status,
+        color: data.color,
+      },
+      metadata: {
+        updatedFields: Object.keys(updates).filter((key) => key !== "updated_at"),
+      },
+    });
 
     return NextResponse.json({ data });
   } catch {

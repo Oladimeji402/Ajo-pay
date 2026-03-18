@@ -2,7 +2,6 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Loader2 } from 'lucide-react';
 import { DataTable, DataTableColumn } from '@/components/admin/DataTable';
 import { LastSynced } from '@/components/admin/LastSynced';
 import { ChartCard } from '@/components/admin/charts/ChartCard';
@@ -33,6 +32,28 @@ type GrowthPoint = {
 function initials(value: string) {
   const parts = value.trim().split(/\s+/).slice(0, 2);
   return parts.map((p) => p[0]?.toUpperCase() ?? '').join('') || 'U';
+}
+
+function AdminUsersSkeleton() {
+  return (
+    <div className="space-y-5 animate-pulse">
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <div className="h-7 w-40 rounded bg-slate-200" />
+          <div className="h-3 w-28 rounded bg-slate-200" />
+        </div>
+        <div className="h-9 w-40 rounded-xl bg-slate-200" />
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }, (_, idx) => (
+          <div key={idx} className="rounded-2xl border border-slate-100 bg-white p-4 h-20" />
+        ))}
+      </div>
+      <div className="rounded-2xl border border-slate-100 bg-white p-4 h-48" />
+      <div className="rounded-2xl border border-slate-100 bg-white p-3 h-16" />
+      <div className="rounded-2xl border border-slate-100 bg-white p-3 h-72" />
+    </div>
+  );
 }
 
 export default function AdminUsersPage() {
@@ -249,7 +270,7 @@ export default function AdminUsersPage() {
   );
 
   if (loading) {
-    return <div className="grid min-h-80 place-items-center"><Loader2 className="animate-spin" size={16} /></div>;
+    return <AdminUsersSkeleton />;
   }
 
   return (
@@ -258,11 +279,6 @@ export default function AdminUsersPage() {
         <div>
           <h1 className="text-2xl font-bold text-brand-navy">Admin Users</h1>
           <LastSynced timestamp={lastSyncedAt} loading={loading || bulkLoading} />
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button disabled={bulkLoading || selectedIds.length === 0} onClick={() => runBulkAction({ status: 'active' })} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-brand-navy disabled:opacity-50">Bulk Activate</button>
-          <button disabled={bulkLoading || selectedIds.length === 0} onClick={() => runBulkAction({ status: 'suspended' })} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-brand-navy disabled:opacity-50">Bulk Suspend</button>
-          <button disabled={bulkLoading || selectedIds.length === 0} onClick={() => runBulkAction({ role: 'admin' })} className="rounded-xl bg-brand-navy px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">Make Admin</button>
         </div>
       </div>
 
@@ -301,9 +317,42 @@ export default function AdminUsersPage() {
       {error && <div className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-600">{error}</div>}
 
       <div className="space-y-2">
-        <label className="inline-flex items-center gap-2 px-2 text-xs font-semibold text-slate-600">
-          <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} /> Select all filtered users
-        </label>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-white p-3">
+          <label className="inline-flex items-center gap-2 px-1 text-xs font-semibold text-slate-600">
+            <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} /> Select all filtered users
+          </label>
+
+          {selectedIds.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-700">
+                {selectedIds.length} selected
+              </span>
+              <button
+                disabled={bulkLoading}
+                onClick={() => runBulkAction({ status: 'active' })}
+                className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-100 disabled:opacity-50"
+              >
+                Bulk Activate
+              </button>
+              <button
+                disabled={bulkLoading}
+                onClick={() => runBulkAction({ status: 'suspended' })}
+                className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-amber-100 disabled:opacity-50"
+              >
+                Bulk Suspend
+              </button>
+              <button
+                disabled={bulkLoading}
+                onClick={() => runBulkAction({ role: 'admin' })}
+                className="rounded-xl bg-brand-navy px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-brand-navy/95 disabled:opacity-50"
+              >
+                Make Admin
+              </button>
+            </div>
+          ) : (
+            <p className="text-xs text-slate-500">Select one or more users to apply bulk actions.</p>
+          )}
+        </div>
 
         <DataTable
           rows={filteredUsers}

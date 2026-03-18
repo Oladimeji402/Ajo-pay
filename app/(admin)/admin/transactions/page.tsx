@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Download, Loader2, Search } from 'lucide-react';
+import { Download, Search } from 'lucide-react';
 import { LastSynced } from '@/components/admin/LastSynced';
 import { DateRangeSelector, DateRangeValue } from '@/components/admin/DateRangeSelector';
 import { DataTable, DataTableColumn } from '@/components/admin/DataTable';
@@ -31,6 +31,28 @@ function toCurrency(value: number) {
 
 function normalizeStatus(status: string | null | undefined) {
   return String(status ?? '').toLowerCase();
+}
+
+function AdminTransactionsSkeleton() {
+  return (
+    <div className="space-y-5 animate-pulse">
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <div className="h-7 w-52 rounded bg-slate-200" />
+          <div className="h-3 w-28 rounded bg-slate-200" />
+        </div>
+        <div className="h-9 w-28 rounded-xl bg-slate-200" />
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }, (_, idx) => (
+          <div key={idx} className="rounded-2xl border border-slate-100 bg-white p-4 h-20" />
+        ))}
+      </div>
+      <div className="rounded-2xl border border-slate-100 bg-white p-4 h-56" />
+      <div className="rounded-2xl border border-slate-100 bg-white p-3 h-16" />
+      <div className="rounded-2xl border border-slate-100 bg-white p-3 h-72" />
+    </div>
+  );
 }
 
 export default function AdminTransactionsPage() {
@@ -244,7 +266,7 @@ export default function AdminTransactionsPage() {
     [toggleSort],
   );
 
-  if (loading) return <div className="grid min-h-80 place-items-center"><Loader2 className="animate-spin" size={16} /></div>;
+  if (loading) return <AdminTransactionsSkeleton />;
 
   return (
     <div className="space-y-5">

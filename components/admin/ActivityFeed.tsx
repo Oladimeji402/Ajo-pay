@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { CircleDollarSign, HandCoins, UserPlus, Users } from 'lucide-react';
+import { Banknote, HandCoins, UserPlus, Users } from 'lucide-react';
 
 type ActivityType = 'contribution' | 'payout' | 'signup' | 'group';
 
@@ -40,7 +40,7 @@ function formatRelativeTime(timestamp: string) {
 
 function ActivityIcon({ type }: { type: ActivityType }) {
     if (type === 'contribution') {
-        return <CircleDollarSign size={16} className="text-emerald-600" />;
+        return <Banknote size={16} className="text-emerald-600" />;
     }
 
     if (type === 'payout') {

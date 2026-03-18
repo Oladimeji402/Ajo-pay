@@ -20,14 +20,18 @@ export default function AdminLoginPage() {
         e.preventDefault();
         setIsLoading(true);
 
-        const success = await adminLogin(email, password);
-        if (success) {
+        const result = await adminLogin(email, password);
+        if (result.ok) {
             notifySuccess(showToast, 'Admin login successful.');
             router.push('/admin');
             return;
         }
 
-        notifyError(showToast, null, 'Invalid administrative credentials. Access denied.');
+        if (result.reason === 'locked') {
+            notifyError(showToast, null, result.message || 'Too many failed attempts. Try again later.');
+        } else {
+            notifyError(showToast, null, 'Invalid administrative credentials. Access denied.');
+        }
         setIsLoading(false);
     };
 

@@ -5,11 +5,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
     LayoutDashboard,
+    ScrollText,
     Users,
     UsersRound,
     History,
     Settings,
     Banknote,
+    Shield,
     LogOut,
     Menu,
     X,
@@ -88,6 +90,8 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
         { name: 'Groups', icon: <UsersRound size={20} />, path: '/admin/groups' },
         { name: 'Payouts', icon: <Banknote size={20} />, path: '/admin/payouts', badge: pendingPayoutsCount },
         { name: 'Transactions', icon: <History size={20} />, path: '/admin/transactions' },
+        { name: 'Audit Log', icon: <ScrollText size={20} />, path: '/admin/audit-log' },
+        { name: 'Security', icon: <Shield size={20} />, path: '/admin/security' },
         { name: 'Settings', icon: <Settings size={20} />, path: '/admin/settings' },
     ];
 

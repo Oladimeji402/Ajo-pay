@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, Copy, Loader2 } from 'lucide-react';
+import { CheckCircle2, Copy } from 'lucide-react';
 import { DataTable, DataTableColumn } from '@/components/admin/DataTable';
 import { DateRangeSelector, DateRangeValue } from '@/components/admin/DateRangeSelector';
 import { LastSynced } from '@/components/admin/LastSynced';
@@ -22,6 +22,10 @@ type PayoutRow = {
   bank_account: string;
   bank_name: string;
   scheduled_for?: string | null;
+  proof_url?: string | null;
+  proof_note?: string | null;
+  proof_uploaded_at?: string | null;
+  approved_at?: string | null;
   created_at: string;
   groups?: {
     id: string;
@@ -44,6 +48,28 @@ function toCurrency(value: number) {
   return `NGN ${Number(value).toLocaleString('en-NG')}`;
 }
 
+function AdminPayoutsSkeleton() {
+  return (
+    <div className="space-y-5 animate-pulse">
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <div className="h-7 w-44 rounded bg-slate-200" />
+          <div className="h-3 w-28 rounded bg-slate-200" />
+        </div>
+        <div className="h-9 w-40 rounded-xl bg-slate-200" />
+      </div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        {Array.from({ length: 3 }, (_, idx) => (
+          <div key={idx} className="rounded-2xl border border-slate-100 bg-white p-4 h-20" />
+        ))}
+      </div>
+      <div className="rounded-2xl border border-slate-100 bg-white p-4 h-56" />
+      <div className="rounded-2xl border border-slate-100 bg-white p-3 h-16" />
+      <div className="rounded-2xl border border-slate-100 bg-white p-3 h-80" />
+    </div>
+  );
+}
+
 export default function AdminPayoutsPage() {
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState('');
@@ -53,6 +79,7 @@ export default function AdminPayoutsPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [payouts, setPayouts] = useState<PayoutRow[]>([]);
   const [payoutDateDrafts, setPayoutDateDrafts] = useState<Record<string, string>>({});
+  const [proofDrafts, setProofDrafts] = useState<Record<string, { proofUrl: string; proofNote: string }>>({});
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
   const { showToast } = useToast();
   const { refreshTrigger, lastEvent } = useRealtimeSubscription({
@@ -77,6 +104,17 @@ export default function AdminPayoutsPage() {
         nextPayouts.map((payout) => [
           payout.id,
           payout.scheduled_for ?? getDefaultPayoutDate(payout.groups?.start_date ?? null, payout.groups?.frequency ?? '', payout.cycle_number) ?? '',
+        ]),
+      ),
+    );
+    setProofDrafts(
+      Object.fromEntries(
+        nextPayouts.map((payout) => [
+          payout.id,
+          {
+            proofUrl: payout.proof_url ?? '',
+            proofNote: payout.proof_note ?? '',
+          },
         ]),
       ),
     );
@@ -137,7 +175,7 @@ export default function AdminPayoutsPage() {
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([, value]) => value);
 
-  const markDone = useCallback(async (payoutId: string) => {
+  const updatePayoutStatus = useCallback(async (payoutId: string, nextStatus: 'processing' | 'done') => {
     setSavingId(payoutId);
     setError('');
 
@@ -145,11 +183,11 @@ export default function AdminPayoutsPage() {
       const res = await fetch('/api/admin/payouts', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ payoutId, status: 'done' }),
+        body: JSON.stringify({ payoutId, status: nextStatus }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed to mark payout as done.');
-      notifySuccess(showToast, 'Payout marked as done.');
+      if (!res.ok) throw new Error(json.error || 'Failed to update payout status.');
+      notifySuccess(showToast, nextStatus === 'processing' ? 'Payout approved.' : 'Payout marked as done.');
       await loadPayouts();
     } catch (err) {
       notifyError(showToast, err, 'Unable to update payout.');
@@ -180,6 +218,33 @@ export default function AdminPayoutsPage() {
       setSavingId('');
     }
   }, [loadPayouts, payoutDateDrafts, showToast]);
+
+  const savePayoutProof = useCallback(async (payoutId: string) => {
+    const draft = proofDrafts[payoutId] ?? { proofUrl: '', proofNote: '' };
+
+    setSavingId(`proof:${payoutId}`);
+    setError('');
+
+    try {
+      const res = await fetch('/api/admin/payouts', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          payoutId,
+          proofUrl: draft.proofUrl,
+          proofNote: draft.proofNote,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to update payout proof.');
+      notifySuccess(showToast, 'Payout proof updated.');
+      await loadPayouts();
+    } catch (err) {
+      notifyError(showToast, err, 'Unable to update payout proof.');
+    } finally {
+      setSavingId('');
+    }
+  }, [loadPayouts, proofDrafts, showToast]);
 
   const runBatchMarkDone = async () => {
     if (selectedIds.length === 0) return;
@@ -226,7 +291,7 @@ export default function AdminPayoutsPage() {
     }
   }, [showToast]);
 
-  const selectableRows = filtered.filter((payout) => payout.status !== 'done');
+  const selectableRows = filtered.filter((payout) => payout.status === 'processing' && Boolean(payout.proof_url));
   const allSelected = selectableRows.length > 0 && selectableRows.every((row) => selectedIds.includes(row.id));
 
   const toggleSelect = (id: string) => {
@@ -250,7 +315,7 @@ export default function AdminPayoutsPage() {
         key: 'recipient',
         header: 'Recipient',
         render: (payout) => {
-          const canSelect = payout.status !== 'done';
+          const canSelect = payout.status === 'processing' && Boolean(payout.proof_url);
           const isSelected = selectedIds.includes(payout.id);
 
           return (
@@ -266,9 +331,8 @@ export default function AdminPayoutsPage() {
                   {payout.profiles?.name || payout.profiles?.email || 'Recipient'} . {payout.groups?.name || 'Group'}
                 </p>
               </div>
-              <p className="text-xs text-slate-500">
-                Cycle {payout.cycle_number} . {new Date(payout.created_at).toLocaleString()}
-              </p>
+              <p className="text-xs text-slate-500">Cycle {payout.cycle_number} . {new Date(payout.created_at).toLocaleString()}</p>
+              {payout.approved_at ? <p className="text-[11px] text-emerald-700">Approved {new Date(payout.approved_at).toLocaleString('en-NG')}</p> : null}
             </div>
           );
         },
@@ -384,25 +448,110 @@ export default function AdminPayoutsPage() {
         render: (payout) => <span className="capitalize text-slate-700">{payout.status}</span>,
       },
       {
+        key: 'proof',
+        header: 'Proof',
+        render: (payout) => {
+          const draft = proofDrafts[payout.id] ?? { proofUrl: '', proofNote: '' };
+          const isSavingProof = savingId === `proof:${payout.id}`;
+
+          return (
+            <div className="space-y-2 text-xs text-slate-600">
+              <div>
+                {payout.proof_url ? (
+                  <a
+                    href={payout.proof_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-semibold text-teal-700 underline"
+                  >
+                    View uploaded proof
+                  </a>
+                ) : (
+                  <p className="text-slate-500">No proof uploaded yet</p>
+                )}
+                {payout.proof_uploaded_at ? (
+                  <p className="mt-1 text-[11px] text-slate-500">Uploaded {new Date(payout.proof_uploaded_at).toLocaleString('en-NG')}</p>
+                ) : null}
+              </div>
+
+              <input
+                type="url"
+                value={draft.proofUrl}
+                onChange={(event) => setProofDrafts((prev) => ({
+                  ...prev,
+                  [payout.id]: {
+                    ...(prev[payout.id] ?? { proofUrl: '', proofNote: '' }),
+                    proofUrl: event.target.value,
+                  },
+                }))}
+                placeholder="https://proof-link"
+                className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-brand-navy"
+              />
+
+              <textarea
+                rows={2}
+                value={draft.proofNote}
+                onChange={(event) => setProofDrafts((prev) => ({
+                  ...prev,
+                  [payout.id]: {
+                    ...(prev[payout.id] ?? { proofUrl: '', proofNote: '' }),
+                    proofNote: event.target.value,
+                  },
+                }))}
+                placeholder="Optional transfer note"
+                className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-brand-navy"
+              />
+
+              <button
+                type="button"
+                disabled={isSavingProof}
+                onClick={() => void savePayoutProof(payout.id)}
+                className="rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold text-slate-700 disabled:opacity-50"
+              >
+                {isSavingProof ? 'Saving...' : 'Save proof'}
+              </button>
+            </div>
+          );
+        },
+      },
+      {
         key: 'action',
         header: 'Action',
         className: 'w-40',
         headerClassName: 'w-40',
-        render: (payout) => (
-          <button
-            disabled={savingId === payout.id || payout.status === 'done'}
-            onClick={() => markDone(payout.id)}
-            className="rounded-lg bg-brand-navy px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
-          >
-            {payout.status === 'done' ? 'Done' : savingId === payout.id ? 'Saving...' : 'Mark Done'}
-          </button>
-        ),
+        render: (payout) => {
+          if (payout.status === 'done') {
+            return <span className="text-xs font-bold text-emerald-700">Done</span>;
+          }
+
+          if (payout.status === 'pending' || payout.status === 'failed') {
+            return (
+              <button
+                disabled={savingId === payout.id}
+                onClick={() => void updatePayoutStatus(payout.id, 'processing')}
+                className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 disabled:opacity-50"
+              >
+                {savingId === payout.id ? 'Saving...' : 'Approve'}
+              </button>
+            );
+          }
+
+          return (
+            <button
+              disabled={savingId === payout.id || !payout.proof_url}
+              onClick={() => void updatePayoutStatus(payout.id, 'done')}
+              className="rounded-lg bg-brand-navy px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
+            >
+              {savingId === payout.id ? 'Saving...' : 'Mark Done'}
+            </button>
+          );
+        },
       },
     ],
-    [copyToClipboard, markDone, payoutDateDrafts, savePayoutDate, selectedIds, savingId],
+    [copyToClipboard, payoutDateDrafts, proofDrafts, savePayoutDate, savePayoutProof, selectedIds, savingId, updatePayoutStatus],
   );
 
-  if (loading) return <div className="grid min-h-80 place-items-center"><Loader2 className="animate-spin" size={16} /></div>;
+  if (loading) return <AdminPayoutsSkeleton />;
 
   return (
     <div className="space-y-5">
@@ -443,7 +592,7 @@ export default function AdminPayoutsPage() {
 
       <div className="space-y-2">
         <label className="mb-2 inline-flex items-center gap-2 px-2 text-xs font-semibold text-slate-600">
-          <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} /> Select all non-done payouts
+          <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} /> Select all approved payouts with proof
         </label>
 
         <DataTable rows={filtered} columns={columns} rowKey={(payout) => payout.id} emptyMessage="No payouts found." />

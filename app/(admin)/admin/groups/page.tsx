@@ -2,7 +2,6 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Loader2 } from 'lucide-react';
 import { LastSynced } from '@/components/admin/LastSynced';
 import { ChartCard } from '@/components/admin/charts/ChartCard';
 import { AdminPieChart } from '@/components/admin/charts/PieChart';
@@ -32,6 +31,26 @@ type GroupRow = {
 function asMemberCount(group: GroupRow) {
   if (!group.group_members || group.group_members.length === 0) return 0;
   return Number(group.group_members[0]?.count ?? 0);
+}
+
+function AdminGroupsSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      <div className="space-y-2">
+        <div className="h-7 w-40 rounded bg-slate-200" />
+        <div className="h-3 w-28 rounded bg-slate-200" />
+      </div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        {Array.from({ length: 3 }, (_, idx) => (
+          <div key={idx} className="rounded-2xl border border-slate-100 bg-white p-4 h-20" />
+        ))}
+      </div>
+      <div className="rounded-2xl border border-slate-100 bg-white p-4 h-56" />
+      <div className="rounded-2xl border border-slate-100 bg-white p-3 h-16" />
+      <div className="rounded-2xl border border-slate-100 bg-white p-4 h-28" />
+      <div className="rounded-2xl border border-slate-100 bg-white p-2 h-72" />
+    </div>
+  );
 }
 
 export default function AdminGroupsPage() {
@@ -169,7 +188,7 @@ export default function AdminGroupsPage() {
   const categoryData = Array.from(categoryMap.entries()).map(([name, value]) => ({ name, value }));
 
   if (loading) {
-    return <div className="grid min-h-80 place-items-center"><Loader2 className="animate-spin" size={16} /></div>;
+    return <AdminGroupsSkeleton />;
   }
 
   return (
