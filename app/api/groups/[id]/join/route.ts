@@ -12,12 +12,16 @@ export async function POST(_request: Request, context: Context) {
     const { id: groupId } = await context.params;
     const adminSupabase = createSupabaseAdminClient();
 
-    const { data: membership } = await adminSupabase
+    const { data: membership, error: membershipError } = await adminSupabase
       .from("group_members")
       .select("id")
       .eq("group_id", groupId)
       .eq("user_id", auth.user.id)
       .maybeSingle();
+
+    if (membershipError) {
+      return serverErrorResponse(membershipError);
+    }
 
     if (membership) {
       return badRequestResponse("User is already a member of this group.");

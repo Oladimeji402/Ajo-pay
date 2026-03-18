@@ -17,7 +17,7 @@ export async function GET(request: Request) {
 
     const { data: paymentRecord, error: paymentRecordError } = await auth.supabase
       .from("payment_records")
-      .select("id, user_id")
+      .select("id, user_id, amount, currency")
       .eq("reference", reference)
       .maybeSingle();
 
@@ -36,7 +36,7 @@ export async function GET(request: Request) {
     const verifyData = await verifyPaystackTransaction(reference);
 
     if (verifyData.status !== "success") {
-      await auth.supabase
+      const { error: failUpdateError } = await auth.supabase
         .from("payment_records")
         .update({
           status: "failed",
@@ -48,12 +48,29 @@ export async function GET(request: Request) {
         })
         .eq("reference", reference);
 
+      if (failUpdateError) {
+        throw new Error(failUpdateError.message);
+      }
+
       return NextResponse.json({
         data: {
           status: verifyData.status,
           reference,
         },
       });
+    }
+
+    const storedAmountKobo = Math.round(Number(paymentRecord.amount) * 100);
+    const verifiedAmountKobo = Math.round(Number(verifyData.amount));
+    const storedCurrency = String(paymentRecord.currency ?? "NGN").toUpperCase();
+    const verifiedCurrency = String(verifyData.currency ?? "NGN").toUpperCase();
+
+    if (!Number.isFinite(storedAmountKobo) || !Number.isFinite(verifiedAmountKobo)) {
+      throw new Error("Invalid payment amount encountered during verification.");
+    }
+
+    if (storedAmountKobo !== verifiedAmountKobo || storedCurrency !== verifiedCurrency) {
+      return NextResponse.json({ error: "Payment amount mismatch." }, { status: 422 });
     }
 
     const result = await markContributionPaymentSuccess({
@@ -73,6 +90,6 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    return serverErrorResponse(error instanceof Error ? error.message : undefined);
+    return serverErrorResponse(error);
   }
 }

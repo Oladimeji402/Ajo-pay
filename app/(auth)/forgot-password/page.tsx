@@ -2,133 +2,142 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { ArrowLeft, CheckCircle2, Mail, Loader2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Loader2, Mail } from 'lucide-react';
 import { motion } from 'motion/react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
+import { mapAuthError } from '@/lib/auth-errors';
 
 export default function ForgotPasswordPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [email, setEmail] = useState('');
+    const router = useRouter();
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+    const isLocalSupabase = supabaseUrl.includes('127.0.0.1') || supabaseUrl.includes('localhost');
     const { showToast } = useToast();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        const normalizedEmail = email.trim();
+
+        if (!normalizedEmail) {
+            notifyError(showToast, new Error('Please enter your email address.'), 'Please enter your email address.');
+            return;
+        }
+
         setIsLoading(true);
 
         const supabase = createSupabaseBrowserClient();
-        const redirectTo = `${window.location.origin}/reset-password`;
-        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo,
+        const { error: otpError } = await supabase.auth.signInWithOtp({
+            email: normalizedEmail,
+            options: {
+                shouldCreateUser: false,
+            },
         });
 
-        if (resetError) {
-            notifyError(showToast, resetError, 'Unable to send reset instructions.');
+        if (otpError) {
+            const message = mapAuthError(otpError, 'Unable to send reset OTP.');
+            notifyError(showToast, new Error(message), message);
             setIsLoading(false);
             return;
         }
 
         setIsLoading(false);
         setIsSubmitted(true);
-        notifySuccess(showToast, 'Password reset instructions sent. Check your email.');
+        notifySuccess(showToast, 'Password reset OTP sent. Check your email.');
     };
 
     if (isSubmitted) {
         return (
-            <>
-                <div className="mb-8">
-                    <h2 className="text-2xl font-bold text-brand-navy mb-2">Check your email</h2>
-                    <p className="text-[13px] text-brand-gray leading-relaxed">We&apos;ve sent a password reset link to your inbox</p>
-                </div>
-                <motion.div
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-center space-y-6"
-                >
-                    <div className="flex justify-center">
-                        <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.1 }}
-                            className="relative"
-                        >
-                            <div className="w-20 h-20 bg-emerald-50 rounded-3xl flex items-center justify-center">
-                                <motion.div
-                                    initial={{ scale: 0 }}
-                                    animate={{ scale: 1 }}
-                                    transition={{ delay: 0.3, type: 'spring', stiffness: 300 }}
-                                >
-                                    <Mail size={32} className="text-brand-emerald" />
-                                </motion.div>
-                            </div>
-                            <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                transition={{ delay: 0.5, type: 'spring', stiffness: 300 }}
-                                className="absolute -top-1 -right-1 w-7 h-7 bg-brand-emerald rounded-full flex items-center justify-center shadow-lg"
-                            >
-                                <CheckCircle2 size={14} className="text-white" />
-                            </motion.div>
-                        </motion.div>
-                    </div>
-
-                    {email && (
-                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-xl">
-                            <span className="text-[12px] text-brand-gray">Sent to</span>
-                            <span className="text-[12px] font-bold text-brand-navy">{email}</span>
-                        </div>
-                    )}
-
-                    <p className="text-[13px] text-brand-gray leading-relaxed max-w-xs mx-auto">
-                        Didn&apos;t receive the email? Check your spam folder or{' '}
-                        <button
-                            onClick={() => setIsSubmitted(false)}
-                            className="font-semibold text-brand-emerald hover:underline"
-                        >
-                            try another email address
-                        </button>
+            <section aria-labelledby="email-sent-title" className="space-y-6">
+                <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0f766e]">Email sent</p>
+                    <h2 id="email-sent-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>
+                        Check your inbox.
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-500">
+                        Instructions on the way to{' '}
+                        <span className="font-semibold text-brand-navy">{email}</span>.
                     </p>
+                </div>
 
-                    <button className="w-full py-3 bg-brand-primary hover:bg-brand-primary-hover text-white rounded-xl font-bold text-[13px] transition-colors">
-                        Open Email App
-                    </button>
-
-                    <Link
-                        href="/login"
-                        className="inline-flex items-center gap-2 text-[13px] font-semibold text-brand-navy hover:text-brand-emerald transition-colors"
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+                    className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-slate-50"
+                >
+                    <Mail size={30} className="text-brand-navy" />
+                    <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: 0.3, type: 'spring', stiffness: 300 }}
+                        className="absolute -top-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-[#0f766e] shadow-md"
                     >
-                        <ArrowLeft size={16} />
-                        Back to login
-                    </Link>
+                        <CheckCircle2 size={13} className="text-white" />
+                    </motion.div>
                 </motion.div>
-            </>
+
+                <p className="text-[13px] leading-relaxed text-slate-500">
+                    If this email is registered, a recovery OTP will arrive shortly. Also check your spam folder.
+                </p>
+
+                {isLocalSupabase && (
+                    <p className="text-[12px] leading-relaxed text-slate-500">
+                        Local Supabase detected: check test emails at <span className="font-semibold text-brand-navy">http://127.0.0.1:54324</span> (Inbucket).
+                    </p>
+                )}
+
+                <div className="space-y-3">
+                    <button
+                        onClick={() => router.push(`/reset-password?email=${encodeURIComponent(email.trim())}`)}
+                        className="inline-flex w-full items-center justify-center rounded-xl border border-[#0f766e]/20 bg-[#0f766e]/5 px-4 py-2.5 text-sm font-semibold text-[#0f766e] hover:bg-[#0f766e]/10 transition-colors"
+                    >
+                        I have the OTP code
+                    </button>
+                    <button
+                        onClick={() => setIsSubmitted(false)}
+                        className="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-navy shadow-sm hover:bg-slate-50 transition-colors"
+                    >
+                        Try a different email
+                    </button>
+                    <div className="text-center">
+                        <Link
+                            href="/login"
+                            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-brand-navy transition-colors"
+                        >
+                            <ArrowLeft size={15} />
+                            Back to sign in
+                        </Link>
+                    </div>
+                </div>
+            </section>
         );
     }
 
     return (
-        <>
-            <div className="mb-8">
-                <h2 className="text-2xl font-bold text-brand-navy mb-2">Forgot password?</h2>
-                <p className="text-[13px] text-brand-gray leading-relaxed">No worries — we&apos;ll send you reset instructions</p>
-            </div>
-            <div className="flex justify-center mb-6">
-                <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                        <path d="M7 11V7a5 5 0 0 1 9.9-1" />
-                    </svg>
-                </div>
+        <section aria-labelledby="forgot-title" className="space-y-6">
+            <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0f766e]">Password recovery</p>
+                <h2 id="forgot-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>
+                    Forgot your password?
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                    Enter your email and we&apos;ll send a password reset OTP.
+                </p>
             </div>
 
-            <form className="space-y-5" onSubmit={handleSubmit}>
+            <form className="space-y-4" onSubmit={handleSubmit} noValidate>
                 <Input
-                    label="Email Address"
+                    label="Email address"
                     type="email"
-                    placeholder="Enter your registered email"
+                    autoComplete="email"
+                    placeholder="name@example.com"
                     required
                     onChange={(e) => setEmail(e.target.value)}
                     value={email}
@@ -142,21 +151,22 @@ export default function ForgotPasswordPage() {
                     {isLoading ? (
                         <span className="flex items-center gap-2">
                             <Loader2 size={16} className="animate-spin" />
-                            Sending instructions...
+                            Sending...
                         </span>
-                    ) : 'Send reset link'}
+                    ) : 'Send reset OTP'}
                 </Button>
-
-                <div className="text-center">
-                    <Link
-                        href="/login"
-                        className="inline-flex items-center gap-2 text-[13px] font-semibold text-brand-navy hover:text-brand-emerald transition-colors"
-                    >
-                        <ArrowLeft size={16} />
-                        Back to login
-                    </Link>
-                </div>
             </form>
-        </>
+
+            <div className="border-t border-slate-100 pt-5 text-center">
+                <Link
+                    href="/login"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-brand-navy transition-colors"
+                >
+                    <ArrowLeft size={15} />
+                    Back to sign in
+                </Link>
+            </div>
+        </section>
     );
 }
+

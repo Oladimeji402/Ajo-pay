@@ -1,6 +1,6 @@
 import { Container } from '../ui/Container';
-import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
+import { BrandLogo } from '../ui/BrandLogo';
 
 export const Footer = () => {
     const currentYear = new Date().getFullYear();
@@ -65,12 +65,7 @@ export const Footer = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-10 lg:gap-16">
                     {/* Brand Column */}
                     <div className="col-span-2">
-                        <Link href="/" className="flex items-center gap-2.5 mb-5">
-                            <div className="w-8 h-8 bg-gradient-to-br from-brand-emerald to-emerald-500 rounded-lg flex items-center justify-center">
-                                <span className="text-white font-bold text-base">A</span>
-                            </div>
-                            <span className="text-lg font-bold text-white tracking-tight">Ajopay</span>
-                        </Link>
+                        <BrandLogo size="sm" className="mb-5" />
                         <p className="text-[13px] text-slate-400 max-w-xs mb-6 leading-relaxed">
                             The modern digital platform for rotating savings groups. Secure, transparent, and community-driven.
                         </p>

@@ -43,8 +43,12 @@ export async function requireAdmin() {
   return auth;
 }
 
-export function serverErrorResponse(message = "Internal server error") {
-  return NextResponse.json({ error: message }, { status: 500 });
+export function serverErrorResponse(error?: unknown) {
+  if (error) {
+    console.error("Server error:", error);
+  }
+
+  return NextResponse.json({ error: "An unexpected error occurred." }, { status: 500 });
 }
 
 export function badRequestResponse(message: string) {

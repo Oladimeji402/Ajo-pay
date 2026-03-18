@@ -11,13 +11,13 @@ import {
     Bell,
     LogOut,
     Plus,
-    Search,
-    ChevronRight,
+    ArrowUpRight,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/Toast';
-import { notifySuccess } from '@/lib/toast';
+import { notifyError, notifySuccess } from '@/lib/toast';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 
 interface DashboardLayoutProps {
     children: ReactNode;
@@ -65,172 +65,193 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         { name: 'Settings', icon: <Settings size={20} />, path: '/settings' },
     ];
 
-    const getGreeting = () => {
-        const hour = new Date().getHours();
-        if (hour < 12) return 'Good morning';
-        if (hour < 17) return 'Good afternoon';
-        return 'Good evening';
+    const isPathActive = (path: string) => {
+        if (path === '/dashboard') return pathname === '/dashboard';
+        return pathname.startsWith(path);
     };
+
+    const currentSection = (() => {
+        const active = navItems.find((item) => isPathActive(item.path));
+        return active?.name ?? 'Dashboard';
+    })();
+
+    const sectionHeading = (() => {
+        const labels: Record<string, string> = {
+            Dashboard: 'Dashboard Command Center',
+            Groups: 'Groups Workspace',
+            Activity: 'Activity Timeline',
+            Settings: 'Account Settings',
+        };
+
+        return labels[currentSection] ?? `${currentSection} Workspace`;
+    })();
 
     const handleSignOut = async () => {
         const supabase = createSupabaseBrowserClient();
-        await supabase.auth.signOut();
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+            notifyError(showToast, error, 'Unable to sign out right now. Please try again.');
+            return;
+        }
         notifySuccess(showToast, 'Signed out successfully.');
         router.push('/login');
         router.refresh();
     };
 
     return (
-        <div className="min-h-screen bg-[#F5F7FB] flex flex-col md:flex-row">
-            {/* Desktop Sidebar */}
-            <aside className="hidden md:flex w-65 bg-brand-navy flex-col sticky top-0 h-screen">
-                {/* Logo */}
-                <div className="p-6 pb-8">
-                    <Link href="/" className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 bg-linear-to-br from-brand-emerald to-emerald-400 rounded-xl flex items-center justify-center shadow-lg shadow-brand-emerald/30">
-                            <span className="text-white font-bold text-lg">A</span>
-                        </div>
-                        <span className="text-xl font-bold text-white tracking-tight">Ajopay</span>
-                    </Link>
-                </div>
+        <div className="min-h-screen bg-linear-to-b from-slate-50 via-[#F3F6FA] to-white flex flex-col md:flex-row">
+            <aside className="hidden md:flex w-72 shrink-0 sticky top-0 h-screen p-4">
+                <div className="relative w-full rounded-3xl border border-slate-200/70 bg-linear-to-b from-brand-navy via-[#172554] to-[#0B223D] text-white overflow-hidden flex flex-col">
+                    <div className="absolute -top-16 -right-16 h-44 w-44 rounded-full bg-brand-emerald/20 blur-3xl" />
+                    <div className="absolute bottom-8 -left-12 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
 
-                {/* Nav Items */}
-                <nav className="grow px-4 space-y-1">
-                    <p className="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] mb-3">Menu</p>
-                    {navItems.map((item) => {
-                        const isActive = pathname === item.path;
-                        return (
-                            <Link
-                                key={item.name}
-                                href={item.path}
-                                className={`relative flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${isActive
-                                    ? 'bg-white/10 text-white font-bold'
-                                    : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
-                                    }`}
-                            >
-                                {isActive && (
-                                    <motion.div
-                                        layoutId="sidebar-active"
-                                        className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-brand-emerald rounded-r-full"
-                                    />
-                                )}
-                                {item.icon}
-                                <span className="text-sm">{item.name}</span>
-                            </Link>
-                        );
-                    })}
-
-                    {/* Join Group CTA */}
-                    <div className="pt-6">
-                        <p className="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] mb-3">Quick Action</p>
-                        <Link href="/groups" className="w-full flex items-center gap-3 px-4 py-3 bg-linear-to-r from-brand-emerald to-emerald-500 text-white rounded-xl font-semibold text-sm shadow-lg shadow-brand-emerald/20 hover:shadow-brand-emerald/40 transition-all duration-200">
-                            <Plus size={18} />
-                            Join Group
-                        </Link>
+                    <div className="relative p-6 pb-5">
+                        <BrandLogo />
+                        <p className="mt-4 text-[10px] uppercase tracking-[0.2em] text-slate-300 font-semibold">Member Workspace</p>
                     </div>
-                </nav>
 
-                {/* User Card at Bottom */}
-                <div className="p-4 mx-4 mb-4 bg-white/5 rounded-2xl">
-                    <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 bg-linear-to-br from-brand-emerald to-emerald-400 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">
-                            {userInitial}
+                    <nav className="relative grow px-4">
+                        <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] mb-2">Navigate</p>
+                        <div className="space-y-1.5">
+                            {navItems.map((item) => {
+                                const isActive = isPathActive(item.path);
+                                return (
+                                    <Link
+                                        key={item.name}
+                                        href={item.path}
+                                        className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${isActive
+                                            ? 'bg-white/12 text-white shadow-lg shadow-black/15'
+                                            : 'text-slate-300 hover:bg-white/8 hover:text-white'
+                                            }`}
+                                    >
+                                        {isActive && (
+                                            <motion.div
+                                                layoutId="sidebar-active"
+                                                className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full bg-brand-emerald"
+                                            />
+                                        )}
+                                        {item.icon}
+                                        <span className="text-sm font-semibold">{item.name}</span>
+                                    </Link>
+                                );
+                            })}
                         </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-white truncate">{userName}</p>
-                            <div className="flex items-center gap-1.5">
-                                <span className="w-1.5 h-1.5 bg-brand-emerald rounded-full animate-pulse"></span>
-                                <p className="text-[10px] text-slate-400 font-medium truncate">{userEmail}</p>
+
+                        <div className="pt-6">
+                            <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] mb-2">Actions</p>
+                            <div className="space-y-2">
+                                <Link href="/groups" className="w-full inline-flex items-center justify-between rounded-xl bg-linear-to-r from-brand-emerald to-emerald-500 px-3 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-emerald/25 hover:shadow-brand-emerald/45 transition-shadow">
+                                    Join a Group
+                                    <Plus size={16} />
+                                </Link>
+                                <Link href="/activity" className="w-full inline-flex items-center justify-between rounded-xl border border-white/15 bg-white/8 px-3 py-2.5 text-sm font-semibold text-slate-200 hover:text-white hover:bg-white/12 transition-colors">
+                                    Review Activity
+                                    <ArrowUpRight size={15} />
+                                </Link>
                             </div>
                         </div>
+                    </nav>
+
+                    <div className="relative p-4 pt-5">
+                        <div className="rounded-2xl border border-white/10 bg-white/8 p-3.5">
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="h-10 w-10 rounded-full bg-linear-to-br from-brand-emerald to-emerald-400 text-white font-bold text-sm grid place-items-center">
+                                    {userInitial}
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-sm font-semibold text-white truncate">{userName}</p>
+                                    <p className="text-[10px] text-slate-300 truncate">{userEmail}</p>
+                                </div>
+                            </div>
+                            <button onClick={handleSignOut} className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-red-200 hover:border-red-300/30 hover:bg-red-400/10 transition-colors">
+                                <LogOut size={14} />
+                                Sign Out
+                            </button>
+                        </div>
                     </div>
-                    <button onClick={handleSignOut} className="flex items-center gap-2 px-3 py-2 w-full text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all duration-200 text-xs font-medium">
-                        <LogOut size={14} />
-                        <span>Sign Out</span>
-                    </button>
                 </div>
             </aside>
 
-            {/* Main Content Area */}
-            <main className="grow flex flex-col pb-20 md:pb-0 min-w-0">
-                {/* Desktop Header */}
-                <header className="hidden md:flex h-18 bg-white/80 backdrop-blur-xl border-b border-slate-100 items-center justify-between px-8 sticky top-0 z-30">
+            <main className="grow min-w-0 pb-24 md:pb-0">
+                <header className="hidden md:flex sticky top-0 z-30 border-b border-slate-200/80 bg-white/85 backdrop-blur-xl px-8 py-4 items-center justify-between">
                     <div>
-                        <h1 className="text-lg font-bold text-brand-navy">
-                            {getGreeting()}, {userName} 👋
-                        </h1>
-                        <p className="text-xs text-brand-gray">Here&apos;s what&apos;s happening with your savings</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-gray">{currentSection}</p>
+                        <h1 className="text-lg font-semibold text-brand-navy">{sectionHeading}</h1>
                     </div>
-                    <div className="flex items-center gap-3">
-                        {/* Search Bar */}
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
-                            <input
-                                type="text"
-                                placeholder="Search..."
-                                className="w-56 pl-9 pr-4 py-2 text-sm rounded-xl border border-slate-100 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary/30 focus:bg-white transition-all"
-                            />
-                        </div>
 
-                        {/* Notification */}
-                        <button className="relative p-2.5 text-brand-gray hover:bg-slate-50 rounded-xl transition-colors">
-                            <Bell size={20} />
-                            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                    <div className="flex items-center gap-2">
+                        <button className="relative inline-flex items-center justify-center h-10 w-10 rounded-xl border border-slate-200 bg-white text-brand-gray hover:text-brand-navy hover:bg-slate-50 transition-colors">
+                            <Bell size={18} />
+                            <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-brand-emerald" />
                         </button>
+                        <Link href="/groups" className="inline-flex items-center gap-2 rounded-xl bg-brand-navy px-3.5 py-2.5 text-sm font-semibold text-white hover:bg-brand-primary transition-colors">
+                            <Plus size={15} />
+                            Join Group
+                        </Link>
+                    </div>
+                </header>
 
-                        {/* Profile Chip */}
-                        <div className="flex items-center gap-2.5 pl-3 border-l border-slate-100">
-                            <div className="w-9 h-9 bg-linear-to-br from-brand-emerald to-emerald-400 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                                {userInitial}
-                            </div>
-                            <ChevronRight size={14} className="text-slate-300" />
+                <header className="md:hidden sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur-xl px-4 py-3">
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-gray">{currentSection}</p>
+                            <p className="text-sm font-semibold text-brand-navy truncate">{sectionHeading}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button className="relative inline-flex items-center justify-center h-9 w-9 rounded-lg border border-slate-200 bg-white text-brand-gray">
+                                <Bell size={16} />
+                                <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-brand-emerald" />
+                            </button>
+                            <Link href="/groups" className="inline-flex items-center gap-1.5 rounded-lg bg-brand-emerald px-2.5 py-2 text-xs font-semibold text-white">
+                                <Plus size={14} />
+                                Join
+                            </Link>
                         </div>
                     </div>
                 </header>
 
-                {/* Page Content */}
                 <div className="p-4 md:p-8">
                     {children}
                 </div>
             </main>
 
-            {/* Mobile Bottom Navigation */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-100 flex items-center justify-around px-2 z-50 pb-[env(safe-area-inset-bottom)]" style={{ height: '68px' }}>
-                {navItems.map((item, index) => {
-                    const isActive = pathname === item.path;
-                    if (index === 2) {
-                        return (
-                            <React.Fragment key="fab-group">
-                                {/* Center FAB */}
-                                <button className="relative -mt-6 w-12 h-12 bg-linear-to-br from-brand-emerald to-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-brand-emerald/30 active:scale-95 transition-transform">
-                                    <Plus size={22} />
-                                </button>
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 p-3 pb-[calc(env(safe-area-inset-bottom)+12px)]">
+                <div className="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white/95 backdrop-blur-xl shadow-xl shadow-slate-300/30 px-2 py-2">
+                    <div className="grid grid-cols-4 items-end gap-1">
+                        {navItems.map((item) => {
+                            const isActive = isPathActive(item.path);
+                            const isPrimary = item.path === '/groups';
+
+                            if (isPrimary) {
+                                return (
+                                    <Link
+                                        key={item.name}
+                                        href={item.path}
+                                        className={`-mt-5 flex flex-col items-center gap-0.5 rounded-xl px-2 py-2.5 text-[10px] font-bold transition-all ${isActive
+                                            ? 'bg-linear-to-b from-brand-emerald to-emerald-500 text-white shadow-lg shadow-brand-emerald/35'
+                                            : 'bg-linear-to-b from-brand-navy to-brand-primary text-white shadow-md shadow-slate-400/35'
+                                            }`}
+                                    >
+                                        <Plus size={16} />
+                                        <span className="uppercase tracking-[0.08em]">Join</span>
+                                    </Link>
+                                );
+                            }
+
+                            return (
                                 <Link
                                     key={item.name}
                                     href={item.path}
-                                    className={`flex flex-col items-center justify-center gap-0.5 transition-colors ${isActive ? 'text-brand-emerald' : 'text-slate-400'
-                                        }`}
+                                    className={`flex flex-col items-center gap-0.5 rounded-lg px-2 py-1.5 text-[10px] font-semibold transition-colors ${isActive ? 'text-brand-navy' : 'text-slate-400'}`}
                                 >
                                     {item.icon}
-                                    <span className="text-[9px] font-bold uppercase tracking-wider">{item.name}</span>
-                                    {isActive && <span className="w-1 h-1 bg-brand-emerald rounded-full mt-0.5"></span>}
+                                    <span className="uppercase tracking-[0.08em]">{item.name}</span>
+                                    {isActive && <span className="h-1 w-1 rounded-full bg-brand-emerald" />}
                                 </Link>
-                            </React.Fragment>
-                        );
-                    }
-                    return (
-                        <Link
-                            key={item.name}
-                            href={item.path}
-                            className={`flex flex-col items-center justify-center gap-0.5 transition-colors ${isActive ? 'text-brand-emerald' : 'text-slate-400'
-                                }`}
-                        >
-                            {item.icon}
-                            <span className="text-[9px] font-bold uppercase tracking-wider">{item.name}</span>
-                            {isActive && <span className="w-1 h-1 bg-brand-emerald rounded-full mt-0.5"></span>}
-                        </Link>
-                    );
-                })}
+                            );
+                        })}
+                    </div>
+                </div>
             </nav>
         </div>
     );

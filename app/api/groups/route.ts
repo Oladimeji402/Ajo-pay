@@ -38,7 +38,7 @@ export async function GET(request: Request) {
       query = applyFilters(query);
 
       const { data, error } = await query;
-      if (error) return serverErrorResponse(error.message);
+      if (error) return serverErrorResponse(error);
 
       return NextResponse.json({ data });
     }
@@ -48,7 +48,7 @@ export async function GET(request: Request) {
       .select("group_id")
       .eq("user_id", auth.user.id);
 
-    if (membershipError) return serverErrorResponse(membershipError.message);
+    if (membershipError) return serverErrorResponse(membershipError);
 
     const groupIds = (memberships ?? []).map((member) => member.group_id);
     if (groupIds.length === 0) {
@@ -65,7 +65,7 @@ export async function GET(request: Request) {
 
     const { data, error } = await query;
 
-    if (error) return serverErrorResponse(error.message);
+    if (error) return serverErrorResponse(error);
     return NextResponse.json({ data });
   } catch {
     return serverErrorResponse();
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
     if (auth.error) return auth.error;
 
     const body = await request.json();
-    if (!body.name || !body.contributionAmount || !body.frequency || !body.maxMembers || !body.totalCycles) {
+    if (!body.name || !body.contributionAmount || !body.frequency || !body.maxMembers || !body.totalCycles || !body.startDate) {
       return badRequestResponse("Missing required fields for group creation.");
     }
 
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
       frequency: String(body.frequency).toLowerCase(),
       max_members: Number(body.maxMembers),
       total_cycles: Number(body.totalCycles),
-      start_date: body.startDate ? String(body.startDate) : null,
+      start_date: String(body.startDate),
       whatsapp_group_phone: body.whatsappGroupPhone ? String(body.whatsappGroupPhone) : null,
       status: body.status ? String(body.status).toLowerCase() : "pending",
       color: body.color ? String(body.color) : "#3B82F6",

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Download, Loader2, Search } from 'lucide-react';
 import { LastSynced } from '@/components/admin/LastSynced';
 import { DateRangeSelector, DateRangeValue } from '@/components/admin/DateRangeSelector';
@@ -70,13 +70,15 @@ export default function AdminTransactionsPage() {
         if (!res.ok) throw new Error(json.error || 'Failed to load transactions.');
         const nextRows = Array.isArray(json.data) ? json.data : [];
 
-        if (refreshTrigger > 0 && nextRows.length > 0 && nextRows[0]?.id !== transactions[0]?.id) {
-          const nextId = String(nextRows[0].id);
-          setHighlightedTxId(nextId);
-          setTimeout(() => setHighlightedTxId(''), 2200);
-        }
+        setTransactions((previousRows) => {
+          if (refreshTrigger > 0 && nextRows.length > 0 && nextRows[0]?.id !== previousRows[0]?.id) {
+            const nextId = String(nextRows[0].id);
+            setHighlightedTxId(nextId);
+            setTimeout(() => setHighlightedTxId(''), 2200);
+          }
 
-        setTransactions(nextRows);
+          return nextRows;
+        });
         setLastSyncedAt(new Date().toISOString());
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unable to load transactions.');
@@ -159,14 +161,14 @@ export default function AdminTransactionsPage() {
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([, value]) => value);
 
-  const toggleSort = (next: SortKey) => {
+  const toggleSort = useCallback((next: SortKey) => {
     if (sortKey === next) {
       setSortDir((value) => (value === 'asc' ? 'desc' : 'asc'));
       return;
     }
     setSortKey(next);
     setSortDir('desc');
-  };
+  }, [sortKey]);
 
   const exportCsv = () => {
     const header = ['Date', 'User', 'Group', 'Type', 'Status', 'Amount', 'Reference', 'Provider Reference'];
@@ -239,7 +241,7 @@ export default function AdminTransactionsPage() {
         render: (tx) => <span className="text-xs text-slate-600">{new Date(tx.created_at).toLocaleString()}</span>,
       },
     ],
-    [sortKey, sortDir],
+    [toggleSort],
   );
 
   if (loading) return <div className="grid min-h-80 place-items-center"><Loader2 className="animate-spin" size={16} /></div>;
