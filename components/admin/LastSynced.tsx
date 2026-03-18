@@ -27,19 +27,17 @@ function formatRelativeSync(value: string | null, nowMs: number) {
 }
 
 export function LastSynced({ timestamp, loading = false }: LastSyncedProps) {
-    const [nowMs, setNowMs] = useState(() => {
-        if (!timestamp) return 0;
-
-        const ts = new Date(timestamp).getTime();
-        return Number.isFinite(ts) ? ts : 0;
-    });
+    const [nowMs, setNowMs] = useState(0);
 
     useEffect(() => {
         const id = window.setInterval(() => setNowMs(Date.now()), 1000);
         return () => window.clearInterval(id);
     }, []);
 
-    const label = useMemo(() => formatRelativeSync(timestamp, nowMs), [timestamp, nowMs]);
+    const label = useMemo(() => {
+        if (nowMs === 0) return 'Checking sync status...';
+        return formatRelativeSync(timestamp, nowMs);
+    }, [timestamp, nowMs]);
 
     return (
         <p className="text-xs font-medium text-slate-500">
