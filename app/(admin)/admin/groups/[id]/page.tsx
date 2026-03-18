@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Loader2 } from 'lucide-react';
+import { TriangleAlert, X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { notifySuccess } from '@/lib/toast';
 import { formatScheduleDate, getCurrentCycleDueDate } from '@/lib/ajo-schedule';
@@ -31,6 +31,16 @@ type GroupData = {
     members: GroupMember[];
 };
 
+function GroupDetailSkeleton() {
+    return (
+        <div className="space-y-5 animate-pulse">
+            <div className="h-4 w-28 rounded bg-slate-200" />
+            <div className="rounded-2xl border border-slate-100 bg-white p-4 h-64" />
+            <div className="rounded-2xl border border-slate-100 bg-white p-4 h-72" />
+        </div>
+    );
+}
+
 export default function AdminGroupDetailPage() {
     const params = useParams<{ id: string }>();
     const id = params.id;
@@ -40,6 +50,8 @@ export default function AdminGroupDetailPage() {
     const [error, setError] = useState('');
     const [group, setGroup] = useState<GroupData | null>(null);
     const [startDate, setStartDate] = useState('');
+    const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
+    const [memberToRemove, setMemberToRemove] = useState<GroupMember | null>(null);
     const { showToast } = useToast();
 
     const loadData = useCallback(async () => {
@@ -114,7 +126,37 @@ export default function AdminGroupDetailPage() {
         }
     };
 
-    if (loading) return <div className="min-h-80 grid place-items-center"><Loader2 className="animate-spin" size={16} /></div>;
+    const removeMember = async (member: GroupMember) => {
+        if (!group) return;
+
+        if (memberToRemove?.id !== member.id) {
+            setMemberToRemove(member);
+            return;
+        }
+
+        setRemovingMemberId(member.id);
+        setError('');
+
+        try {
+            const res = await fetch(`/api/admin/groups/${group.id}/members/${member.user_id}`, {
+                method: 'DELETE',
+                cache: 'no-store',
+            });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error || 'Failed to remove member.');
+            notifySuccess(showToast, 'Member removed successfully.');
+            await loadData();
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Could not remove member.';
+            setError(message);
+            showToast(message, { type: 'error' });
+        } finally {
+            setRemovingMemberId(null);
+            setMemberToRemove(null);
+        }
+    };
+
+    if (loading) return <GroupDetailSkeleton />;
     if (!group) return <div className="text-sm text-red-600">Group not found.</div>;
 
     const currentDueDate = getCurrentCycleDueDate(group);
@@ -175,12 +217,64 @@ export default function AdminGroupDetailPage() {
                                 <p className="font-semibold text-brand-navy">{member.profiles?.name || member.profiles?.email || member.user_id}</p>
                                 <p className="text-xs text-brand-gray">Contribution: {member.contribution_status} · Payout: {member.payout_status}</p>
                             </div>
-                            <p className="text-xs text-brand-gray">Position #{member.position}</p>
+                            <div className="flex items-center gap-2">
+                                <p className="text-xs text-brand-gray">Position #{member.position}</p>
+                                <button
+                                    disabled={saving || removingMemberId === member.id}
+                                    onClick={() => setMemberToRemove(member)}
+                                    className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-bold text-red-700 hover:bg-red-100 disabled:opacity-60"
+                                >
+                                    {removingMemberId === member.id ? 'Removing...' : 'Remove'}
+                                </button>
+                            </div>
                         </div>
                     ))}
                     {group.members.length === 0 && <p className="text-sm text-brand-gray">No members yet.</p>}
                 </div>
             </div>
+
+            {memberToRemove && group && (
+                <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/55 px-4">
+                    <div className="w-full max-w-md rounded-3xl border border-red-200 bg-white p-6 shadow-2xl shadow-slate-900/20">
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-red-600">Remove member</p>
+                                <h2 className="mt-2 text-xl font-semibold text-brand-navy">Confirm member removal?</h2>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setMemberToRemove(null)}
+                                className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50"
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
+
+                        <p className="mt-4 text-sm leading-relaxed text-slate-600">
+                            Remove {memberToRemove.profiles?.name || memberToRemove.profiles?.email || 'this member'} from {group.name}? This action is tracked in the audit log.
+                        </p>
+
+                        <div className="mt-5 flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setMemberToRemove(null)}
+                                className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-navy hover:bg-slate-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                disabled={removingMemberId === memberToRemove.id}
+                                onClick={() => void removeMember(memberToRemove)}
+                                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+                            >
+                                <TriangleAlert size={14} />
+                                {removingMemberId === memberToRemove.id ? 'Removing...' : 'Confirm remove'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

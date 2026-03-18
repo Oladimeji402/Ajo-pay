@@ -3,11 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
+  Banknote,
   CalendarCheck2,
   Clock3,
-  DollarSign,
   Layers3,
-  Loader2,
   Percent,
   Users,
 } from 'lucide-react';
@@ -121,6 +120,34 @@ function sumPreviousMonth(rows: TrendPoint[]) {
   }, 0);
 }
 
+function AdminOverviewSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      <div className="flex items-center justify-between gap-3">
+        <div className="space-y-2">
+          <div className="h-7 w-48 rounded bg-slate-200" />
+          <div className="h-3 w-32 rounded bg-slate-200" />
+        </div>
+        <div className="h-9 w-40 rounded-xl bg-slate-200" />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+        {Array.from({ length: 6 }, (_, idx) => (
+          <div key={idx} className="rounded-2xl border border-slate-100 bg-white p-4 h-24" />
+        ))}
+      </div>
+      <div className="grid gap-4 xl:grid-cols-2">
+        <div className="rounded-2xl border border-slate-100 bg-white p-4 h-64" />
+        <div className="rounded-2xl border border-slate-100 bg-white p-4 h-64" />
+      </div>
+      <div className="grid gap-4 xl:grid-cols-3">
+        <div className="rounded-2xl border border-slate-100 bg-white p-4 h-56" />
+        <div className="rounded-2xl border border-slate-100 bg-white p-4 h-56" />
+        <div className="rounded-2xl border border-slate-100 bg-white p-4 h-56" />
+      </div>
+    </div>
+  );
+}
+
 export default function AdminOverviewPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -202,11 +229,7 @@ export default function AdminOverviewPage() {
   }, [refreshTrigger, trendRange]);
 
   if (loading && !dashboard) {
-    return (
-      <div className="grid min-h-80 place-items-center text-sm text-brand-gray">
-        <Loader2 className="animate-spin" size={16} />
-      </div>
-    );
+    return <AdminOverviewSkeleton />;
   }
 
   if (error || !dashboard) {
@@ -298,7 +321,7 @@ export default function AdminOverviewPage() {
         <StatCard
           label="Total Volume"
           value={formatCurrency(dashboard.stats.totalVolume)}
-          icon={DollarSign}
+          icon={Banknote}
           trend={trendBadge(volumeCurrent, volumePrevious)}
           delay={0.1}
           pulseOnChange={refreshing}
@@ -358,7 +381,7 @@ export default function AdminOverviewPage() {
                 Count
               </button>
             </div>
-            {refreshing ? <Loader2 size={14} className="animate-spin text-slate-500" /> : null}
+            {refreshing ? <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" /> : null}
           </div>
 
           <AdminAreaChart
