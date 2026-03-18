@@ -121,8 +121,8 @@ export async function POST(request: Request) {
       return badRequestResponse(paymentRecordError.message);
     }
 
-    const callbackUrlBase = process.env.APP_URL || "http://localhost:3000";
-    const callbackUrl = `${callbackUrlBase}/dashboard`;
+    const callbackUrlBase = process.env.APP_URL || "http://localhost:3001";
+    const callbackUrl = `${callbackUrlBase}/payments/status`;
 
     const paystackData = await initializePaystackTransaction({
       email: auth.user.email ?? "no-reply@ajopay.local",

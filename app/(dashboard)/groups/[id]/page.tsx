@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Users, Wallet, Calendar, Loader2, CheckCircle2, LogOut } from 'lucide-react';
+import { ArrowLeft, Users, Wallet, Calendar, Loader2, LogOut } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { openPaystackInline } from '@/lib/paystack-inline';
 import { useToast } from '@/components/ui/Toast';
@@ -44,21 +44,29 @@ type ContributionRow = {
     created_at: string;
 };
 
+type PaymentPhase = 'idle' | 'initializing' | 'verifying';
+
 export default function GroupDetailsPage() {
     const params = useParams<{ id: string }>();
     const router = useRouter();
     const groupId = params.id;
+    const paymentPhaseRef = useRef<PaymentPhase>('idle');
 
     const [loading, setLoading] = useState(true);
     const [paying, setPaying] = useState(false);
     const [leaving, setLeaving] = useState(false);
     const [error, setError] = useState('');
+    const [paymentPhase, setPaymentPhase] = useState<PaymentPhase>('idle');
 
     const [group, setGroup] = useState<GroupDetail | null>(null);
     const [contributions, setContributions] = useState<ContributionRow[]>([]);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [currentUserEmail, setCurrentUserEmail] = useState<string>('customer@ajopay.local');
     const { showToast } = useToast();
+
+    useEffect(() => {
+        paymentPhaseRef.current = paymentPhase;
+    }, [paymentPhase]);
 
     const loadData = useCallback(async () => {
         if (!groupId) return;
@@ -118,6 +126,7 @@ export default function GroupDetailsPage() {
 
         setError('');
         setPaying(true);
+        setPaymentPhase('initializing');
 
         try {
             const initRes = await fetch('/api/payments/initialize', {
@@ -156,6 +165,7 @@ export default function GroupDetailsPage() {
                 ref: data.reference,
                 access_code: data.accessCode,
                 callback: (response) => {
+                    setPaymentPhase('verifying');
                     void (async () => {
                         try {
                             const verifyRes = await fetch(`/api/payments/verify?reference=${encodeURIComponent(response.reference)}`, {
@@ -168,17 +178,22 @@ export default function GroupDetailsPage() {
                             }
 
                             notifySuccess(showToast, 'Contribution verified successfully.');
-                            await loadData();
+                            router.push(`/payments/status?reference=${encodeURIComponent(response.reference)}`);
+                            router.refresh();
                         } catch (err) {
+                            setPaymentPhase('idle');
                             notifyError(showToast, err, 'Could not verify payment.');
                         }
                     })();
                 },
                 onClose: () => {
-                    notifyWarning(showToast, 'Payment window closed before completion.');
+                    if (paymentPhaseRef.current !== 'verifying') {
+                        notifyWarning(showToast, 'Payment window closed before completion.');
+                    }
                 },
             });
         } catch (err) {
+            setPaymentPhase('idle');
             notifyError(showToast, err, 'Unable to process contribution.');
         } finally {
             setPaying(false);
@@ -228,6 +243,19 @@ export default function GroupDetailsPage() {
 
     return (
         <div className="max-w-4xl mx-auto space-y-5">
+            {paymentPhase !== 'idle' && (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    <p className="font-bold">
+                        {paymentPhase === 'initializing' ? 'Preparing payment...' : 'Verifying payment...'}
+                    </p>
+                    <p className="mt-1 text-xs text-amber-800">
+                        {paymentPhase === 'initializing'
+                            ? 'Please wait while Ajopay opens the secure Paystack checkout.'
+                            : 'Please keep this page open while we confirm your contribution. You will be redirected automatically.'}
+                    </p>
+                </div>
+            )}
+
             <Link href="/groups" className="inline-flex items-center gap-2 text-xs font-bold text-brand-gray hover:text-brand-navy">
                 <ArrowLeft size={14} /> Back to Groups
             </Link>
@@ -277,10 +305,10 @@ export default function GroupDetailsPage() {
                         </button>
                         <button
                             onClick={handleContribution}
-                            disabled={paying}
+                            disabled={paying || paymentPhase !== 'idle'}
                             className="px-4 py-2 rounded-xl bg-brand-emerald text-white text-sm font-bold disabled:opacity-60"
                         >
-                            {paying ? 'Processing...' : 'Make Contribution'}
+                            {paymentPhase === 'initializing' ? 'Opening Checkout...' : paymentPhase === 'verifying' ? 'Verifying Payment...' : paying ? 'Processing...' : 'Make Contribution'}
                         </button>
                     </div>
                 </div>

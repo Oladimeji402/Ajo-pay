@@ -12,24 +12,23 @@ export const Footer = () => {
                 { name: 'How it Works', href: '#how-it-works' },
                 { name: 'Features', href: '#features' },
                 { name: 'Security', href: '#security' },
-                { name: 'Pricing', href: '#' },
+                { name: 'Support', href: '/support' },
             ],
         },
         {
             title: 'Company',
             links: [
-                { name: 'About Us', href: '#' },
-                { name: 'Careers', href: '#' },
-                { name: 'Blog', href: '#' },
-                { name: 'Contact', href: '#' },
+                { name: 'About Ajopay', href: '/support' },
+                { name: 'Help Center', href: '/support' },
+                { name: 'Contact', href: '/support' },
             ],
         },
         {
             title: 'Legal',
             links: [
-                { name: 'Privacy Policy', href: '#' },
-                { name: 'Terms of Service', href: '#' },
-                { name: 'Cookie Policy', href: '#' },
+                { name: 'Privacy Policy', href: '/privacy' },
+                { name: 'Terms of Service', href: '/terms' },
+                { name: 'Support', href: '/support' },
             ],
         },
     ];
@@ -102,12 +101,12 @@ export const Footer = () => {
                             <ul className="space-y-3">
                                 {group.links.map((link) => (
                                     <li key={link.name}>
-                                        <a
+                                        <Link
                                             href={link.href}
                                             className="text-[13px] text-slate-400 hover:text-white transition-colors"
                                         >
                                             {link.name}
-                                        </a>
+                                        </Link>
                                     </li>
                                 ))}
                             </ul>

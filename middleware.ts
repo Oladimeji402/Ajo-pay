@@ -1,7 +1,7 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const USER_PROTECTED_PATHS = ["/dashboard", "/groups", "/activity", "/settings", "/onboarding"];
+const USER_PROTECTED_PATHS = ["/dashboard", "/groups", "/activity", "/settings", "/onboarding", "/payments"];
 const ADMIN_PROTECTED_PATH = "/admin";
 const AUTH_PAGES = ["/login", "/signup", "/forgot-password", "/reset-password", "/admin-login"];
 
@@ -83,5 +83,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/groups/:path*", "/activity/:path*", "/settings/:path*", "/onboarding", "/admin/:path*", "/login", "/signup", "/forgot-password", "/reset-password", "/admin-login"],
+  matcher: ["/dashboard/:path*", "/groups/:path*", "/activity/:path*", "/settings/:path*", "/onboarding", "/payments/:path*", "/admin/:path*", "/login", "/signup", "/forgot-password", "/reset-password", "/admin-login"],
 };
