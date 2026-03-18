@@ -165,7 +165,10 @@ function ResetPasswordContent() {
 
     const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword;
     const passwordsMismatch = confirmPassword.length > 0 && password !== confirmPassword;
-    const isEmailLockedForOtp = otp.trim().length > 0 || isVerifyingOtp;
+    // Lock the email field permanently once the OTP flow has started (OTP typed, verifying, or verified).
+    // This prevents the "email swap" attack where an attacker verifies OTP for one email
+    // then changes the email field to reset a different account's password.
+    const isEmailLockedForOtp = isOtpVerified || otp.trim().length > 0 || isVerifyingOtp;
 
     if (isSuccess) {
         return (
@@ -242,7 +245,7 @@ function ResetPasswordContent() {
                         />
 
                         {isEmailLockedForOtp && (
-                            <p className="text-[11px] text-slate-500">Email is locked while entering OTP. Clear the OTP field to edit.</p>
+                            <p className="text-[11px] text-slate-500">Email is locked for this session for security.</p>
                         )}
 
                         <Input

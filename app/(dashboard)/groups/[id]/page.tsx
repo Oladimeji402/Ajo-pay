@@ -72,7 +72,9 @@ export default function GroupDetailsPage() {
                 data: { user },
             } = await supabase.auth.getUser();
             setCurrentUserId(user?.id ?? null);
-            setCurrentUserEmail(user?.email ?? 'customer@ajopay.local');
+            // Do not fall back to a dummy email — if the email is missing we must
+            // abort the payment rather than send a real transaction under a fake address.
+            setCurrentUserEmail(user?.email ?? '');
 
             const [groupRes, contributionsRes] = await Promise.all([
                 fetch(`/api/groups/${groupId}`, { cache: 'no-store' }),
@@ -147,6 +149,12 @@ export default function GroupDetailsPage() {
 
     const handleContribution = async () => {
         if (!group || !groupId) return;
+
+        // Guard: a verified email address is required to process payments.
+        if (!currentUserEmail) {
+            notifyError(showToast, new Error('Email missing'), 'Your account email is missing. Please update your profile settings before making a payment.');
+            return;
+        }
 
         setError('');
         setPaying(true);

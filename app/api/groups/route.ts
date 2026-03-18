@@ -30,16 +30,34 @@ export async function GET(request: Request) {
     };
 
     if (scope === "all") {
+      // Regular users may discover joinable groups (metadata only — no member PII).
+      // Admins see all statuses; regular users only see pending/active groups.
+      const adminCheck = await requireAdmin();
+      const isAdmin = !adminCheck.error;
+
+      const DISCOVER_FIELDS = "id, name, invite_code, contribution_amount, frequency, max_members, current_cycle, total_cycles, start_date, status, color, category";
+
+      if (isAdmin) {
+        // Admins: unrestricted full list
+        let query = auth.supabase
+          .from("groups")
+          .select(DISCOVER_FIELDS)
+          .order("created_at", { ascending: false });
+        query = applyFilters(query);
+        const { data, error } = await query;
+        if (error) return serverErrorResponse(error);
+        return NextResponse.json({ data });
+      }
+
+      // Regular users: only joinable groups
       let query = auth.supabase
         .from("groups")
-        .select("*")
+        .select(DISCOVER_FIELDS)
+        .in("status", ["pending", "active"])
         .order("created_at", { ascending: false });
-
       query = applyFilters(query);
-
       const { data, error } = await query;
       if (error) return serverErrorResponse(error);
-
       return NextResponse.json({ data });
     }
 

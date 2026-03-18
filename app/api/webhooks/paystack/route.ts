@@ -35,7 +35,13 @@ export async function POST(request: Request) {
     });
 
     if (result.notFound) {
+      // Return 200 so Paystack does not retry — reference is simply unknown to us
       return NextResponse.json({ received: true, warning: "Reference not found." });
+    }
+
+    if (result.idempotent) {
+      // Already processed — return 200 immediately to prevent duplicate side-effects on retry
+      return NextResponse.json({ received: true, note: "Already processed." });
     }
 
     return NextResponse.json({
@@ -43,6 +49,9 @@ export async function POST(request: Request) {
       whatsapp: result.whatsapp,
     });
   } catch (error) {
-    return serverErrorResponse(error);
+    // Always return 200 on unexpected errors to prevent Paystack from retrying indefinitely.
+    // Errors are logged via serverErrorResponse internals.
+    console.error("[webhook/paystack] Unexpected error:", error);
+    return NextResponse.json({ received: true, error: "Internal processing error." });
   }
 }
