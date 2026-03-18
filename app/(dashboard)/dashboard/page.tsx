@@ -213,10 +213,18 @@ export default function DashboardPage() {
 
     if (loading) {
         return (
-            <div className="min-h-80 grid place-items-center text-brand-gray">
-                <div className="flex items-center gap-2 text-sm font-semibold">
-                    <Loader2 className="animate-spin" size={16} />
-                    Loading dashboard...
+            <div className="max-w-6xl mx-auto space-y-6 animate-pulse">
+                <div className="rounded-3xl bg-slate-200 h-36" />
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    {[0, 1, 2, 3].map((i) => (
+                        <div key={i} className="rounded-2xl border border-slate-100 bg-white h-20" />
+                    ))}
+                </div>
+                <div className="rounded-3xl border border-slate-100 bg-white h-40" />
+                <div className="rounded-3xl border border-slate-100 bg-white h-56" />
+                <div className="grid gap-4 xl:grid-cols-[1.6fr_1fr]">
+                    <div className="rounded-3xl border border-slate-100 bg-white h-64" />
+                    <div className="rounded-3xl border border-slate-100 bg-white h-44" />
                 </div>
             </div>
         );
@@ -238,7 +246,14 @@ export default function DashboardPage() {
                             Savings Control Room
                         </h1>
                         <p className="text-sm text-white/80 max-w-xl">
-                            {profile?.name || 'Member'}, your savings rhythm is at <span className="font-semibold text-white">{momentumScore}% momentum</span>. Focus on today&apos;s due cycles to keep payouts on track.
+                            {profile?.name || 'Member'}, your savings rhythm is at{' '}
+                            <span className="relative group/tooltip inline-block">
+                                <span className="font-semibold text-white cursor-help underline decoration-dotted decoration-white/50">{momentumScore}% momentum</span>
+                                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 rounded-xl border border-white/20 bg-brand-navy px-3 py-2 text-[11px] text-white/80 shadow-lg opacity-0 group-hover/tooltip:opacity-100 transition-opacity z-20 text-left leading-relaxed">
+                                    Momentum = the percentage of your active groups where you have already paid your contribution for the current cycle.
+                                    <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-brand-navy" />
+                                </span>
+                            </span>. Focus on today&apos;s due cycles to keep payouts on track.
                         </p>
                     </div>
 

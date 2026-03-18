@@ -1,6 +1,21 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { badRequestResponse, requireAdmin, requireUser, serverErrorResponse } from "@/lib/api/auth";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+
+async function addMemberCounts<T extends { id: string }>(rows: T[]): Promise<Array<T & { member_count: number }>> {
+  if (rows.length === 0) return rows.map((r) => ({ ...r, member_count: 0 }));
+  const admin = createSupabaseAdminClient();
+  const { data: memberRows } = await admin
+    .from("group_members")
+    .select("group_id")
+    .in("group_id", rows.map((r) => r.id));
+  const counts: Record<string, number> = {};
+  for (const row of (memberRows ?? [])) {
+    counts[row.group_id] = (counts[row.group_id] ?? 0) + 1;
+  }
+  return rows.map((r) => ({ ...r, member_count: counts[r.id] ?? 0 }));
+}
 
 const createGroupSchema = z.object({
   name: z.string().min(1, "name is required"),
@@ -61,7 +76,7 @@ export async function GET(request: Request) {
         query = applyFilters(query);
         const { data, error } = await query;
         if (error) return serverErrorResponse(error);
-        return NextResponse.json({ data });
+        return NextResponse.json({ data: await addMemberCounts(data ?? []) });
       }
 
       // Regular users: only joinable groups
@@ -73,7 +88,7 @@ export async function GET(request: Request) {
       query = applyFilters(query);
       const { data, error } = await query;
       if (error) return serverErrorResponse(error);
-      return NextResponse.json({ data });
+      return NextResponse.json({ data: await addMemberCounts(data ?? []) });
     }
 
     const { data: memberships, error: membershipError } = await auth.supabase
@@ -99,7 +114,7 @@ export async function GET(request: Request) {
     const { data, error } = await query;
 
     if (error) return serverErrorResponse(error);
-    return NextResponse.json({ data });
+    return NextResponse.json({ data: await addMemberCounts(data ?? []) });
   } catch {
     return serverErrorResponse();
   }

@@ -8,6 +8,7 @@ import {
     Building2,
     ChevronRight,
     CheckCircle2,
+    Copy,
     Eye,
     EyeOff,
     KeyRound,
@@ -289,6 +290,15 @@ export default function SettingsPage() {
         router.refresh();
     };
 
+    const copyToClipboard = async (value: string) => {
+        try {
+            await navigator.clipboard.writeText(value);
+            notifySuccess(showToast, 'Copied to clipboard.', { duration: 2200 });
+        } catch (err) {
+            notifyError(showToast, err, 'Could not copy to clipboard.');
+        }
+    };
+
     const createInAppNotification = async (payload: {
         type: string;
         title: string;
@@ -549,23 +559,40 @@ export default function SettingsPage() {
                                 </div>
                                 <div>
                                     <label className="block text-xs font-semibold text-brand-gray mb-1">Bank Account</label>
-                                    <input
-                                        value={bankAccount}
-                                        onChange={(e) => {
-                                            hasEditedBankDetails.current = true;
-                                            setBankAccount(e.target.value.replace(/\D/g, '').slice(0, 10));
-                                            setResolvedAccountName('');
-                                            setVerificationError('');
-                                        }}
-                                        inputMode="numeric"
-                                        pattern="[0-9]{10}"
-                                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
-                                        placeholder="0123456789"
-                                    />
+                                    <div className="relative">
+                                        <input
+                                            value={bankAccount}
+                                            onChange={(e) => {
+                                                hasEditedBankDetails.current = true;
+                                                setBankAccount(e.target.value.replace(/\D/g, '').slice(0, 10));
+                                                setResolvedAccountName('');
+                                                setVerificationError('');
+                                            }}
+                                            inputMode="numeric"
+                                            pattern="[0-9]{10}"
+                                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm"
+                                            placeholder="0123456789"
+                                        />
+                                        {bankAccount && (
+                                            <button
+                                                type="button"
+                                                onClick={() => void copyToClipboard(bankAccount)}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                                                title="Copy account number"
+                                            >
+                                                <Copy size={16} />
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                                 <div className="min-h-7 text-xs rounded-xl border border-slate-200 bg-white px-3 py-2">
                                     {isVerifyingAccount && <span className="inline-flex items-center gap-1.5 font-medium text-brand-gray"><Loader2 size={13} className="animate-spin" />Verifying account details...</span>}
-                                    {!isVerifyingAccount && !!resolvedAccountName && <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-700"><CheckCircle2 size={13} />{resolvedAccountName}</span>}
+                                    {!isVerifyingAccount && !!resolvedAccountName && (
+                                        <span className="inline-flex items-center justify-between">
+                                            <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-700"><CheckCircle2 size={13} />{resolvedAccountName}</span>
+                                            <button type="button" onClick={() => void copyToClipboard(resolvedAccountName)} className="text-emerald-700 hover:text-emerald-900"><Copy size={13} /></button>
+                                        </span>
+                                    )}
                                     {!isVerifyingAccount && !!verificationError && <span className="inline-flex items-center gap-1.5 font-medium text-red-600"><XCircle size={13} />{verificationError}</span>}
                                 </div>
                                 <button disabled={saving || !canSave} className="w-full rounded-xl bg-brand-navy text-white px-4 py-2.5 text-sm font-semibold disabled:opacity-60">{saving ? 'Saving...' : 'Save Changes'}</button>
@@ -699,19 +726,31 @@ export default function SettingsPage() {
 
                         <div>
                             <label className="block text-xs font-semibold text-brand-gray mb-1">Bank Account</label>
-                            <input
-                                value={bankAccount}
-                                onChange={(e) => {
-                                    hasEditedBankDetails.current = true;
-                                    setBankAccount(e.target.value.replace(/\D/g, '').slice(0, 10));
-                                    setResolvedAccountName('');
-                                    setVerificationError('');
-                                }}
-                                inputMode="numeric"
-                                pattern="[0-9]{10}"
-                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
-                                placeholder="0123456789"
-                            />
+                            <div className="relative">
+                                <input
+                                    value={bankAccount}
+                                    onChange={(e) => {
+                                        hasEditedBankDetails.current = true;
+                                        setBankAccount(e.target.value.replace(/\D/g, '').slice(0, 10));
+                                        setResolvedAccountName('');
+                                        setVerificationError('');
+                                    }}
+                                    inputMode="numeric"
+                                    pattern="[0-9]{10}"
+                                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm"
+                                    placeholder="0123456789"
+                                />
+                                {bankAccount && (
+                                    <button
+                                        type="button"
+                                        onClick={() => void copyToClipboard(bankAccount)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                                        title="Copy account number"
+                                    >
+                                        <Copy size={16} />
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
 
@@ -723,9 +762,19 @@ export default function SettingsPage() {
                             </span>
                         )}
                         {!isVerifyingAccount && !!resolvedAccountName && (
-                            <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-700">
-                                <CheckCircle2 size={13} />
-                                {resolvedAccountName}
+                            <span className="inline-flex items-center justify-between">
+                                <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-700">
+                                    <CheckCircle2 size={13} />
+                                    {resolvedAccountName}
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => void copyToClipboard(resolvedAccountName)}
+                                    className="text-emerald-700 hover:text-emerald-900 transition-colors"
+                                    title="Copy account name"
+                                >
+                                    <Copy size={13} />
+                                </button>
                             </span>
                         )}
                         {!isVerifyingAccount && !!verificationError && (
