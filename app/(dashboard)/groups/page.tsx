@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Users, Search, Calendar, Wallet, ChevronRight, Loader2, Sparkles, Compass, Layers3 } from 'lucide-react';
+import { Users, Search, Calendar, Wallet, ChevronRight, Loader2, Sparkles, Compass, Layers3, Copy, Check } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
 import { formatScheduleDate, getCurrentCycleDueDate } from '@/lib/ajo-schedule';
@@ -41,12 +41,25 @@ export default function GroupsPage() {
     const [joinedGroups, setJoinedGroups] = useState<GroupRow[]>([]);
     const [discoverGroups, setDiscoverGroups] = useState<GroupRow[]>([]);
     const [contributions, setContributions] = useState<ContributionRow[]>([]);
+    const [copiedCode, setCopiedCode] = useState<string | null>(null);
+    const [isSearching, setIsSearching] = useState(false);
     const { showToast } = useToast();
 
-    const loadData = async (searchValue = joinSearch) => {
+    const handleCopyCode = async (code: string) => {
+        try {
+            await navigator.clipboard.writeText(code);
+            setCopiedCode(code);
+            setTimeout(() => setCopiedCode(null), 2000);
+        } catch {
+            notifyError(showToast, new Error('Copy failed'), 'Could not copy invite code.');
+        }
+    };
+
+    const loadData = async (searchValue = joinSearch, isBackgroundUpdate = false) => {
         try {
             setError('');
-            setLoading(true);
+            if (!isBackgroundUpdate) setLoading(true);
+            else setIsSearching(true);
 
             const discoverQuery = searchValue.trim()
                 ? `?scope=all&q=${encodeURIComponent(searchValue.trim())}`
@@ -85,7 +98,8 @@ export default function GroupsPage() {
             setError(err instanceof Error ? err.message : 'Unable to load groups.');
             notifyError(showToast, err, 'Failed to load groups. Please refresh.');
         } finally {
-            setLoading(false);
+            if (!isBackgroundUpdate) setLoading(false);
+            else setIsSearching(false);
         }
     };
 
@@ -96,7 +110,7 @@ export default function GroupsPage() {
 
     useEffect(() => {
         const timer = window.setTimeout(() => {
-            void loadData(joinSearch);
+            void loadData(joinSearch, true);
         }, 280);
 
         return () => window.clearTimeout(timer);
@@ -272,12 +286,16 @@ export default function GroupsPage() {
                         <p className="text-xs text-brand-gray">Search by group name or invite code.</p>
                     </div>
                     <div className="relative w-80 max-w-full">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                        {isSearching ? (
+                            <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 animate-spin" size={14} />
+                        ) : (
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                        )}
                         <input
                             type="text"
                             value={joinSearch}
                             onChange={(e) => setJoinSearch(e.target.value)}
-                            placeholder="Find by group name or code"
+                            placeholder="Search by name or paste invite code"
                             className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
                         />
                     </div>
@@ -299,9 +317,22 @@ export default function GroupsPage() {
                                                 <Users size={10} /> {memberCount}/{group.max_members}
                                             </span>
                                         </div>
-                                        <p className="text-[11px] text-brand-gray mt-0.5">
-                                            Code: <span className="font-mono font-semibold text-brand-navy">{group.invite_code}</span> · NGN {Number(group.contribution_amount).toLocaleString('en-NG')} · {group.frequency}
-                                        </p>
+                                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                            <p className="text-[11px] text-brand-gray">
+                                                Code: <span className="font-mono font-semibold text-brand-navy">{group.invite_code}</span>
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={() => void handleCopyCode(group.invite_code)}
+                                                title="Copy invite code"
+                                                className="inline-flex items-center gap-0.5 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 hover:border-slate-300 hover:text-brand-navy transition-colors"
+                                            >
+                                                {copiedCode === group.invite_code
+                                                    ? <><Check size={10} className="text-emerald-500" /> Copied!</>
+                                                    : <><Copy size={10} /> Copy</>}
+                                            </button>
+                                            <span className="text-[11px] text-brand-gray">· NGN {Number(group.contribution_amount).toLocaleString('en-NG')} · {group.frequency}</span>
+                                        </div>
                                         <p className="text-[11px] text-brand-gray mt-0.5">Current collection date: {formatScheduleDate(getCurrentCycleDueDate(group))}</p>
                                     </div>
                                     <button

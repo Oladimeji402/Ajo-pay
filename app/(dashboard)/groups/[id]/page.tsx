@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Users, Wallet, Calendar, Loader2, Sparkles, ShieldCheck, ArrowUpRight, CheckCircle2, LogOut, TriangleAlert } from 'lucide-react';
+import { ArrowLeft, Users, Wallet, Calendar, Loader2, Sparkles, ShieldCheck, ArrowUpRight, CheckCircle2, LogOut, TriangleAlert, Copy, Check } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { openPaystackInline } from '@/lib/paystack-inline';
 import { useToast } from '@/components/ui/Toast';
@@ -68,7 +68,19 @@ export default function GroupDetailsPage() {
     const [receipt, setReceipt] = useState<PaymentReceipt | null>(null);
     const [showLeaveModal, setShowLeaveModal] = useState(false);
     const [leavingGroup, setLeavingGroup] = useState(false);
+    const [codeCopied, setCodeCopied] = useState(false);
     const { showToast } = useToast();
+
+    const handleCopyCode = async () => {
+        if (!group?.invite_code) return;
+        try {
+            await navigator.clipboard.writeText(group.invite_code);
+            setCodeCopied(true);
+            setTimeout(() => setCodeCopied(false), 2000);
+        } catch {
+            notifyError(showToast, new Error('Copy failed'), 'Could not copy invite code.');
+        }
+    };
 
     const loadData = useCallback(async () => {
         if (!groupId) return;
@@ -298,10 +310,20 @@ export default function GroupDetailsPage() {
                         <h1 className="text-2xl font-semibold mt-1">{group.name}</h1>
                         <p className="text-sm text-white/80 capitalize mt-1">{group.status} · {group.frequency}</p>
                     </div>
-                    <div className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-right">
+                    <button
+                        onClick={handleCopyCode}
+                        title="Copy invite code"
+                        className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-right hover:bg-white/20 transition-colors cursor-pointer group"
+                    >
                         <p className="text-[11px] text-white/70">Invite code</p>
-                        <p className="font-mono font-semibold text-white text-sm">{group.invite_code}</p>
-                    </div>
+                        <div className="flex items-center justify-end gap-1.5 mt-0.5">
+                            <p className="font-mono font-semibold text-white text-sm">{group.invite_code}</p>
+                            {codeCopied
+                                ? <Check size={13} className="text-emerald-300 shrink-0" />
+                                : <Copy size={13} className="text-white/50 group-hover:text-white/80 shrink-0 transition-colors" />}
+                        </div>
+                        {codeCopied && <p className="text-[10px] text-emerald-300 mt-0.5 text-right">Copied!</p>}
+                    </button>
                 </div>
 
                 <div className="grid sm:grid-cols-3 gap-3 mt-5">
