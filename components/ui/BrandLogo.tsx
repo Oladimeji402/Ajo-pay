@@ -30,14 +30,14 @@ export const BrandLogo = ({
     return (
         <Link href={href} className={`inline-flex items-center gap-2.5 ${className}`}>
             <Image
-                src="/ajopay-mark.svg"
-                alt="Ajopay logo"
+                src="/subtech-ajo-solution-mark.svg"
+                alt="Subtech Ajo Solution logo"
                 width={styles.mark}
                 height={styles.mark}
                 priority
             />
             {showWordmark ? (
-                <span className={`${styles.text} ${textColor} font-bold tracking-tight`}>Ajopay</span>
+                <span className={`${styles.text} ${textColor} font-bold tracking-tight`}>Subtech Ajo Solution</span>
             ) : null}
         </Link>
     );

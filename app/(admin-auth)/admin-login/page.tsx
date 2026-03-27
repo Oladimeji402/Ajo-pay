@@ -46,7 +46,7 @@ export default function AdminLoginPage() {
                     <span className="text-white font-bold text-3xl">A</span>
                 </div>
                 <h1 className="text-2xl font-black text-brand-navy mb-2 tracking-tight">Access Control</h1>
-                <p className="text-[13px] text-brand-gray">Authenticate to enter the AjoPay Administrative Panel</p>
+                <p className="text-[13px] text-brand-gray">Authenticate to enter the Subtech Ajo Solution Administrative Panel</p>
             </div>
 
             <div className="bg-white p-8 rounded-4xl border border-slate-100 shadow-xl shadow-slate-200/50 relative overflow-hidden">
@@ -62,7 +62,7 @@ export default function AdminLoginPage() {
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                placeholder="name@ajopay.com"
+                                placeholder="name@subtechajosolution.com"
                                 className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-semibold focus:outline-none focus:ring-4 focus:ring-red-500/5 focus:border-red-500/30 focus:bg-white transition-all"
                                 required
                             />

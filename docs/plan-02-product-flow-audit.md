@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document captures the current Ajopay product flow implemented in the
+This document captures the current Subtech Ajo Solution product flow implemented in the
 Next.js app, the supporting APIs and backend modules behind each journey, and
 the major product or operational gaps that should be addressed before deeper
 production hardening work.

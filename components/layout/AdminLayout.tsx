@@ -34,7 +34,7 @@ interface AdminLayoutProps {
 export const AdminLayout = ({ children }: AdminLayoutProps) => {
     const pathname = usePathname();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [adminEmail, setAdminEmail] = useState('admin@ajopay.com');
+    const [adminEmail, setAdminEmail] = useState('admin@subtechajosolution.com');
     const [pendingPayoutsCount, setPendingPayoutsCount] = useState(0);
     const [newUsersTodayCount, setNewUsersTodayCount] = useState(0);
     const { refreshTrigger } = useRealtimeSubscription({
@@ -104,7 +104,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
                 <div className="flex items-center gap-3">
                     <BrandLogo href="/admin" size="sm" showWordmark={false} />
                     <div>
-                        <span className="text-xl font-bold text-white tracking-tight block">Ajopay</span>
+                        <span className="text-xl font-bold text-white tracking-tight block">Subtech Ajo Solution</span>
                         <div className="flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
                             <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest">Admin Panel</span>

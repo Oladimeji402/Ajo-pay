@@ -96,7 +96,7 @@ export async function GET(request: Request) {
       id: `signup-${item.id}`,
       type: "signup",
       title: "New signup",
-      description: `${item.name || item.email || "A user"} joined AjoPay`,
+      description: `${item.name || item.email || "A user"} joined Subtech Ajo Solution`,
       timestamp: item.created_at,
     }));
 

@@ -228,7 +228,7 @@ export default function SignUpPage() {
             <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0f766e]">Step 1 of 2</p>
                 <h2 id="signup-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>Join your circle.</h2>
-                <p className="mt-1 text-sm text-slate-500">Create your AjoPay account.</p>
+                <p className="mt-1 text-sm text-slate-500">Create your Subtech Ajo Solution account.</p>
             </div>
 
             {notice && (
@@ -334,7 +334,7 @@ export default function SignUpPage() {
                         </div>
                     </label>
                     <span className="text-sm text-slate-600 leading-relaxed">
-                        I agree to Ajopay&apos;s{' '}
+                        I agree to Subtech Ajo Solution&apos;s{' '}
                         <Link href="/terms" className="font-semibold text-brand-navy underline decoration-dotted underline-offset-4 hover:text-brand-primary transition-colors">Terms of Service</Link>
                         {' '}and{' '}
                         <Link href="/privacy" className="font-semibold text-brand-navy underline decoration-dotted underline-offset-4 hover:text-brand-primary transition-colors">Privacy Policy</Link>

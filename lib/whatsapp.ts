@@ -22,7 +22,7 @@ type GroupReceiptResult = {
 function getWhatsappConfig() {
   const token = process.env.WHATSAPP_API_TOKEN;
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  const templateName = process.env.WHATSAPP_RECEIPT_TEMPLATE_NAME ?? "ajopay_contribution_receipt";
+  const templateName = process.env.WHATSAPP_RECEIPT_TEMPLATE_NAME ?? "subtechajosolution_contribution_receipt";
   const languageCode = process.env.WHATSAPP_TEMPLATE_LANGUAGE_CODE ?? "en";
 
   return {
