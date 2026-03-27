@@ -260,7 +260,7 @@ export default function OnboardingPage() {
                         {/* Logo */}
                         <div className="flex items-center gap-2.5">
                             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0f766e] text-sm font-bold text-white">A</div>
-                            <span className="text-sm font-semibold tracking-widest text-white/50" style={{ fontFamily: 'var(--font-auth-heading, sans-serif)' }}>AJOPAY</span>
+                            <span className="text-sm font-semibold tracking-widest text-white/50" style={{ fontFamily: 'var(--font-auth-heading, sans-serif)' }}>SUBTECH AJO SOLUTION</span>
                         </div>
 
                         {/* Statement */}
@@ -292,7 +292,7 @@ export default function OnboardingPage() {
                             </div>
                         </div>
 
-                        <p className="text-[11px] text-white/25">&copy; 2026 AjoPay</p>
+                        <p className="text-[11px] text-white/25">&copy; 2026 Subtech Ajo Solution</p>
                     </div>
                 </aside>
 
@@ -301,7 +301,7 @@ export default function OnboardingPage() {
                     {/* Mobile logo */}
                     <div className="mb-8 flex items-center gap-2 lg:hidden">
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0f766e] text-xs font-bold text-white">A</div>
-                        <span className="text-sm font-semibold tracking-widest text-brand-navy">AJOPAY</span>
+                        <span className="text-sm font-semibold tracking-widest text-brand-navy">SUBTECH AJO SOLUTION</span>
                     </div>
 
                     {/* Mobile step-progress banner */}

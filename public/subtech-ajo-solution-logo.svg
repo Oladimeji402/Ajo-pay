@@ -1,11 +1,11 @@
 <svg width="820" height="200" viewBox="0 0 820 200" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="ajopayLogoGradient" x1="20" y1="20" x2="180" y2="180" gradientUnits="userSpaceOnUse">
+    <linearGradient id="subtechAjoSolutionLogoGradient" x1="20" y1="20" x2="180" y2="180" gradientUnits="userSpaceOnUse">
       <stop stop-color="#1B2F6B"/>
       <stop offset="1" stop-color="#0F766E"/>
     </linearGradient>
   </defs>
-  <rect x="20" y="20" width="160" height="160" rx="38" fill="url(#ajopayLogoGradient)"/>
+    <rect x="20" y="20" width="160" height="160" rx="38" fill="url(#subtechAjoSolutionLogoGradient)"/>
   <circle cx="100" cy="100" r="42" stroke="white" stroke-opacity="0.35" stroke-width="2.6"/>
   <circle cx="100" cy="100" r="29" stroke="white" stroke-opacity="0.5" stroke-width="2.6"/>
   <circle cx="100" cy="58" r="5.5" fill="white"/>

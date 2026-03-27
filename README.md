@@ -1,4 +1,4 @@
-# Ajopay Digital Ajo Savings
+# Subtech Ajo Solution Digital Ajo Savings
 
 This repository is now a single Next.js app from the root directory.
 

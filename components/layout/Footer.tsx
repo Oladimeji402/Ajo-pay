@@ -115,7 +115,7 @@ export const Footer = () => {
             <div className="border-t border-white/[0.06]">
                 <Container className="py-6 flex flex-col md:flex-row justify-between items-center gap-4">
                     <p className="text-[11px] text-slate-500">
-                        © {currentYear} Ajopay Technologies Limited. All rights reserved.
+                        © {currentYear} Subtech Ajo Solution Technologies Limited. All rights reserved.
                     </p>
 
                     {/* Trust Badges */}
@@ -138,7 +138,7 @@ export const Footer = () => {
                     </div>
 
                     <p className="text-[11px] text-slate-500 text-center md:text-right max-w-xs">
-                        Ajopay is a fintech platform. Payments processed securely via Paystack.
+                        Subtech Ajo Solution is a fintech platform. Payments processed securely via Paystack.
                     </p>
                 </Container>
             </div>

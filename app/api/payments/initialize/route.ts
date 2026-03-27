@@ -89,7 +89,7 @@ export async function POST(request: Request) {
     const callbackUrl = `${callbackUrlBase}/dashboard`;
 
     const paystackData = await initializePaystackTransaction({
-      email: auth.user.email ?? "no-reply@ajopay.local",
+      email: auth.user.email ?? "no-reply@subtechajosolution.local",
       amountKobo: requestedAmount * 100,
       reference,
       callbackUrl,

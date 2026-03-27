@@ -1,4 +1,4 @@
-# AjoPay AI Development Instructions
+# Subtech Ajo Solution AI Development Instructions
 
 This document guides AI agents working on this repository.
 
@@ -10,7 +10,7 @@ The goal is to ensure AI behaves like a senior backend engineer when modifying t
 
 # Project Overview
 
-AjoPay is a digital rotating savings platform based on the Nigerian "Ajo" system.
+Subtech Ajo Solution is a digital rotating savings platform based on the Nigerian "Ajo" system.
 
 Members contribute a fixed amount periodically.
 
@@ -205,7 +205,7 @@ Contribution endpoints
 
 # Group Types
 
-AjoPay supports multiple group categories beyond traditional Ajo savings.
+Subtech Ajo Solution supports multiple group categories beyond traditional Ajo savings.
 
 ## School Social Saving & Contribution
 

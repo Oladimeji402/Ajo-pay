@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'AjoPay',
-    short_name: 'AjoPay',
+    name: 'Subtech Ajo Solution',
+    short_name: 'Subtech Ajo',
     description: 'Save together, grow together. Digital Ajo savings platform.',
     start_url: '/',
     display: 'standalone',
@@ -16,12 +16,12 @@ export default function manifest(): MetadataRoute.Manifest {
         type: 'image/svg+xml',
       },
       {
-        src: '/ajopay-mark.svg',
+        src: '/subtech-ajo-solution-mark.svg',
         sizes: '128x128',
         type: 'image/svg+xml',
       },
       {
-        src: '/ajopay-mark-mono-dark.svg',
+        src: '/subtech-ajo-solution-mark-mono-dark.svg',
         sizes: '128x128',
         type: 'image/svg+xml',
         purpose: 'maskable',

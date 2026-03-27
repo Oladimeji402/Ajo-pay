@@ -9,7 +9,7 @@ const testimonials = [
   {
     name: 'Olawale J.',
     role: 'Software Engineer, Lagos',
-    content: 'Ajopay has completely changed how I save. Automated contributions mean I never forget my turn, and the transparency is unmatched.',
+    content: 'Subtech Ajo Solution has completely changed how I save. Automated contributions mean I never forget my turn, and the transparency is unmatched.',
     rating: 5,
     color: '#1B2F6B',
     initials: 'OJ',
@@ -41,7 +41,7 @@ const testimonials = [
   {
     name: 'Bola T.',
     role: 'Nurse, Ibadan',
-    content: 'The instant payout feature is amazing. Got my ₦500,000 rotation within minutes of the schedule. I trust Ajopay completely.',
+    content: 'The instant payout feature is amazing. Got my ₦500,000 rotation within minutes of the schedule. I trust Subtech Ajo Solution completely.',
     rating: 5,
     color: '#0e7490',
     initials: 'BT',
@@ -49,7 +49,7 @@ const testimonials = [
   {
     name: 'Emeka D.',
     role: 'Entrepreneur, Enugu',
-    content: 'Managing 15 members used to be stressful. Now Ajopay handles reminders, deductions, and payouts automatically. Game changer!',
+    content: 'Managing 15 members used to be stressful. Now Subtech Ajo Solution handles reminders, deductions, and payouts automatically. Game changer!',
     rating: 5,
     color: '#be185d',
     initials: 'ED',
