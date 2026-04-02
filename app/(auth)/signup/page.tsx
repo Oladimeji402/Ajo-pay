@@ -10,7 +10,7 @@ import { AlertCircle, Check, CheckCircle2, Eye, EyeOff, Loader2, X } from 'lucid
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { notifySuccess } from '@/lib/toast';
-import { mapAuthError } from '@/lib/auth-errors';
+import { isDuplicateSignupWithoutError, mapAuthError } from '@/lib/auth-errors';
 
 export default function SignUpPage() {
     const [isLoading, setIsLoading] = useState(false);
@@ -39,10 +39,11 @@ export default function SignUpPage() {
         setIsLoading(true);
 
         const supabase = createSupabaseBrowserClient();
+        const normalizedEmail = email.trim().toLowerCase();
 
         const fullName = `${firstName} ${lastName}`.trim();
-        const { error: signUpError } = await supabase.auth.signUp({
-            email,
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email: normalizedEmail,
             password,
             options: {
                 data: {
@@ -60,8 +61,16 @@ export default function SignUpPage() {
             return;
         }
 
+        if (isDuplicateSignupWithoutError(signUpData)) {
+            const message = 'An account with this email already exists. Please sign in instead.';
+            setError(message);
+            showToast(message, { type: 'error' });
+            setIsLoading(false);
+            return;
+        }
+
         await supabase.auth.signOut();
-        setPendingEmail(email.trim());
+        setPendingEmail(normalizedEmail);
         setIsVerified(false);
         setVerificationMode(true);
         const otpNotice = 'A 6-digit OTP has been sent to your email. Enter it below to verify your account.';

@@ -25,6 +25,7 @@ import {
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess, notifyWarning } from '@/lib/toast';
+import { mapAuthError } from '@/lib/auth-errors';
 
 type Profile = {
     id: string;
@@ -339,7 +340,7 @@ export default function SettingsPage() {
             const supabase = createSupabaseBrowserClient();
             const { error: updateError } = await supabase.auth.updateUser({ email: nextEmail });
             if (updateError) {
-                throw new Error(updateError.message);
+                throw new Error(mapAuthError(updateError, 'Unable to start email update.'));
             }
 
             await createInAppNotification({
@@ -378,12 +379,12 @@ export default function SettingsPage() {
                 password: currentPassword,
             });
             if (checkError) {
-                throw new Error('Your current password is incorrect.');
+                throw new Error(mapAuthError(checkError, 'Your current password is incorrect.'));
             }
 
             const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
             if (updateError) {
-                throw new Error(updateError.message);
+                throw new Error(mapAuthError(updateError, 'Unable to update your password.'));
             }
 
             await createInAppNotification({
