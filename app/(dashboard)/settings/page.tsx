@@ -446,28 +446,12 @@ export default function SettingsPage() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6">
-            <section className="relative overflow-hidden rounded-3xl border border-blue-900/20 bg-linear-to-br from-[#060E3A] via-[#0D2185] to-[#1D4ED8] text-white p-6">
-                <div className="absolute -right-8 -top-10 h-44 w-44 rounded-full bg-white/8 blur-3xl" />
-                <div className="absolute -left-8 -bottom-10 h-36 w-36 rounded-full bg-[#60A5FA]/20 blur-3xl" />
-                <div className="relative flex flex-wrap items-end justify-between gap-4">
-                    <div>
-                        <p className="text-[11px] uppercase tracking-[0.2em] text-white/70 font-semibold">Your account</p>
-                        <h1 className="text-2xl font-semibold mt-1">Settings</h1>
-                        <p className="text-sm text-white/80 mt-2">Update your name, bank account, and login details.</p>
-                    </div>
-                    <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm inline-flex items-center gap-2">
-                        <ShieldCheck size={15} /> Keep your bank details up to date
-                    </div>
-                </div>
-            </section>
-
-            <section className="md:hidden rounded-3xl border border-slate-200 bg-white overflow-hidden">
+        <div className="max-w-2xl mx-auto space-y-4">
+            <section className="md:hidden rounded-2xl border border-slate-200 bg-white overflow-hidden">
                 {mobileView === 'menu' ? (
                     <div>
                         <div className="px-5 py-4 border-b border-slate-100">
-                            <p className="text-[11px] uppercase tracking-[0.18em] text-brand-gray font-semibold">Quick settings</p>
-                            <h2 className="mt-1 text-base font-semibold text-brand-navy">Choose what to manage</h2>
+                            <p className="text-xs font-semibold text-brand-gray">Choose what to manage</p>
                         </div>
 
                         <button onClick={() => setMobileView('profile')} className="w-full px-5 py-4 border-b border-slate-100 flex items-center justify-between text-left hover:bg-slate-50">
@@ -511,7 +495,7 @@ export default function SettingsPage() {
                         </button>
                     </div>
                 ) : (
-                    <div className="p-5 space-y-4">
+                    <div className="p-4 space-y-4">
                         <button onClick={() => setMobileView('menu')} className="inline-flex items-center gap-2 text-xs font-semibold text-brand-gray hover:text-brand-navy">
                             <ArrowLeft size={14} /> Back to settings menu
                         </button>
@@ -531,7 +515,7 @@ export default function SettingsPage() {
                                     <label className="block text-xs font-semibold text-brand-gray mb-1">Email</label>
                                     <input value={email} readOnly className="w-full rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-brand-gray" />
                                 </div>
-                                <button disabled={saving || !canSave} className="w-full rounded-xl bg-[#1D4ED8] text-white px-4 py-2.5 text-sm font-semibold disabled:opacity-60 hover:bg-[#1A43C2]">{saving ? 'Saving...' : 'Save'}</button>
+                                <button disabled={saving || !canSave} className="w-full rounded-xl bg-brand-primary text-white px-4 py-2.5 text-sm font-semibold disabled:opacity-60 hover:bg-brand-primary-hover">{saving ? 'Saving...' : 'Save'}</button>
                             </form>
                         )}
 
@@ -595,7 +579,7 @@ export default function SettingsPage() {
                                     )}
                                     {!isVerifyingAccount && !!verificationError && <span className="inline-flex items-center gap-1.5 font-medium text-red-600"><XCircle size={13} />{verificationError}</span>}
                                 </div>
-                                <button disabled={saving || !canSave} className="w-full rounded-xl bg-[#1D4ED8] text-white px-4 py-2.5 text-sm font-semibold disabled:opacity-60 hover:bg-[#1A43C2]">{saving ? 'Saving...' : 'Save'}</button>
+                                <button disabled={saving || !canSave} className="w-full rounded-xl bg-brand-primary text-white px-4 py-2.5 text-sm font-semibold disabled:opacity-60 hover:bg-brand-primary-hover">{saving ? 'Saving...' : 'Save'}</button>
                             </form>
                         )}
 
@@ -607,7 +591,7 @@ export default function SettingsPage() {
                                     <label className="block text-xs font-semibold text-brand-gray mb-1">New email address</label>
                                     <input type="email" value={pendingEmail} onChange={(e) => setPendingEmail(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm" placeholder="new-email@example.com" />
                                 </div>
-                                <button type="submit" disabled={emailChanging} className="w-full rounded-xl bg-[#1D4ED8] text-white px-4 py-2.5 text-sm font-semibold disabled:opacity-60 hover:bg-[#1A43C2]">{emailChanging ? 'Sending...' : 'Update email'}</button>
+                                <button type="submit" disabled={emailChanging} className="w-full rounded-xl bg-brand-primary text-white px-4 py-2.5 text-sm font-semibold disabled:opacity-60 hover:bg-brand-primary-hover">{emailChanging ? 'Sending...' : 'Update email'}</button>
                             </form>
                         )}
 
@@ -635,7 +619,7 @@ export default function SettingsPage() {
                                         <button type="button" onClick={() => setShowConfirmPassword((value) => !value)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-brand-navy">{showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}</button>
                                     </div>
                                 </div>
-                                <button type="submit" disabled={passwordChanging || !passwordsMatch || !isNewPasswordStrong} className="w-full rounded-xl bg-[#1D4ED8] text-white px-4 py-2.5 text-sm font-semibold disabled:opacity-60 hover:bg-[#1A43C2]">{passwordChanging ? 'Updating...' : 'Update password'}</button>
+                                <button type="submit" disabled={passwordChanging || !passwordsMatch || !isNewPasswordStrong} className="w-full rounded-xl bg-brand-primary text-white px-4 py-2.5 text-sm font-semibold disabled:opacity-60 hover:bg-brand-primary-hover">{passwordChanging ? 'Updating...' : 'Update password'}</button>
                             </form>
                         )}
 
@@ -657,7 +641,7 @@ export default function SettingsPage() {
                 )}
             </section>
 
-            <form onSubmit={handleSave} className="hidden md:block bg-white border border-slate-200 rounded-3xl p-5 md:p-6 space-y-5">
+            <form onSubmit={handleSave} className="hidden md:block bg-white border border-slate-200 rounded-2xl p-5 space-y-5">
                 <div className="flex items-center gap-2">
                     <User size={16} className="text-brand-gray" />
                     <h2 className="font-semibold text-brand-navy">My Profile</h2>
@@ -788,15 +772,15 @@ export default function SettingsPage() {
 
                 <button
                     disabled={saving || !canSave}
-                    className="w-full rounded-xl bg-[#1D4ED8] text-white px-4 py-2.5 text-sm font-semibold disabled:opacity-60 inline-flex items-center justify-center gap-2 hover:bg-[#1A43C2] transition-colors"
+                    className="w-full rounded-xl bg-brand-primary text-white px-4 py-2.5 text-sm font-semibold disabled:opacity-60 inline-flex items-center justify-center gap-2 hover:bg-brand-primary-hover transition-colors"
                 >
                     <Save size={14} />
                     {saving ? 'Saving...' : 'Save changes'}
                 </button>
             </form>
 
-            <section className="hidden md:grid gap-6 lg:grid-cols-2">
-                <form onSubmit={handleChangeEmail} className="rounded-3xl border border-slate-200 bg-white p-5 md:p-6 space-y-4">
+            <section className="hidden md:grid gap-4 lg:grid-cols-2">
+                <form onSubmit={handleChangeEmail} className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4">
                     <div className="inline-flex items-center gap-2">
                         <Mail size={16} className="text-brand-gray" />
                         <h2 className="font-semibold text-brand-navy">Change email</h2>
@@ -815,13 +799,13 @@ export default function SettingsPage() {
                     <button
                         type="submit"
                         disabled={emailChanging}
-                        className="w-full rounded-xl bg-[#1D4ED8] text-white px-4 py-2.5 text-sm font-semibold hover:bg-[#1A43C2] disabled:opacity-60"
+                        className="w-full rounded-xl bg-brand-primary text-white px-4 py-2.5 text-sm font-semibold hover:bg-brand-primary-hover disabled:opacity-60"
                     >
                         {emailChanging ? 'Sending...' : 'Update email'}
                     </button>
                 </form>
 
-                <form onSubmit={handleChangePassword} className="rounded-3xl border border-slate-200 bg-white p-5 md:p-6 space-y-4">
+                <form onSubmit={handleChangePassword} className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4">
                     <div className="inline-flex items-center gap-2">
                         <KeyRound size={16} className="text-brand-gray" />
                         <h2 className="font-semibold text-brand-navy">Change password</h2>
@@ -887,14 +871,14 @@ export default function SettingsPage() {
                     <button
                         type="submit"
                         disabled={passwordChanging || !passwordsMatch || !isNewPasswordStrong}
-                        className="w-full rounded-xl bg-[#1D4ED8] text-white px-4 py-2.5 text-sm font-semibold hover:bg-[#1A43C2] disabled:opacity-60"
+                        className="w-full rounded-xl bg-brand-primary text-white px-4 py-2.5 text-sm font-semibold hover:bg-brand-primary-hover disabled:opacity-60"
                     >
                         {passwordChanging ? 'Updating...' : 'Update password'}
                     </button>
                 </form>
             </section>
 
-            <section className="hidden md:block rounded-3xl border border-red-200 bg-white p-5 md:p-6 space-y-4">
+            <section className="hidden md:block rounded-2xl border border-red-200 bg-white p-5 space-y-4">
                 <div className="inline-flex items-center gap-2 text-red-700">
                     <AlertTriangle size={16} />
                     <h2 className="font-semibold">Delete my account</h2>

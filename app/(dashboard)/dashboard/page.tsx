@@ -6,12 +6,14 @@ import {
     AlertTriangle,
     ArrowDownLeft,
     ArrowUpRight,
-    CalendarClock,
     CheckCircle2,
-    CircleDashed,
-    Clock3,
-    Loader2,
-    TrendingUp,
+    ChevronRight,
+    CreditCard,
+    Eye,
+    EyeOff,
+    FileText,
+    Search,
+    Share2,
     Users,
     Wallet,
 } from 'lucide-react';
@@ -63,6 +65,8 @@ export default function DashboardPage() {
     const [groups, setGroups] = useState<Group[]>([]);
     const [contributions, setContributions] = useState<Contribution[]>([]);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [savedVisible, setSavedVisible] = useState(true);
+    const [receivedVisible, setReceivedVisible] = useState(true);
     const { showToast } = useToast();
 
     useEffect(() => {
@@ -213,19 +217,12 @@ export default function DashboardPage() {
 
     if (loading) {
         return (
-            <div className="max-w-6xl mx-auto space-y-6 animate-pulse">
-                <div className="rounded-3xl bg-slate-200 h-36" />
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    {[0, 1, 2, 3].map((i) => (
-                        <div key={i} className="rounded-2xl border border-slate-100 bg-white h-20" />
-                    ))}
-                </div>
-                <div className="rounded-3xl border border-slate-100 bg-white h-40" />
-                <div className="rounded-3xl border border-slate-100 bg-white h-56" />
-                <div className="grid gap-4 xl:grid-cols-[1.6fr_1fr]">
-                    <div className="rounded-3xl border border-slate-100 bg-white h-64" />
-                    <div className="rounded-3xl border border-slate-100 bg-white h-44" />
-                </div>
+            <div className="max-w-2xl mx-auto space-y-4 animate-pulse">
+                <div className="rounded-3xl bg-slate-200 h-44" />
+                <div className="rounded-3xl bg-white border border-slate-100 h-24" />
+                <div className="rounded-2xl bg-white border border-slate-100 h-28" />
+                <div className="rounded-2xl bg-white border border-slate-100 h-48" />
+                <div className="rounded-2xl bg-white border border-slate-100 h-40" />
             </div>
         );
     }
@@ -234,227 +231,305 @@ export default function DashboardPage() {
         return <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-600">{error}</div>;
     }
 
+    // First group the user is in (for invite sharing)
+    const firstGroupId = groups[0]?.id ?? null;
+
+    const quickActions = [
+        {
+            href: actionQueue.length > 0 ? `/groups/${actionQueue[0]?.id}` : '/groups',
+            icon: CreditCard,
+            label: 'Pay Now',
+            bg: 'bg-brand-primary',
+            color: 'text-white',
+            badge: actionQueue.length > 0 ? actionQueue.length : undefined,
+            onClick: undefined,
+        },
+        {
+            href: '/groups',
+            icon: Search,
+            label: 'Find Group',
+            bg: 'bg-purple-50',
+            color: 'text-purple-600',
+            badge: undefined,
+            onClick: undefined,
+        },
+        {
+            href: firstGroupId ? `/groups/${firstGroupId}` : '/groups',
+            icon: Users,
+            label: 'My Groups',
+            bg: 'bg-emerald-50',
+            color: 'text-emerald-600',
+            badge: groups.length > 0 ? groups.length : undefined,
+            onClick: undefined,
+        },
+        {
+            href: '/activity',
+            icon: FileText,
+            label: 'Statement',
+            bg: 'bg-amber-50',
+            color: 'text-amber-600',
+            badge: undefined,
+            onClick: undefined,
+        },
+        {
+            href: firstGroupId ? `/groups/${firstGroupId}` : '/groups',
+            icon: Share2,
+            label: 'Invite',
+            bg: 'bg-sky-50',
+            color: 'text-sky-600',
+            badge: undefined,
+            onClick: undefined,
+        },
+    ];
+
     return (
-        <div className="max-w-6xl mx-auto space-y-6">
-            <section className="relative overflow-hidden rounded-3xl border border-blue-900/20 bg-linear-to-br from-[#060E3A] via-[#0D2185] to-[#1D4ED8] p-6 md:p-8 text-white">
-                <div className="absolute -top-20 -right-14 h-52 w-52 rounded-full bg-white/8 blur-2xl" />
-                <div className="absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-[#60A5FA]/20 blur-3xl" />
-                <div className="absolute top-1/3 right-1/3 h-32 w-32 rounded-full bg-blue-300/10 blur-2xl" />
-                <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                    <div className="space-y-2">
-                        <p className="text-[11px] uppercase tracking-[0.22em] text-white/70 font-semibold">Good day</p>
-                        <h1 className="text-2xl md:text-3xl font-semibold leading-tight">
-                            Welcome back, {profile?.name || 'Member'} 👋
-                        </h1>
-                        <p className="text-sm text-white/80 max-w-xl">
-                            {groupsAwaitingContribution > 0
-                                ? `You have ${groupsAwaitingContribution} group${groupsAwaitingContribution === 1 ? '' : 's'} waiting for your payment. Pay now to keep your savings on track.`
-                                : activeGroups > 0
-                                    ? `You are all caught up! Your ${activeGroups} active group${activeGroups === 1 ? '' : 's'} ${activeGroups === 1 ? 'is' : 'are'} on track.`
-                                    : 'Join a savings group to start saving with others.'}
+        <div className="max-w-2xl mx-auto space-y-4">
+            {/* Balance Overview */}
+            <section className="relative overflow-hidden rounded-3xl bg-linear-to-br from-[#060E3A] via-[#0D2185] to-brand-primary p-5 text-white">
+                <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-white/5 blur-2xl pointer-events-none" />
+                <div className="absolute -bottom-14 -left-6 h-44 w-44 rounded-full bg-blue-300/15 blur-3xl pointer-events-none" />
+
+                <p className="relative text-[11px] font-medium text-white/60 mb-4">Your savings overview</p>
+
+                <div className="relative grid grid-cols-2 gap-3">
+                    {/* Total Saved */}
+                    <div className="rounded-2xl border border-white/10 bg-white/10 p-3.5 backdrop-blur-sm">
+                        <div className="mb-2.5 flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                                <Wallet size={12} className="text-white/60" />
+                                <span className="text-[11px] font-medium text-white/70">Total Saved</span>
+                            </div>
+                            <button
+                                onClick={() => setSavedVisible((v) => !v)}
+                                className="text-white/50 transition-colors hover:text-white/90"
+                                aria-label={savedVisible ? 'Hide total saved' : 'Show total saved'}
+                            >
+                                {savedVisible ? <Eye size={13} /> : <EyeOff size={13} />}
+                            </button>
+                        </div>
+                        <p className="text-[17px] font-bold leading-tight tracking-tight">
+                            {savedVisible ? formatCurrency(profile?.total_contributed ?? 0) : '••••••'}
                         </p>
+                        <p className="mt-1 text-[10px] text-white/40">Contributions</p>
                     </div>
 
-                    <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-sm px-4 py-3 min-w-52">
-                        <p className="text-[11px] uppercase tracking-[0.2em] text-white/70 mb-2">Today&apos;s summary</p>
-                        <div className="space-y-2 text-sm">
-                            <p className="flex items-center justify-between gap-4">
-                                <span className="inline-flex items-center gap-2"><CalendarClock size={14} /> Payments due</span>
-                                <strong>{groupsAwaitingContribution}</strong>
-                            </p>
-                            <p className="flex items-center justify-between gap-4">
-                                <span className="inline-flex items-center gap-2"><TrendingUp size={14} /> Active groups</span>
-                                <strong>{activeGroups}</strong>
-                            </p>
+                    {/* Money Received */}
+                    <div className="rounded-2xl border border-white/10 bg-white/10 p-3.5 backdrop-blur-sm">
+                        <div className="mb-2.5 flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                                <ArrowDownLeft size={12} className="text-white/60" />
+                                <span className="text-[11px] font-medium text-white/70">Received</span>
+                            </div>
+                            <button
+                                onClick={() => setReceivedVisible((v) => !v)}
+                                className="text-white/50 transition-colors hover:text-white/90"
+                                aria-label={receivedVisible ? 'Hide received amount' : 'Show received amount'}
+                            >
+                                {receivedVisible ? <Eye size={13} /> : <EyeOff size={13} />}
+                            </button>
                         </div>
+                        <p className="text-[17px] font-bold leading-tight tracking-tight">
+                            {receivedVisible ? formatCurrency(profile?.total_received ?? 0) : '••••••'}
+                        </p>
+                        <p className="mt-1 text-[10px] text-white/40">Payout earnings</p>
                     </div>
                 </div>
-            </section>
 
-            <section className="grid gap-4 grid-cols-2 xl:grid-cols-4">
-                <article className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <p className="text-[11px] uppercase tracking-wide text-brand-gray mb-2 inline-flex items-center gap-1"><Wallet size={13} /> Total Saved</p>
-                    <p className="text-xl font-semibold text-brand-navy">{formatCurrency(profile?.total_contributed ?? 0)}</p>
-                </article>
-
-                <article className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <p className="text-[11px] uppercase tracking-wide text-brand-gray mb-2 inline-flex items-center gap-1"><ArrowDownLeft size={13} /> Money Received</p>
-                    <p className="text-xl font-semibold text-brand-navy">{formatCurrency(profile?.total_received ?? 0)}</p>
-                </article>
-
-                <article className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <p className="text-[11px] uppercase tracking-wide text-brand-gray mb-2 inline-flex items-center gap-1"><Users size={13} /> My Groups</p>
-                    <p className="text-xl font-semibold text-brand-navy">{activeGroups}</p>
-                </article>
-
-                <article className="rounded-2xl border border-blue-100 bg-linear-to-br from-blue-50 to-[#EFF6FF] p-4">
-                    <p className="text-[11px] uppercase tracking-wide text-blue-600 mb-2 font-semibold inline-flex items-center gap-1"><AlertTriangle size={13} /> Needs Payment</p>
-                    <p className="text-xl font-bold text-brand-navy">{groupsAwaitingContribution}</p>
-                </article>
-            </section>
-
-            <section className="rounded-3xl border border-slate-200 bg-white overflow-hidden">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
-                    <div>
-                        <h2 className="text-base font-semibold text-brand-navy">Payments due</h2>
-                        <p className="text-xs text-brand-gray">Groups waiting for your payment right now.</p>
-                    </div>
-                    <Link href="/groups" className="text-xs font-bold text-[#1D4ED8]">See all groups</Link>
-                </div>
-
-                <div className="p-4 md:p-5 space-y-3">
-                    {actionQueue.length === 0 ? (
-                        <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 inline-flex items-center gap-2">
-                            <CheckCircle2 size={16} />
-                            You&apos;re all up to date! No payments due right now.
-                        </div>
-                    ) : (
-                        actionQueue.map((group) => {
-                            const state = currentCycleStatusByGroup.get(group.id) ?? 'due';
-                            const dueDate = getCurrentCycleDueDate(group);
-                            const dueWindow = getDueWindow(dueDate);
-                            return (
-                                <div key={group.id} className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                                    <div className="min-w-0">
-                                        <p className="text-sm font-semibold text-brand-navy truncate">{group.name}</p>
-                                        <p className="text-xs text-brand-gray mt-0.5">
-                                            Round {group.current_cycle} of {group.total_cycles} &middot; Pay {formatCurrency(group.contribution_amount)}
-                                        </p>
-                                        <p className="text-[11px] text-brand-gray mt-1">
-                                            Pay by: {formatScheduleDate(dueDate)}
-                                            {state === 'overdue' ? ` · ${dueWindow.daysOverdue} day${dueWindow.daysOverdue === 1 ? '' : 's'} late` : ''}
-                                        </p>
-                                    </div>
-
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${getContributionStateStyle(state)}`}>
-                                            {state === 'pending' ? <Clock3 size={12} /> : state === 'failed' || state === 'overdue' ? <AlertTriangle size={12} /> : <CircleDashed size={12} />}
-                                            {getContributionStateLabel(state)}
-                                        </span>
-                                        <Link href={`/groups/${group.id}`} className="inline-flex items-center justify-center rounded-lg bg-[#1D4ED8] px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-[#1A43C2]">
-                                            {state === 'failed' ? 'Retry payment' : 'Pay now'}
-                                        </Link>
-                                    </div>
-                                </div>
-                            );
-                        })
+                {/* Stats chips */}
+                <div className="relative mt-4 flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/10 px-2.5 py-1 text-[11px] text-white/80">
+                        <Users size={11} /> {activeGroups} active group{activeGroups !== 1 ? 's' : ''}
+                    </span>
+                    {groupsAwaitingContribution > 0 && (
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/20 bg-amber-400/20 px-2.5 py-1 text-[11px] text-amber-300">
+                            <AlertTriangle size={11} /> {groupsAwaitingContribution} payment{groupsAwaitingContribution !== 1 ? 's' : ''} due
+                        </span>
                     )}
                 </div>
             </section>
 
-            <section className="rounded-3xl border border-slate-200 bg-white overflow-hidden">
-                <div className="border-b border-slate-100 px-5 py-4">
-                    <h2 className="text-base font-semibold text-brand-navy">My Savings Groups</h2>
-                    <p className="text-xs text-brand-gray">See where each group is in its savings cycle.</p>
+            {/* Quick Actions */}
+            <section className="rounded-3xl border border-slate-200 bg-white p-4">
+                <div className="grid grid-cols-5 gap-1">
+                    {quickActions.map(({ href, icon: Icon, label, bg, color, badge }) => (
+                        <Link key={label} href={href} className="group flex flex-col items-center gap-1.5 px-1">
+                            <div className="relative">
+                                <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${bg} transition-all duration-150 group-active:scale-90`}>
+                                    <Icon size={20} className={color} />
+                                </div>
+                                {badge !== undefined && badge > 0 && (
+                                    <span className="absolute -right-1 -top-1 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white">
+                                        {badge > 9 ? '9+' : badge}
+                                    </span>
+                                )}
+                            </div>
+                            <span className="text-center text-[10px] font-semibold leading-tight text-slate-600">{label}</span>
+                        </Link>
+                    ))}
                 </div>
+            </section>
 
-                {groups.length === 0 ? (
-                    <div className="p-5 text-sm text-brand-gray">You are not in any groups yet.</div>
-                ) : (
-                    <div className="p-4 md:p-5 grid gap-3 md:grid-cols-2">
-                        {groups.map((group) => {
+            {/* Payments Due */}
+            {actionQueue.length > 0 ? (
+                <section>
+                    <div className="mb-2.5 flex items-center justify-between">
+                        <h2 className="text-sm font-bold text-brand-navy">Payments Due</h2>
+                        <Link href="/groups" className="text-[11px] font-semibold text-brand-primary">See all</Link>
+                    </div>
+                    <div className="space-y-2.5">
+                        {actionQueue.map((group) => {
+                            const state = currentCycleStatusByGroup.get(group.id) ?? 'due';
+                            const dueDate = getCurrentCycleDueDate(group);
+                            const dueWindow = getDueWindow(dueDate);
+                            const isUrgent = state === 'overdue' || state === 'failed';
+                            return (
+                                <div
+                                    key={group.id}
+                                    className={`flex items-center justify-between gap-3 rounded-2xl border p-3.5 ${isUrgent ? 'border-rose-200 bg-rose-50/60' : 'border-amber-200 bg-amber-50/60'}`}
+                                >
+                                    <div className="min-w-0">
+                                        <p className="truncate text-sm font-bold text-brand-navy">{group.name}</p>
+                                        <p className="mt-0.5 text-[11px] text-brand-gray">
+                                            Round {group.current_cycle}/{group.total_cycles} · {formatCurrency(group.contribution_amount)}
+                                        </p>
+                                        <p className="mt-1 text-[10px] text-brand-gray">
+                                            {isUrgent && state === 'overdue' ? (
+                                                <span className="font-semibold text-rose-600">{dueWindow.daysOverdue}d overdue</span>
+                                            ) : (
+                                                `Due: ${formatScheduleDate(dueDate)}`
+                                            )}
+                                        </p>
+                                    </div>
+                                    <Link
+                                        href={`/groups/${group.id}`}
+                                        className={`inline-flex shrink-0 items-center justify-center rounded-xl px-3 py-2 text-[11px] font-bold text-white transition-colors ${isUrgent ? 'bg-rose-500 hover:bg-rose-600' : 'bg-brand-primary hover:bg-brand-primary-hover'}`}
+                                    >
+                                        {state === 'failed' ? 'Retry' : 'Pay Now'}
+                                    </Link>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </section>
+            ) : (
+                <div className="flex items-center gap-2.5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                    <CheckCircle2 size={18} className="shrink-0 text-emerald-600" />
+                    <span className="font-semibold">All caught up!</span>
+                    <span className="text-xs text-emerald-700">No payments due right now.</span>
+                </div>
+            )}
+
+            {/* My Groups */}
+            {groups.length > 0 ? (
+                <section>
+                    <div className="mb-2.5 flex items-center justify-between">
+                        <h2 className="text-sm font-bold text-brand-navy">My Groups</h2>
+                        <Link href="/groups" className="text-[11px] font-semibold text-brand-primary">See all</Link>
+                    </div>
+                    <div className="space-y-2.5">
+                        {groups.slice(0, 3).map((group) => {
                             const rawProgress = Number(group.current_cycle) / Math.max(Number(group.total_cycles), 1);
                             const progress = Math.max(0, Math.min(100, Math.round(rawProgress * 100)));
                             const state = currentCycleStatusByGroup.get(group.id) ?? 'due';
-                            const dueDate = getCurrentCycleDueDate(group);
-
                             return (
-                                <Link key={group.id} href={`/groups/${group.id}`} className="rounded-2xl border border-slate-200 p-4 hover:border-slate-300 transition-colors">
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div>
-                                            <p className="text-sm font-semibold text-brand-navy">{group.name}</p>
-                                            <p className="text-[11px] text-brand-gray mt-0.5 capitalize">{group.frequency} · {group.status}</p>
-                                        </div>
-                                        <span className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-semibold ${getContributionStateStyle(state)}`}>
-                                            {getContributionStateLabel(state)}
-                                        </span>
+                                <Link
+                                    key={group.id}
+                                    href={`/groups/${group.id}`}
+                                    className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 transition-colors hover:border-slate-300"
+                                >
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50">
+                                        <Users size={18} className="text-blue-600" />
                                     </div>
-
-                                    <p className="mt-2 text-[11px] text-brand-gray">Next payment: {formatScheduleDate(dueDate)}</p>
-
-                                    <div className="mt-4 space-y-1.5">
-                                        <div className="flex items-center justify-between text-[11px] text-brand-gray">
-                                            <span>Progress</span>
-                                            <span>{group.current_cycle} / {group.total_cycles}</span>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="mb-1.5 flex items-center justify-between gap-2">
+                                            <p className="truncate text-sm font-semibold text-brand-navy">{group.name}</p>
+                                            <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold ${getContributionStateStyle(state)}`}>
+                                                {getContributionStateLabel(state)}
+                                            </span>
                                         </div>
-                                        <div className="h-2 rounded-full bg-blue-100 overflow-hidden">
-                                            <div className="h-full rounded-full bg-linear-to-r from-[#1D4ED8] to-[#60A5FA]" style={{ width: `${progress}%` }} />
+                                        <div className="h-1.5 overflow-hidden rounded-full bg-blue-100">
+                                            <div
+                                                className="h-full rounded-full bg-linear-to-r from-brand-primary to-brand-electric transition-all duration-500"
+                                                style={{ width: `${progress}%` }}
+                                            />
+                                        </div>
+                                        <div className="mt-1 flex items-center justify-between">
+                                            <p className="text-[10px] capitalize text-brand-gray">{group.frequency}</p>
+                                            <p className="text-[10px] text-brand-gray">{group.current_cycle}/{group.total_cycles} rounds</p>
                                         </div>
                                     </div>
+                                    <ChevronRight size={14} className="shrink-0 text-slate-300" />
                                 </Link>
                             );
                         })}
                     </div>
-                )}
-            </section>
+                </section>
+            ) : (
+                <Link
+                    href="/groups"
+                    className="flex items-center justify-between rounded-2xl border border-dashed border-blue-200 bg-blue-50/50 p-4 transition-colors hover:bg-blue-50"
+                >
+                    <div>
+                        <p className="text-sm font-bold text-brand-navy">Join a savings group</p>
+                        <p className="mt-0.5 text-[11px] text-brand-gray">Start saving with friends and family</p>
+                    </div>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-primary">
+                        <Search size={16} className="text-white" />
+                    </div>
+                </Link>
+            )}
 
-            <section className="grid gap-4 xl:grid-cols-[1.6fr_1fr]">
-                <div className="rounded-3xl border border-slate-200 bg-white overflow-hidden">
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
-                        <div>
-                            <h2 className="text-base font-semibold text-brand-navy">Recent Payments</h2>
-                            <p className="text-xs text-brand-gray">Your latest payment activity.</p>
-                        </div>
-                        <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1">
-                            {(['all', 'contribution', 'payout'] as const).map((item) => (
-                                <button
-                                    key={item}
-                                    onClick={() => setActivityFilter(item)}
-                                    className={`px-2.5 py-1 text-[11px] rounded-lg font-semibold capitalize transition-colors ${activityFilter === item ? 'bg-white text-brand-navy shadow-xs' : 'text-brand-gray'}`}
-                                >
-                                    {item === 'all' ? 'All' : item === 'contribution' ? 'Sent' : 'Received'}
-                                </button>
-                            ))}
+            {/* Recent Activity */}
+            {transactions.length > 0 && (
+                <section>
+                    <div className="mb-2.5 flex items-center justify-between">
+                        <h2 className="text-sm font-bold text-brand-navy">Recent Activity</h2>
+                        <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-0.5 rounded-xl bg-slate-100 p-0.5">
+                                {(['all', 'contribution', 'payout'] as const).map((item) => (
+                                    <button
+                                        key={item}
+                                        onClick={() => setActivityFilter(item)}
+                                        className={`rounded-lg px-2 py-1 text-[10px] font-semibold capitalize transition-colors ${activityFilter === item ? 'bg-white text-brand-navy shadow-xs' : 'text-brand-gray'}`}
+                                    >
+                                        {item === 'all' ? 'All' : item === 'contribution' ? 'Sent' : 'Received'}
+                                    </button>
+                                ))}
+                            </div>
+                            <Link href="/activity" className="text-[11px] font-semibold text-brand-primary">See all</Link>
                         </div>
                     </div>
 
-                    <div className="p-4 md:p-5 space-y-2">
+                    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white divide-y divide-slate-100">
                         {filteredActivity.length === 0 ? (
-                            <p className="text-sm text-brand-gray">No payments found.</p>
+                            <p className="p-4 text-sm text-brand-gray">No transactions found.</p>
                         ) : (
-                            filteredActivity.map((tx) => {
+                            filteredActivity.slice(0, 5).map((tx) => {
                                 const isContribution = tx.type === 'contribution';
                                 return (
-                                    <div key={tx.id} className="flex items-center justify-between rounded-xl border border-slate-100 px-3 py-2.5">
-                                        <div className="flex items-center gap-2 min-w-0">
-                                            <div className={`h-8 w-8 rounded-lg grid place-items-center ${isContribution ? 'bg-brand-primary/10 text-brand-primary' : 'bg-emerald-50 text-emerald-600'}`}>
-                                                {isContribution ? <ArrowUpRight size={14} /> : <ArrowDownLeft size={14} />}
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p className="text-sm font-semibold text-brand-navy truncate">{tx.groups?.name ?? 'Group'}</p>
-                                                <p className="text-[11px] text-brand-gray truncate">{new Date(tx.created_at).toLocaleString()}</p>
-                                            </div>
+                                    <div key={tx.id} className="flex items-center gap-3 px-4 py-3">
+                                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${isContribution ? 'bg-blue-50' : 'bg-emerald-50'}`}>
+                                            {isContribution ? <ArrowUpRight size={16} className="text-blue-600" /> : <ArrowDownLeft size={16} className="text-emerald-600" />}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-sm font-semibold text-brand-navy">{tx.groups?.name ?? 'Group'}</p>
+                                            <p className="text-[10px] text-brand-gray">
+                                                {new Date(tx.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                            </p>
                                         </div>
                                         <div className="text-right">
-                                            <p className={`text-sm font-semibold ${isContribution ? 'text-brand-navy' : 'text-emerald-700'}`}>
-                                                {isContribution ? '-' : '+'}{formatCurrency(tx.amount).replace('NGN ', 'NGN ')}
+                                            <p className={`text-sm font-bold ${isContribution ? 'text-brand-navy' : 'text-emerald-600'}`}>
+                                                {isContribution ? '-' : '+'}{formatCurrency(tx.amount)}
                                             </p>
-                                            <p className="text-[10px] text-brand-gray capitalize">{tx.status}</p>
+                                            <p className="text-[10px] capitalize text-brand-gray">{tx.status}</p>
                                         </div>
                                     </div>
                                 );
                             })
                         )}
                     </div>
-                </div>
-
-                <div className="rounded-3xl border border-slate-200 bg-linear-to-b from-slate-50 to-white p-5">
-                    <h3 className="text-sm font-semibold text-brand-navy">Quick links</h3>
-                    <p className="text-xs text-brand-gray mt-1">Jump to any section.</p>
-
-                    <div className="mt-4 space-y-2">
-                        <Link href="/groups" className="block rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-brand-navy hover:bg-slate-50">
-                            Find &amp; join a group
-                        </Link>
-                        <Link href="/activity" className="block rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-brand-navy hover:bg-slate-50">
-                            See all payments
-                        </Link>
-                        <Link href="/settings" className="block rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-brand-navy hover:bg-slate-50">
-                            Update bank details
-                        </Link>
-                    </div>
-                </div>
-            </section>
+                </section>
+            )}
         </div>
     );
 }

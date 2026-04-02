@@ -47,6 +47,7 @@ export default function AdminGroupDetailPage() {
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [generatingPayout, setGeneratingPayout] = useState(false);
     const [error, setError] = useState('');
     const [group, setGroup] = useState<GroupData | null>(null);
     const [startDate, setStartDate] = useState('');
@@ -123,6 +124,29 @@ export default function AdminGroupDetailPage() {
             showToast(message, { type: 'error' });
         } finally {
             setSaving(false);
+        }
+    };
+
+    const createPayout = async () => {
+        if (!group) return;
+        setGeneratingPayout(true);
+        setError('');
+        try {
+            const res = await fetch('/api/admin/payouts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ groupId: group.id, cycleNumber: group.current_cycle }),
+            });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error || 'Failed to generate payout.');
+            notifySuccess(showToast, `Payout for cycle ${group.current_cycle} created. Go to Payouts to approve.`);
+            await loadData();
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Could not generate payout.';
+            setError(message);
+            showToast(message, { type: 'error' });
+        } finally {
+            setGeneratingPayout(false);
         }
     };
 
@@ -205,6 +229,18 @@ export default function AdminGroupDetailPage() {
                         </button>
                     ))}
                 </div>
+                {group.status === 'active' && group.current_cycle <= group.total_cycles && (
+                    <div className="mt-3">
+                        <button
+                            disabled={generatingPayout || saving}
+                            onClick={() => void createPayout()}
+                            className="rounded-lg bg-brand-emerald px-3 py-2 text-xs font-bold text-white disabled:opacity-60"
+                        >
+                            {generatingPayout ? 'Generating...' : `Generate Cycle ${group.current_cycle} Payout`}
+                        </button>
+                        <p className="mt-1 text-[11px] text-brand-gray">Creates a pending payout for the member at position {group.current_cycle}. All contributions must be paid first.</p>
+                    </div>
+                )}
                 {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
             </div>
 
