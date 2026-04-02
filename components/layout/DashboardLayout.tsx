@@ -27,7 +27,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     const pathname = usePathname();
     const router = useRouter();
     const [userName, setUserName] = useState('Member');
-    const [userEmail, setUserEmail] = useState('member@subtechajosolution.com');
+    const [userEmail, setUserEmail] = useState('member@example.com');
     const [unreadNotifications, setUnreadNotifications] = useState(0);
     const { showToast } = useToast();
 
@@ -39,7 +39,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             } = await supabase.auth.getUser();
 
             if (!user) return;
-            setUserEmail(user.email ?? 'member@subtechajosolution.com');
+            setUserEmail(user.email ?? 'member@example.com');
 
             const { data: profile } = await supabase
                 .from('profiles')

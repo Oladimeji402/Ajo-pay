@@ -34,7 +34,7 @@ interface AdminLayoutProps {
 export const AdminLayout = ({ children }: AdminLayoutProps) => {
     const pathname = usePathname();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [adminEmail, setAdminEmail] = useState('admin@subtechajosolution.com');
+    const [adminEmail, setAdminEmail] = useState('Admin account');
     const [pendingPayoutsCount, setPendingPayoutsCount] = useState(0);
     const [newUsersTodayCount, setNewUsersTodayCount] = useState(0);
     const { refreshTrigger } = useRealtimeSubscription({
