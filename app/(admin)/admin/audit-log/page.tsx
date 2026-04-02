@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ChevronRight, Clock3, Download, RotateCcw, ShieldCheck, Sparkles, X } from 'lucide-react';
+import { ChevronRight, Clock3, Download, RotateCcw, ShieldCheck, X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError } from '@/lib/toast';
 
@@ -148,14 +148,30 @@ export default function AdminAuditLogPage() {
 
     return (
         <div className="space-y-5">
-            <section className="rounded-3xl border border-slate-200/70 bg-gradient-to-br from-white via-white to-slate-50 p-4 shadow-sm md:p-5">
-                <p className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-brand-gray">
-                    <Sparkles size={12} className="text-amber-500" /> Governance
-                </p>
-                <h1 className="mt-1 text-2xl font-bold text-brand-navy">Audit log</h1>
-                <p className="mt-2 text-sm text-brand-gray">Track sensitive admin actions across users, groups, and payouts.</p>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <h1 className="text-2xl font-bold text-brand-navy">Audit Log</h1>
+                <div className="flex flex-wrap items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={exportCsv}
+                        className={subtleButtonClassName}
+                    >
+                        <Download size={13} />
+                        Export CSV
+                    </button>
+                    <button
+                        type="button"
+                        onClick={clearFilters}
+                        className={subtleButtonClassName}
+                    >
+                        <RotateCcw size={13} />
+                        Reset filters
+                    </button>
+                </div>
+            </div>
 
-                <div className="mt-4 grid gap-2 md:grid-cols-3">
+            <div className="rounded-2xl border border-slate-100 bg-white p-3">
+                <div className="grid gap-2 md:grid-cols-3">
                     <select value={actionFilter} onChange={(e) => setActionFilter(e.target.value)} className={controlClassName}>
                         {ACTION_FILTERS.map((value) => (
                             <option key={value} value={value}>{value === 'all' ? 'All actions' : value}</option>
@@ -191,28 +207,8 @@ export default function AdminAuditLogPage() {
                         className={controlClassName}
                     />
                 </div>
-
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <button
-                        type="button"
-                        onClick={exportCsv}
-                        className={subtleButtonClassName}
-                    >
-                        <Download size={13} />
-                        Export CSV
-                    </button>
-                    <button
-                        type="button"
-                        onClick={clearFilters}
-                        className={subtleButtonClassName}
-                    >
-                        <RotateCcw size={13} />
-                        Reset filters
-                    </button>
-                </div>
-
                 {groupedSummary.length > 0 && (
-                    <div className="mt-4 flex flex-wrap gap-2">
+                    <div className="mt-3 flex flex-wrap gap-2">
                         {groupedSummary.map(([action, count]) => (
                             <span key={action} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-brand-navy">
                                 {(ACTION_META[action]?.label || action)}: {count}
@@ -220,7 +216,7 @@ export default function AdminAuditLogPage() {
                         ))}
                     </div>
                 )}
-            </section>
+            </div>
 
             <section className="grid gap-3 sm:grid-cols-3">
                 <div className="rounded-2xl border border-slate-100 bg-white p-4">

@@ -1,8 +1,7 @@
-'use client';
+﻿'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, Copy } from 'lucide-react';
-import { DataTable, DataTableColumn } from '@/components/admin/DataTable';
+import { CheckCircle2, ChevronRight, Copy, ExternalLink, Loader2, Upload, X } from 'lucide-react';
 import { DateRangeSelector, DateRangeValue } from '@/components/admin/DateRangeSelector';
 import { LastSynced } from '@/components/admin/LastSynced';
 import { ChartCard } from '@/components/admin/charts/ChartCard';
@@ -13,6 +12,9 @@ import { notifyError, notifySuccess } from '@/lib/toast';
 import { formatScheduleDate, getDefaultPayoutDate, getDueWindow, getEffectivePayoutDate } from '@/lib/ajo-schedule';
 
 const PAYOUTS_REALTIME_TABLES = ['payouts', 'profiles'];
+
+const ALLOWED_PROOF_TYPES = new Set(['image/jpeg', 'image/png', 'application/pdf']);
+const MAX_PROOF_SIZE = 5 * 1024 * 1024; // 5 MB
 
 type PayoutRow = {
   id: string;
@@ -48,6 +50,13 @@ function toCurrency(value: number) {
   return `NGN ${Number(value).toLocaleString('en-NG')}`;
 }
 
+function statusBadgeClass(status: string) {
+  if (status === 'done') return 'bg-emerald-100 text-emerald-700';
+  if (status === 'processing') return 'bg-blue-100 text-blue-700';
+  if (status === 'failed') return 'bg-red-100 text-red-700';
+  return 'bg-amber-100 text-amber-700';
+}
+
 function AdminPayoutsSkeleton() {
   return (
     <div className="space-y-5 animate-pulse">
@@ -79,9 +88,9 @@ export default function AdminPayoutsPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [payouts, setPayouts] = useState<PayoutRow[]>([]);
   const [payoutDateDrafts, setPayoutDateDrafts] = useState<Record<string, string>>({});
-  const [proofDrafts, setProofDrafts] = useState<Record<string, { proofUrl: string; proofNote: string }>>({});
-  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
-  const { showToast } = useToast();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [proofFiles, setProofFiles] = useState<Record<string, { file: File | null; note: string; uploading: boolean }>>({});
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null); const [viewingProofId, setViewingProofId] = useState<string | null>(null); const { showToast } = useToast();
   const { refreshTrigger, lastEvent } = useRealtimeSubscription({
     channelName: 'admin-payouts-live',
     tables: PAYOUTS_REALTIME_TABLES,
@@ -107,14 +116,11 @@ export default function AdminPayoutsPage() {
         ]),
       ),
     );
-    setProofDrafts(
+    setProofFiles(
       Object.fromEntries(
         nextPayouts.map((payout) => [
           payout.id,
-          {
-            proofUrl: payout.proof_url ?? '',
-            proofNote: payout.proof_note ?? '',
-          },
+          { file: null, note: payout.proof_note ?? '', uploading: false },
         ]),
       ),
     );
@@ -219,32 +225,30 @@ export default function AdminPayoutsPage() {
     }
   }, [loadPayouts, payoutDateDrafts, showToast]);
 
-  const savePayoutProof = useCallback(async (payoutId: string) => {
-    const draft = proofDrafts[payoutId] ?? { proofUrl: '', proofNote: '' };
+  const uploadProofFile = useCallback(async (payoutId: string) => {
+    const state = proofFiles[payoutId] ?? { file: null, note: '', uploading: false };
+    if (!state.file) return;
 
-    setSavingId(`proof:${payoutId}`);
+    setProofFiles((prev) => ({ ...prev, [payoutId]: { ...state, uploading: true } }));
     setError('');
 
     try {
-      const res = await fetch('/api/admin/payouts', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          payoutId,
-          proofUrl: draft.proofUrl,
-          proofNote: draft.proofNote,
-        }),
-      });
+      const formData = new FormData();
+      formData.append('file', state.file);
+      formData.append('payoutId', payoutId);
+      formData.append('proofNote', state.note);
+
+      const res = await fetch('/api/admin/payouts/upload', { method: 'POST', body: formData });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed to update payout proof.');
-      notifySuccess(showToast, 'Payout proof updated.');
+      if (!res.ok) throw new Error(json.error || 'Failed to upload proof.');
+      notifySuccess(showToast, 'Proof uploaded successfully.');
+      setProofFiles((prev) => ({ ...prev, [payoutId]: { file: null, note: '', uploading: false } }));
       await loadPayouts();
     } catch (err) {
-      notifyError(showToast, err, 'Unable to update payout proof.');
-    } finally {
-      setSavingId('');
+      notifyError(showToast, err, 'Unable to upload proof.');
+      setProofFiles((prev) => ({ ...prev, [payoutId]: { ...state, uploading: false } }));
     }
-  }, [loadPayouts, proofDrafts, showToast]);
+  }, [loadPayouts, proofFiles, showToast]);
 
   const runBatchMarkDone = async () => {
     if (selectedIds.length === 0) return;
@@ -282,6 +286,20 @@ export default function AdminPayoutsPage() {
     }
   };
 
+  const viewProof = useCallback(async (payoutId: string) => {
+    setViewingProofId(payoutId);
+    try {
+      const res = await fetch(`/api/admin/payouts/proof-url?payoutId=${encodeURIComponent(payoutId)}`);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Could not generate proof URL.');
+      window.open(json.signedUrl, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      notifyError(showToast, err, 'Unable to open proof document.');
+    } finally {
+      setViewingProofId(null);
+    }
+  }, [showToast]);
+
   const copyToClipboard = useCallback(async (value: string) => {
     try {
       await navigator.clipboard.writeText(value);
@@ -309,270 +327,40 @@ export default function AdminPayoutsPage() {
     setSelectedIds(Array.from(next));
   };
 
-  const columns: Array<DataTableColumn<PayoutRow>> = useMemo(
-    () => [
-      {
-        key: 'recipient',
-        header: 'Recipient',
-        render: (payout) => {
-          const canSelect = payout.status === 'processing' && Boolean(payout.proof_url);
-          const isSelected = selectedIds.includes(payout.id);
-
-          return (
-            <div className="min-w-0">
-              <div className="mb-1 flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  disabled={!canSelect}
-                  checked={isSelected}
-                  onChange={() => toggleSelect(payout.id)}
-                />
-                <p className="font-semibold text-brand-navy">
-                  {payout.profiles?.name || payout.profiles?.email || 'Recipient'} . {payout.groups?.name || 'Group'}
-                </p>
-              </div>
-              <p className="text-xs text-slate-500">Cycle {payout.cycle_number} . {new Date(payout.created_at).toLocaleString()}</p>
-              {payout.approved_at ? <p className="text-[11px] text-emerald-700">Approved {new Date(payout.approved_at).toLocaleString('en-NG')}</p> : null}
-            </div>
-          );
-        },
-      },
-      {
-        key: 'bank',
-        header: 'Bank Details',
-        render: (payout) => {
-          const payoutBankName = payout.bank_name || payout.profiles?.bank_name || '';
-          const payoutBankAccount = payout.bank_account || payout.profiles?.bank_account || '';
-
-          return (
-            <div className="grid gap-2 sm:grid-cols-2">
-              <div className="rounded-lg bg-slate-50 px-2 py-1.5 text-xs">
-                <p className="font-semibold text-slate-700">Bank Name</p>
-                <div className="mt-0.5 flex items-center justify-between gap-2">
-                  <span className="truncate text-slate-600">{payoutBankName || 'Not set'}</span>
-                  {payoutBankName ? (
-                    <button
-                      type="button"
-                      onClick={() => copyToClipboard(payoutBankName)}
-                      className="text-slate-500 hover:text-slate-800"
-                    >
-                      <Copy size={12} />
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-              <div className="rounded-lg bg-slate-50 px-2 py-1.5 text-xs">
-                <p className="font-semibold text-slate-700">Account Number</p>
-                <div className="mt-0.5 flex items-center justify-between gap-2">
-                  <span className="font-mono tracking-wide text-slate-600">
-                    {payoutBankAccount
-                      ? `••••••${payoutBankAccount.slice(-4)}`
-                      : 'Not set'}
-                  </span>
-                  {payoutBankAccount ? (
-                    <button
-                      type="button"
-                      onClick={() => copyToClipboard(payoutBankAccount)}
-                      className="text-slate-500 hover:text-slate-800"
-                    >
-                      <Copy size={12} />
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-          );
-        },
-      },
-      {
-        key: 'schedule',
-        header: 'Scheduled',
-        render: (payout) => {
-          const payoutDate = getEffectivePayoutDate({
-            scheduledFor: payout.scheduled_for ?? null,
-            startDate: payout.groups?.start_date ?? null,
-            frequency: payout.groups?.frequency ?? '',
-            cycleNumber: payout.cycle_number,
-          });
-          const defaultPayoutDate = getDefaultPayoutDate(payout.groups?.start_date ?? null, payout.groups?.frequency ?? '', payout.cycle_number);
-          const dueWindow = getDueWindow(payoutDate);
-          const draftValue = payoutDateDrafts[payout.id] ?? defaultPayoutDate ?? '';
-          const isSavingDate = savingId === `date:${payout.id}`;
-
-          return (
-            <div className="space-y-2 text-xs text-slate-600">
-              <div>
-                <p className="font-semibold text-brand-navy">{formatScheduleDate(payoutDate)}</p>
-                <p className="mt-1">
-                  {dueWindow.phase === 'overdue'
-                    ? `${dueWindow.daysOverdue} day${dueWindow.daysOverdue === 1 ? '' : 's'} past payout date`
-                    : dueWindow.phase === 'due'
-                      ? 'Payout date is today'
-                      : dueWindow.phase === 'scheduled'
-                        ? `In ${dueWindow.daysUntilDue} day${dueWindow.daysUntilDue === 1 ? '' : 's'}`
-                        : 'Schedule missing'}
-                </p>
-                <p className="mt-1 text-[11px] text-slate-500">
-                  {payout.scheduled_for ? 'Admin-set payout date' : `Default payout date from cycle schedule: ${formatScheduleDate(defaultPayoutDate)}`}
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-end gap-2">
-                <input
-                  type="date"
-                  value={draftValue}
-                  onChange={(event) => setPayoutDateDrafts((prev) => ({ ...prev, [payout.id]: event.target.value }))}
-                  className="rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-brand-navy"
-                />
-                <button
-                  type="button"
-                  disabled={isSavingDate || !draftValue}
-                  onClick={() => void savePayoutDate(payout.id)}
-                  className="rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold text-slate-700 disabled:opacity-50"
-                >
-                  {isSavingDate ? 'Saving...' : 'Save date'}
-                </button>
-              </div>
-            </div>
-          );
-        },
-      },
-      {
-        key: 'amount',
-        header: 'Amount',
-        className: 'w-44',
-        headerClassName: 'w-44',
-        render: (payout) => <span className="font-bold text-brand-navy">{toCurrency(Number(payout.amount ?? 0))}</span>,
-      },
-      {
-        key: 'status',
-        header: 'Status',
-        className: 'w-32',
-        headerClassName: 'w-32',
-        render: (payout) => <span className="capitalize text-slate-700">{payout.status}</span>,
-      },
-      {
-        key: 'proof',
-        header: 'Proof',
-        render: (payout) => {
-          const draft = proofDrafts[payout.id] ?? { proofUrl: '', proofNote: '' };
-          const isSavingProof = savingId === `proof:${payout.id}`;
-
-          return (
-            <div className="space-y-2 text-xs text-slate-600">
-              <div>
-                {payout.proof_url ? (
-                  <a
-                    href={payout.proof_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-semibold text-teal-700 underline"
-                  >
-                    View uploaded proof
-                  </a>
-                ) : (
-                  <p className="text-slate-500">No proof uploaded yet</p>
-                )}
-                {payout.proof_uploaded_at ? (
-                  <p className="mt-1 text-[11px] text-slate-500">Uploaded {new Date(payout.proof_uploaded_at).toLocaleString('en-NG')}</p>
-                ) : null}
-              </div>
-
-              <input
-                type="url"
-                value={draft.proofUrl}
-                onChange={(event) => setProofDrafts((prev) => ({
-                  ...prev,
-                  [payout.id]: {
-                    ...(prev[payout.id] ?? { proofUrl: '', proofNote: '' }),
-                    proofUrl: event.target.value,
-                  },
-                }))}
-                placeholder="https://proof-link"
-                className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-brand-navy"
-              />
-
-              <textarea
-                rows={2}
-                value={draft.proofNote}
-                onChange={(event) => setProofDrafts((prev) => ({
-                  ...prev,
-                  [payout.id]: {
-                    ...(prev[payout.id] ?? { proofUrl: '', proofNote: '' }),
-                    proofNote: event.target.value,
-                  },
-                }))}
-                placeholder="Optional transfer note"
-                className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-brand-navy"
-              />
-
-              <button
-                type="button"
-                disabled={isSavingProof}
-                onClick={() => void savePayoutProof(payout.id)}
-                className="rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold text-slate-700 disabled:opacity-50"
-              >
-                {isSavingProof ? 'Saving...' : 'Save proof'}
-              </button>
-            </div>
-          );
-        },
-      },
-      {
-        key: 'action',
-        header: 'Action',
-        className: 'w-40',
-        headerClassName: 'w-40',
-        render: (payout) => {
-          if (payout.status === 'done') {
-            return <span className="text-xs font-bold text-emerald-700">Done</span>;
-          }
-
-          if (payout.status === 'pending' || payout.status === 'failed') {
-            return (
-              <button
-                disabled={savingId === payout.id}
-                onClick={() => void updatePayoutStatus(payout.id, 'processing')}
-                className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 disabled:opacity-50"
-              >
-                {savingId === payout.id ? 'Saving...' : 'Approve'}
-              </button>
-            );
-          }
-
-          return (
-            <button
-              disabled={savingId === payout.id || !payout.proof_url}
-              onClick={() => void updatePayoutStatus(payout.id, 'done')}
-              className="rounded-lg bg-brand-navy px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
-            >
-              {savingId === payout.id ? 'Saving...' : 'Mark Done'}
-            </button>
-          );
-        },
-      },
-    ],
-    [copyToClipboard, payoutDateDrafts, proofDrafts, savePayoutDate, savePayoutProof, selectedIds, savingId, updatePayoutStatus],
-  );
-
   if (loading) return <AdminPayoutsSkeleton />;
+
+  const expandedPayout = expandedId ? filtered.find((p) => p.id === expandedId) ?? null : null;
 
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-brand-navy">Admin Payouts</h1>
+          <h1 className="text-2xl font-bold text-brand-navy">Payouts</h1>
           <LastSynced timestamp={lastSyncedAt} loading={loading || savingId !== ''} />
         </div>
-        <button disabled={savingId === 'batch' || selectedIds.length === 0} onClick={runBatchMarkDone} className="inline-flex items-center gap-2 rounded-xl bg-brand-navy px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
-          <CheckCircle2 size={14} /> Mark Selected Done
+        <button
+          disabled={savingId === 'batch' || selectedIds.length === 0}
+          onClick={runBatchMarkDone}
+          className="inline-flex items-center gap-2 rounded-xl bg-brand-navy px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+        >
+          <CheckCircle2 size={14} />
+          {selectedIds.length > 0 ? `Mark ${selectedIds.length} Done` : 'Mark Selected Done'}
         </button>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Total Paid Out</p><p className="text-xl font-bold text-brand-navy">{toCurrency(totalPaidOut)}</p></div>
-        <div className="rounded-2xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Pending Amount</p><p className="text-xl font-bold text-amber-700">{toCurrency(pendingAmount)}</p></div>
-        <div className="rounded-2xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Processing Count</p><p className="text-xl font-bold text-brand-navy">{processingCount}</p></div>
+        <div className="rounded-2xl border border-slate-100 bg-white p-4">
+          <p className="text-xs text-brand-gray">Total Paid Out</p>
+          <p className="text-xl font-bold text-brand-navy">{toCurrency(totalPaidOut)}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-100 bg-white p-4">
+          <p className="text-xs text-brand-gray">Pending Amount</p>
+          <p className="text-xl font-bold text-amber-700">{toCurrency(pendingAmount)}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-100 bg-white p-4">
+          <p className="text-xs text-brand-gray">Processing</p>
+          <p className="text-xl font-bold text-blue-700">{processingCount}</p>
+        </div>
       </div>
 
       <ChartCard title="Payout Timeline" subtitle="Payout amount by day for selected range">
@@ -594,13 +382,307 @@ export default function AdminPayoutsPage() {
 
       {error && <div className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-600">{error}</div>}
 
-      <div className="space-y-2">
-        <label className="mb-2 inline-flex items-center gap-2 px-2 text-xs font-semibold text-slate-600">
-          <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} /> Select all approved payouts with proof
-        </label>
+      <label className="inline-flex cursor-pointer items-center gap-2 px-1 text-xs font-semibold text-slate-600 select-none">
+        <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} />
+        Select all approved payouts with proof
+      </label>
 
-        <DataTable rows={filtered} columns={columns} rowKey={(payout) => payout.id} emptyMessage="No payouts found." />
+      <div className="rounded-2xl border border-slate-100 bg-white overflow-hidden">
+        <div className="hidden sm:grid sm:grid-cols-[1.5rem_1fr_auto_auto_1.5rem] items-center gap-4 border-b border-slate-100 bg-slate-50/80 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+          <span />
+          <span>Recipient</span>
+          <span>Amount</span>
+          <span>Due Date</span>
+          <span />
+        </div>
+
+        {filtered.length === 0 && (
+          <p className="p-8 text-center text-sm text-slate-400">No payouts found.</p>
+        )}
+
+        {filtered.map((payout, idx) => {
+          const canSelect = payout.status === 'processing' && Boolean(payout.proof_url);
+          const isSelected = selectedIds.includes(payout.id);
+          const payoutDate = getEffectivePayoutDate({
+            scheduledFor: payout.scheduled_for ?? null,
+            startDate: payout.groups?.start_date ?? null,
+            frequency: payout.groups?.frequency ?? '',
+            cycleNumber: payout.cycle_number,
+          });
+          const dueWindow = getDueWindow(payoutDate);
+
+          return (
+            <div
+              key={payout.id}
+              className={`grid grid-cols-[1.5rem_1fr_auto] sm:grid-cols-[1.5rem_1fr_auto_auto_1.5rem] items-center gap-4 px-4 py-3.5 transition-colors hover:bg-slate-50 cursor-pointer${idx < filtered.length - 1 ? ' border-b border-slate-100' : ''
+                }${isSelected ? ' bg-blue-50/40' : ''}`}
+              onClick={() => setExpandedId(payout.id)}
+            >
+              <input
+                type="checkbox"
+                disabled={!canSelect}
+                checked={isSelected}
+                onClick={(e) => e.stopPropagation()}
+                onChange={() => toggleSelect(payout.id)}
+                className="shrink-0"
+              />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-brand-navy">
+                  {payout.profiles?.name || payout.profiles?.email || 'Recipient'}
+                </p>
+                <p className="text-xs text-slate-400 truncate">
+                  {payout.groups?.name || 'Group'}  Cycle {payout.cycle_number}
+                </p>
+                <div className="mt-0.5 flex items-center gap-2">
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold capitalize ${statusBadgeClass(payout.status)}`}>
+                    {payout.status}
+                  </span>
+                  {payout.proof_url
+                    ? <span className="text-[10px] font-semibold text-teal-600">Proof uploaded</span>
+                    : payout.status !== 'done' && <span className="text-[10px] text-slate-400">No proof</span>}
+                </div>
+              </div>
+              <p className="hidden sm:block shrink-0 text-sm font-bold text-brand-navy">
+                {toCurrency(Number(payout.amount ?? 0))}
+              </p>
+              <div className="hidden sm:block shrink-0 text-right">
+                <p className="text-xs font-semibold text-brand-navy">{formatScheduleDate(payoutDate)}</p>
+                <p className={`text-[11px] ${dueWindow.phase === 'overdue' ? 'text-red-500 font-semibold'
+                  : dueWindow.phase === 'due' ? 'text-amber-500 font-semibold'
+                    : 'text-slate-400'
+                  }`}>
+                  {dueWindow.phase === 'overdue'
+                    ? `${dueWindow.daysOverdue}d overdue`
+                    : dueWindow.phase === 'due' ? 'Due today'
+                      : dueWindow.phase === 'scheduled' ? `In ${dueWindow.daysUntilDue}d`
+                        : ''}
+                </p>
+              </div>
+              <ChevronRight size={15} className="hidden sm:block shrink-0 text-slate-300" />
+            </div>
+          );
+        })}
       </div>
+
+      {expandedPayout && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-[2px]"
+            onClick={() => setExpandedId(null)}
+          />
+          <div className="fixed right-0 top-0 z-50 flex h-screen w-full max-w-lg flex-col bg-white shadow-2xl">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+              <div className="min-w-0">
+                <p className="truncate font-bold text-brand-navy">
+                  {expandedPayout.profiles?.name || expandedPayout.profiles?.email || 'Recipient'}
+                </p>
+                <p className="text-xs text-slate-400">{expandedPayout.groups?.name}  Cycle {expandedPayout.cycle_number}</p>
+              </div>
+              <div className="ml-3 flex shrink-0 items-center gap-2">
+                <span className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${statusBadgeClass(expandedPayout.status)}`}>
+                  {expandedPayout.status}
+                </span>
+                <button type="button" onClick={() => setExpandedId(null)} className="rounded-xl border border-slate-200 p-2 text-slate-500 hover:bg-slate-50">
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5 space-y-5">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl bg-slate-50 p-3">
+                  <p className="text-[11px] text-slate-400">Amount</p>
+                  <p className="text-xl font-bold text-brand-navy">{toCurrency(Number(expandedPayout.amount ?? 0))}</p>
+                </div>
+                <div className="rounded-xl bg-slate-50 p-3">
+                  <p className="text-[11px] text-slate-400">Created</p>
+                  <p className="text-sm font-semibold text-brand-navy">
+                    {new Date(expandedPayout.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                </div>
+                {expandedPayout.approved_at && (
+                  <div className="col-span-2 rounded-xl bg-emerald-50 p-3">
+                    <p className="text-[11px] text-emerald-600">Approved</p>
+                    <p className="text-sm font-semibold text-emerald-700">{new Date(expandedPayout.approved_at).toLocaleString('en-NG')}</p>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">Bank Details</p>
+                <div className="space-y-2">
+                  {([
+                    { label: 'Bank Name', value: expandedPayout.bank_name || expandedPayout.profiles?.bank_name || '', mono: false },
+                    { label: 'Account Number', value: expandedPayout.bank_account || expandedPayout.profiles?.bank_account || '', mono: true },
+                  ] as const).map(({ label, value, mono }) => (
+                    <div key={label} className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
+                      <div>
+                        <p className="text-[11px] text-slate-400">{label}</p>
+                        <p className={`text-sm font-semibold ${value ? 'text-brand-navy' : 'text-slate-400 font-normal'} ${mono && value ? 'font-mono' : ''}`}>
+                          {value ? (mono ? `\u2022\u2022\u2022\u2022\u2022\u2022${value.slice(-4)}` : value) : 'Not set'}
+                        </p>
+                      </div>
+                      {value && (
+                        <button type="button" onClick={() => void copyToClipboard(value)} className="rounded-lg p-1.5 text-slate-400 hover:bg-white hover:text-brand-navy transition-colors">
+                          <Copy size={14} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {(() => {
+                const payoutDate = getEffectivePayoutDate({
+                  scheduledFor: expandedPayout.scheduled_for ?? null,
+                  startDate: expandedPayout.groups?.start_date ?? null,
+                  frequency: expandedPayout.groups?.frequency ?? '',
+                  cycleNumber: expandedPayout.cycle_number,
+                });
+                const defaultPayoutDate = getDefaultPayoutDate(expandedPayout.groups?.start_date ?? null, expandedPayout.groups?.frequency ?? '', expandedPayout.cycle_number);
+                const dueWindow = getDueWindow(payoutDate);
+                const draftValue = payoutDateDrafts[expandedPayout.id] ?? defaultPayoutDate ?? '';
+                const isSavingDate = savingId === `date:${expandedPayout.id}`;
+                return (
+                  <div>
+                    <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">Payout Schedule</p>
+                    <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 space-y-3">
+                      <div>
+                        <p className="text-sm font-bold text-brand-navy">{formatScheduleDate(payoutDate)}</p>
+                        <p className={`text-xs mt-0.5 ${dueWindow.phase === 'overdue' ? 'text-red-600 font-semibold' : dueWindow.phase === 'due' ? 'text-amber-600 font-semibold' : 'text-slate-500'}`}>
+                          {dueWindow.phase === 'overdue' ? `${dueWindow.daysOverdue} day${dueWindow.daysOverdue === 1 ? '' : 's'} overdue`
+                            : dueWindow.phase === 'due' ? 'Due today'
+                              : dueWindow.phase === 'scheduled' ? `In ${dueWindow.daysUntilDue} day${dueWindow.daysUntilDue === 1 ? '' : 's'}`
+                                : 'No schedule set'}
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          {expandedPayout.scheduled_for ? 'Admin-set date' : `Default: ${formatScheduleDate(defaultPayoutDate)}`}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="date"
+                          value={draftValue}
+                          onChange={(e) => setPayoutDateDrafts((prev) => ({ ...prev, [expandedPayout.id]: e.target.value }))}
+                          className="flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-brand-navy"
+                        />
+                        <button
+                          type="button"
+                          disabled={isSavingDate || !draftValue}
+                          onClick={() => void savePayoutDate(expandedPayout.id)}
+                          className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                        >
+                          {isSavingDate ? 'Saving...' : 'Save'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div>
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">Transfer Proof</p>
+                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-3">
+                  {expandedPayout.proof_url ? (
+                    <div className="rounded-lg border border-teal-100 bg-teal-50/60 p-3">
+                      <p className="mb-1 text-[11px] font-semibold text-teal-600">Current proof</p>
+                      <button
+                        type="button"
+                        onClick={() => viewProof(expandedPayout.id)}
+                        disabled={viewingProofId === expandedPayout.id}
+                        className="flex items-center gap-1.5 text-sm font-semibold text-teal-700 underline underline-offset-2 disabled:opacity-60"
+                      >
+                        {viewingProofId === expandedPayout.id
+                          ? <Loader2 size={13} className="animate-spin" />
+                          : <ExternalLink size={13} />}
+                        View proof document
+                      </button>
+                      {expandedPayout.proof_uploaded_at && (
+                        <p className="mt-1 text-[11px] text-slate-400">Uploaded {new Date(expandedPayout.proof_uploaded_at).toLocaleString('en-NG')}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-400">No proof uploaded yet.</p>
+                  )}
+                  <p className="text-xs font-semibold text-slate-600">{expandedPayout.proof_url ? 'Replace proof' : 'Upload proof'}</p>
+                  <label className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-slate-200 bg-white px-4 py-5 text-slate-400 transition-colors hover:border-slate-300 hover:bg-slate-50/50">
+                    <Upload size={20} className={proofFiles[expandedPayout.id]?.file ? 'text-teal-600' : ''} />
+                    <span className="text-xs text-center leading-relaxed">
+                      {proofFiles[expandedPayout.id]?.file
+                        ? proofFiles[expandedPayout.id]!.file!.name
+                        : 'Click to select  JPEG, PNG or PDF  max 5 MB'}
+                    </span>
+                    <input
+                      type="file"
+                      accept=".jpg,.jpeg,.png,.pdf"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] ?? null;
+                        if (!file) return;
+                        if (!ALLOWED_PROOF_TYPES.has(file.type)) {
+                          notifyError(showToast, new Error('Invalid type'), 'Only JPEG, PNG and PDF are allowed.');
+                          e.target.value = '';
+                          return;
+                        }
+                        if (file.size > MAX_PROOF_SIZE) {
+                          notifyError(showToast, new Error('Too large'), 'File must be under 5 MB.');
+                          e.target.value = '';
+                          return;
+                        }
+                        setProofFiles((prev) => ({ ...prev, [expandedPayout.id]: { ...(prev[expandedPayout.id] ?? { note: '', uploading: false }), file } }));
+                      }}
+                    />
+                  </label>
+                  <input
+                    value={proofFiles[expandedPayout.id]?.note ?? ''}
+                    onChange={(e) => setProofFiles((prev) => ({ ...prev, [expandedPayout.id]: { ...(prev[expandedPayout.id] ?? { file: null, uploading: false }), note: e.target.value } }))}
+                    placeholder="Optional transfer note"
+                    maxLength={500}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-brand-navy placeholder:text-slate-400"
+                  />
+                  <button
+                    type="button"
+                    disabled={!proofFiles[expandedPayout.id]?.file || proofFiles[expandedPayout.id]?.uploading}
+                    onClick={() => void uploadProofFile(expandedPayout.id)}
+                    className="w-full rounded-xl bg-teal-600 py-2.5 text-sm font-bold text-white hover:bg-teal-700 disabled:opacity-50"
+                  >
+                    {proofFiles[expandedPayout.id]?.uploading ? 'Uploading...' : 'Upload Proof'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-100 p-5">
+              {expandedPayout.status === 'done' ? (
+                <div className="flex items-center justify-center gap-2 py-1 font-bold text-emerald-700">
+                  <CheckCircle2 size={18} /> Paid Out
+                </div>
+              ) : expandedPayout.status === 'pending' || expandedPayout.status === 'failed' ? (
+                <button
+                  disabled={savingId === expandedPayout.id}
+                  onClick={() => void updatePayoutStatus(expandedPayout.id, 'processing')}
+                  className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  {savingId === expandedPayout.id ? 'Saving...' : 'Approve Payout'}
+                </button>
+              ) : (
+                <>
+                  <button
+                    disabled={savingId === expandedPayout.id || !expandedPayout.proof_url}
+                    onClick={() => void updatePayoutStatus(expandedPayout.id, 'done')}
+                    className="w-full rounded-xl bg-brand-navy py-3 text-sm font-bold text-white hover:opacity-90 disabled:opacity-50"
+                  >
+                    {savingId === expandedPayout.id ? 'Saving...' : 'Mark as Done'}
+                  </button>
+                  {!expandedPayout.proof_url && (
+                    <p className="mt-2 text-center text-xs text-slate-400">Upload proof before marking done</p>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -124,12 +124,10 @@ export default function AdminSecurityPage() {
 
     return (
         <div className="space-y-5">
-            <section className="rounded-2xl border border-slate-100 bg-white p-4 md:p-5">
-                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-gray">Security</p>
-                <h1 className="mt-1 text-2xl font-bold text-brand-navy">Admin login attempts</h1>
-                <p className="mt-2 text-sm text-brand-gray">Monitor suspicious login patterns and lockout pressure by email/IP.</p>
+            <h1 className="text-2xl font-bold text-brand-navy">Login Attempts</h1>
 
-                <div className="mt-4 grid gap-2 md:grid-cols-3">
+            <div className="rounded-2xl border border-slate-100 bg-white p-3">
+                <div className="grid gap-2 md:grid-cols-3">
                     <select value={windowMinutes} onChange={(event) => setWindowMinutes(event.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-brand-navy">
                         {WINDOW_OPTIONS.map((option) => (
                             <option key={option.value} value={option.value}>{option.label}</option>
@@ -149,7 +147,7 @@ export default function AdminSecurityPage() {
                         className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-brand-navy"
                     />
                 </div>
-            </section>
+            </div>
 
             {error && <div className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-600">{error}</div>}
 
