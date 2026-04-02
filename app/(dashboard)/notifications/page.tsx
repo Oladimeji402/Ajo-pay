@@ -138,152 +138,118 @@ export default function NotificationsPage() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6">
-            <section className="relative overflow-hidden rounded-3xl border border-blue-900/20 bg-linear-to-br from-[#060E3A] via-[#0D2185] to-[#1D4ED8] p-6 text-white">
-                <div className="absolute -right-10 -top-14 h-48 w-48 rounded-full bg-white/8 blur-3xl" />
-                <div className="absolute -left-8 -bottom-12 h-36 w-36 rounded-full bg-[#60A5FA]/20 blur-3xl" />
-                <div className="relative flex flex-wrap items-end justify-between gap-4">
-                    <div>
-                        <p className="text-[11px] uppercase tracking-[0.2em] text-white/70 font-semibold">Updates &amp; Alerts</p>
-                        <h1 className="mt-1 text-2xl font-semibold inline-flex items-center gap-2"><Bell size={20} /> Notifications</h1>
-                        <p className="text-sm text-white/80 mt-2">Payment confirmations, account security updates, and group activity.</p>
-                    </div>
-                    <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3">
-                        <p className="text-[11px] uppercase tracking-[0.18em] text-white/70 mb-1">Unread</p>
-                        <p className="font-semibold text-lg">{unreadCount}</p>
-                    </div>
+        <div className="max-w-2xl mx-auto space-y-4">
+            {/* Top bar: filters + mark all */}
+            <div className="flex items-center justify-between gap-3">
+                <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
+                    {FILTERS.map((filter) => (
+                        <button
+                            key={filter.key}
+                            type="button"
+                            onClick={() => setActiveFilter(filter.key)}
+                            className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors ${activeFilter === filter.key
+                                ? 'border-brand-primary bg-brand-primary text-white'
+                                : 'border-slate-200 bg-white text-brand-navy hover:bg-blue-50 hover:border-blue-200'}`}
+                        >
+                            {filter.label}
+                            {filter.key === 'all' && unreadCount > 0 && (
+                                <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white">
+                                    {unreadCount > 9 ? '9+' : unreadCount}
+                                </span>
+                            )}
+                        </button>
+                    ))}
                 </div>
-            </section>
-
-            <section className="rounded-3xl border border-slate-200 bg-white p-5">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="mt-1 flex flex-wrap gap-2">
-                        {FILTERS.map((filter) => (
-                            <button
-                                key={filter.key}
-                                type="button"
-                                onClick={() => setActiveFilter(filter.key)}
-                                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${activeFilter === filter.key
-                                    ? 'border-[#1D4ED8] bg-[#1D4ED8] text-white'
-                                    : 'border-slate-200 bg-white text-brand-navy hover:bg-blue-50 hover:border-blue-200'}`}
-                            >
-                                {filter.label}
-                            </button>
-                        ))}
-                    </div>
-                    <button
-                        type="button"
-                        onClick={markAllAsRead}
-                        disabled={saving === 'all' || unreadCount === 0}
-                        className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3.5 py-2.5 text-sm font-semibold text-[#1D4ED8] hover:bg-blue-100 disabled:opacity-60"
-                    >
-                        <CheckCheck size={15} />
-                        Mark all as read
-                    </button>
-                </div>
-            </section>
+                <button
+                    type="button"
+                    onClick={markAllAsRead}
+                    disabled={saving === 'all' || unreadCount === 0}
+                    className="shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3 py-1.5 text-[11px] font-semibold text-brand-primary hover:bg-blue-100 disabled:opacity-50"
+                >
+                    <CheckCheck size={13} />
+                    Mark all read
+                </button>
+            </div>
 
             {error && <div className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-600">{error}</div>}
 
             {filteredNotifications.length === 0 ? (
-                <section className="rounded-3xl border border-slate-200 bg-white p-8 text-center">
-                    <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-slate-50 text-slate-500">
-                        <Bell size={22} />
+                <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-100 bg-white p-10 text-center">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50 text-slate-400">
+                        <Bell size={20} />
                     </div>
-                    <h2 className="mt-4 text-lg font-semibold text-brand-navy">No notifications in this filter</h2>
-                    <p className="mt-2 text-sm text-slate-500">Try another filter to view more updates.</p>
-                </section>
+                    <p className="text-sm font-semibold text-brand-navy">No notifications here</p>
+                    <p className="text-xs text-brand-gray">Try another filter to see more.</p>
+                </div>
             ) : (
-                <section className="space-y-3">
+                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white divide-y divide-slate-100">
                     {filteredNotifications.map((item) => {
                         const category = getNotificationCategory(item.type);
                         const badge = getCategoryBadge(category);
                         const BadgeIcon = badge.icon;
 
                         return (
-                            <article key={item.id} className={`rounded-2xl border p-4 ${item.read ? 'border-slate-200 bg-white' : 'border-blue-200 bg-blue-50/50'}`}>
-                                <div className="flex flex-wrap items-start justify-between gap-3">
-                                    <div className="space-y-2">
-                                        <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${badge.className}`}>
-                                            <BadgeIcon size={12} />
-                                            {badge.label}
-                                        </span>
-                                        <p className="text-sm font-semibold text-brand-navy">{item.title}</p>
-                                        <p className="line-clamp-2 text-sm leading-relaxed text-slate-600">{item.body}</p>
-                                        <p className="text-xs text-slate-400">{new Date(item.created_at).toLocaleString('en-NG')}</p>
+                            <article key={item.id} className={`p-4 ${!item.read ? 'bg-blue-50/40' : ''}`}>
+                                <div className="flex items-start gap-3">
+                                    <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border ${badge.className}`}>
+                                        <BadgeIcon size={14} />
                                     </div>
-
-                                    <div className="flex gap-2">
-                                        {!item.read && (
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <p className="text-sm font-semibold text-brand-navy leading-snug">{item.title}</p>
+                                            {!item.read && <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-brand-primary" />}
+                                        </div>
+                                        <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-slate-500">{item.body}</p>
+                                        <div className="mt-2 flex items-center gap-3">
+                                            <p className="text-[10px] text-slate-400">{new Date(item.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                                            {!item.read && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => markOneAsRead(item.id)}
+                                                    disabled={saving === item.id}
+                                                    className="text-[10px] font-semibold text-brand-primary hover:underline disabled:opacity-60"
+                                                >
+                                                    {saving === item.id ? 'Saving...' : 'Mark as read'}
+                                                </button>
+                                            )}
                                             <button
                                                 type="button"
-                                                onClick={() => markOneAsRead(item.id)}
-                                                disabled={saving === item.id}
-                                                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-brand-navy hover:bg-slate-50 disabled:opacity-60"
+                                                onClick={() => setSelectedNotification(item)}
+                                                className="text-[10px] font-semibold text-slate-400 hover:text-brand-navy"
                                             >
-                                                {saving === item.id ? 'Saving...' : 'Read'}
+                                                View
                                             </button>
-                                        )}
-                                        <button
-                                            type="button"
-                                            onClick={() => setSelectedNotification(item)}
-                                            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-brand-navy hover:bg-slate-50"
-                                        >
-                                            View details
-                                        </button>
+                                        </div>
                                     </div>
                                 </div>
                             </article>
                         );
                     })}
-                </section>
+                </div>
             )}
 
             {selectedNotification && (
-                <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/55 px-4">
-                    <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-900/20">
-                        <div className="flex items-start justify-between gap-3">
+                <div className="fixed inset-0 z-50 grid place-items-end sm:place-items-center bg-slate-950/60 px-0 sm:px-4">
+                    <div className="w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl">
+                        <div className="flex items-start justify-between gap-3 mb-4">
                             <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-gray">Notification details</p>
-                                <h2 className="mt-2 text-xl font-semibold text-brand-navy">{selectedNotification.title}</h2>
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-gray">Notification</p>
+                                <h2 className="mt-1 text-base font-bold text-brand-navy">{selectedNotification.title}</h2>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setSelectedNotification(null)}
-                                className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50"
+                                className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 text-slate-400 hover:bg-slate-50"
                             >
-                                <X size={16} />
+                                <X size={15} />
                             </button>
                         </div>
-
-                        <div className="mt-4 space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                            <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Message</p>
-                                <p className="mt-1 text-sm leading-relaxed text-slate-700">{selectedNotification.body}</p>
-                            </div>
-                            <div className="grid gap-3 sm:grid-cols-2">
-                                <div>
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Category</p>
-                                    <p className="mt-1 text-sm font-medium capitalize text-brand-navy">{selectedNotification.type.replace(/_/g, ' ')}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Time</p>
-                                    <p className="mt-1 text-sm font-medium text-brand-navy">{new Date(selectedNotification.created_at).toLocaleString('en-NG')}</p>
-                                </div>
-                            </div>
-                            {selectedNotification.metadata && Object.keys(selectedNotification.metadata).length > 0 && (
-                                <div>
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Metadata</p>
-                                    <pre className="mt-1 overflow-auto rounded-xl border border-slate-200 bg-white p-3 text-[11px] leading-relaxed text-slate-700">
-                                        {JSON.stringify(selectedNotification.metadata, null, 2)}
-                                    </pre>
-                                </div>
-                            )}
-                        </div>
+                        <p className="text-sm leading-relaxed text-slate-600 mb-4">{selectedNotification.body}</p>
+                        <p className="text-xs text-slate-400 mb-5">{new Date(selectedNotification.created_at).toLocaleString('en-NG')}</p>
                         <button
                             type="button"
                             onClick={() => setSelectedNotification(null)}
-                            className="mt-5 w-full rounded-xl bg-[#1D4ED8] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1A43C2]"
+                            className="w-full rounded-xl bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-primary-hover"
                         >
                             Close
                         </button>

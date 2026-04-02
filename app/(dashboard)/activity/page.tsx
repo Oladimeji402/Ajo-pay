@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowDownLeft, ArrowUpRight, ChevronLeft, ChevronRight, Filter, Search } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 
 const PAGE_SIZE = 20;
 
@@ -70,47 +70,34 @@ export default function ActivityPage() {
     }, [transactions, search]);
 
     return (
-        <div className="max-w-5xl mx-auto space-y-6">
-            <section className="relative overflow-hidden rounded-3xl border border-blue-900/20 bg-linear-to-br from-[#060E3A] via-[#0D2185] to-[#1D4ED8] p-6 text-white">
-                <div className="absolute -right-10 -top-14 h-48 w-48 rounded-full bg-white/8 blur-3xl" />
-                <div className="absolute -left-8 -bottom-12 h-36 w-36 rounded-full bg-[#60A5FA]/20 blur-3xl" />
-                <div className="absolute top-1/2 right-1/4 h-28 w-28 rounded-full bg-blue-300/10 blur-2xl" />
-                <div className="relative flex flex-wrap items-end justify-between gap-4">
-                    <div>
-                        <p className="text-[11px] uppercase tracking-[0.2em] text-white/70 font-semibold">Your payment history</p>
-                        <h1 className="text-2xl font-semibold mt-1">Payments</h1>
-                        <p className="text-sm text-white/80 mt-2">All money you&apos;ve sent to groups and money you&apos;ve received.</p>
-                    </div>
-                    <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3">
-                        <p className="text-[11px] uppercase tracking-[0.18em] text-white/70 mb-1">Total payments</p>
-                        <p className="font-semibold text-lg">{total}</p>
-                    </div>
+        <div className="max-w-2xl mx-auto space-y-4">
+            {/* Page summary bar */}
+            <div className="flex items-center justify-between">
+                <p className="text-xs text-brand-gray font-semibold">
+                    {total > 0 ? `${total} payment${total === 1 ? '' : 's'} total` : 'No payments yet'}
+                </p>
+                <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-0.5">
+                    {(['all', 'contribution', 'payout'] as const).map((item) => (
+                        <button
+                            key={item}
+                            onClick={() => setFilter(item)}
+                            className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold capitalize transition-colors ${filter === item ? 'bg-white text-brand-navy shadow-xs' : 'text-brand-gray'}`}
+                        >
+                            {item === 'all' ? 'All' : item === 'contribution' ? 'Sent' : 'Received'}
+                        </button>
+                    ))}
                 </div>
-            </section>
+            </div>
 
-            <section className="rounded-3xl border border-slate-200 bg-white p-4 md:p-5 space-y-4">
-                <div className="flex flex-col sm:flex-row gap-3">
-                    <div className="flex gap-1 rounded-xl bg-slate-100 border border-slate-200 p-1 w-fit">
-                        <p className="sr-only">Filter activity type</p>
-                        <span className="inline-flex items-center px-2 text-slate-500"><Filter size={13} /></span>
-                        {(['all', 'contribution', 'payout'] as const).map((item) => (
-                            <button
-                                key={item}
-                                onClick={() => setFilter(item)}
-                                className={`px-3 py-1.5 text-xs font-semibold rounded-lg capitalize transition-colors ${filter === item ? 'bg-white text-brand-navy shadow-xs' : 'text-brand-gray'}`}
-                            >
-                                {item === 'all' ? 'All' : item === 'contribution' ? 'Money sent' : 'Money received'}
-                            </button>
-                        ))}
-                    </div>
-
+            <section className="rounded-2xl border border-slate-200 bg-white p-3 space-y-3">
+                <div className="flex flex-col sm:flex-row gap-2">
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                         <input
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search by group name"
+                            placeholder="Search by group name or ref"
                             className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
                         />
                     </div>
@@ -119,34 +106,34 @@ export default function ActivityPage() {
                 {loading ? (
                     <div className="space-y-2 animate-pulse">
                         {[0, 1, 2, 3, 4].map((i) => (
-                            <div key={i} className="rounded-2xl border border-slate-100 bg-slate-100 h-[4.5rem]" />
+                            <div key={i} className="rounded-xl border border-slate-100 bg-slate-100 h-16" />
                         ))}
                     </div>
                 ) : error ? (
                     <div className="rounded-xl border border-red-100 bg-red-50 text-red-600 p-3 text-sm font-semibold">{error}</div>
                 ) : filtered.length === 0 ? (
-                    <div className="rounded-xl border border-slate-100 bg-slate-50 p-5 text-sm text-brand-gray">No payments found. Try a different filter.</div>
+                    <div className="rounded-xl border border-slate-100 bg-slate-50 p-5 text-sm text-brand-gray">No payments found.</div>
                 ) : (
-                    <div className="space-y-2">
+                    <div className="divide-y divide-slate-100">
                         {filtered.map((tx) => {
                             const isContribution = tx.type === 'contribution';
                             return (
-                                <div key={tx.id} className="rounded-2xl border border-slate-200 bg-linear-to-r from-white to-slate-50/70 p-4 flex items-center justify-between gap-3">
-                                    <div className="flex items-center gap-3 min-w-0">
-                                        <div className={`h-10 w-10 rounded-xl grid place-items-center ${isContribution ? 'bg-brand-primary/10 text-brand-primary' : 'bg-emerald-50 text-emerald-600'}`}>
-                                            {isContribution ? <ArrowUpRight size={16} /> : <ArrowDownLeft size={16} />}
-                                        </div>
-                                        <div className="min-w-0">
-                                            <p className="text-sm font-semibold text-brand-navy truncate">{tx.groups?.name ?? 'Group'}</p>
-                                            <p className="text-[11px] text-brand-gray truncate">{new Date(tx.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })} &middot; Ref: {tx.reference.slice(-8)}</p>
-                                        </div>
+                                <div key={tx.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${isContribution ? 'bg-blue-50' : 'bg-emerald-50'}`}>
+                                        {isContribution ? <ArrowUpRight size={16} className="text-blue-600" /> : <ArrowDownLeft size={16} className="text-emerald-600" />}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-semibold text-brand-navy truncate">{tx.groups?.name ?? 'Group'}</p>
+                                        <p className="text-[10px] text-brand-gray">
+                                            {new Date(tx.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })} · Ref: {tx.reference.slice(-8)}
+                                        </p>
                                     </div>
                                     <div className="text-right shrink-0">
-                                        <p className={`text-sm font-semibold ${isContribution ? 'text-brand-navy' : 'text-emerald-700'}`}>
+                                        <p className={`text-sm font-bold ${isContribution ? 'text-brand-navy' : 'text-emerald-600'}`}>
                                             {isContribution ? '-' : '+'}NGN {Number(tx.amount).toLocaleString('en-NG')}
                                         </p>
-                                        <p className="text-[11px] text-brand-gray capitalize inline-flex items-center gap-1 justify-end">
-                                            {tx.status === 'success' ? '✓ Successful' : tx.status === 'pending' ? '⏳ Confirming' : '✗ Failed'}
+                                        <p className={`text-[10px] font-medium ${tx.status === 'success' ? 'text-emerald-600' : tx.status === 'pending' ? 'text-amber-600' : 'text-rose-600'}`}>
+                                            {tx.status === 'success' ? 'Successful' : tx.status === 'pending' ? 'Confirming' : 'Failed'}
                                         </p>
                                     </div>
                                 </div>

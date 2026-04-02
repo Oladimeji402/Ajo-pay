@@ -105,14 +105,18 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     })();
 
     const sectionHeading = (() => {
+        if (currentSection === 'Dashboard') {
+            const hour = new Date().getHours();
+            const timeGreeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+            const firstName = userName.split(' ')[0];
+            return `${timeGreeting}, ${firstName}`;
+        }
         const labels: Record<string, string> = {
-            Dashboard: 'Home',
             Groups: 'My Groups',
             Activity: 'Payments',
             Notifications: 'Notifications',
             Settings: 'Settings',
         };
-
         return labels[currentSection] ?? currentSection;
     })();
 

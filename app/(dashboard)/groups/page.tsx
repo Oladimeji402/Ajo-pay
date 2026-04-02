@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Users, Search, Calendar, Wallet, ChevronRight, Loader2, Sparkles, Compass, Copy, Check } from 'lucide-react';
+import { Users, Search, Wallet, Calendar, ChevronRight, Loader2, Sparkles, Compass, Copy, Check } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
 import { formatScheduleDate, getCurrentCycleDueDate } from '@/lib/ajo-schedule';
@@ -160,67 +160,37 @@ export default function GroupsPage() {
 
     if (loading) {
         return (
-            <div className="max-w-6xl mx-auto space-y-6 animate-pulse">
-                <div className="rounded-3xl bg-slate-200 h-32" />
-                <div className="rounded-3xl border border-slate-100 bg-white overflow-hidden">
-                    <div className="border-b border-slate-100 px-5 py-4">
-                        <div className="h-5 w-40 rounded bg-slate-200" />
-                        <div className="h-3 w-56 rounded bg-slate-100 mt-2" />
-                    </div>
-                    <div className="p-4 grid md:grid-cols-2 gap-4">
-                        {[0, 1].map((i) => (
-                            <div key={i} className="rounded-2xl border border-slate-100 bg-slate-50 h-40" />
-                        ))}
-                    </div>
-                </div>
-                <div className="rounded-3xl border border-slate-100 bg-white p-4 md:p-5 space-y-3">
-                    <div className="h-5 w-40 rounded bg-slate-200" />
-                    {[0, 1, 2].map((i) => (
-                        <div key={i} className="rounded-xl border border-slate-100 bg-slate-50 h-16" />
-                    ))}
-                </div>
+            <div className="max-w-2xl mx-auto space-y-4 animate-pulse">
+                <div className="rounded-2xl bg-white border border-slate-100 h-28" />
+                <div className="rounded-2xl bg-white border border-slate-100 h-40" />
+                <div className="rounded-2xl bg-white border border-slate-100 h-36" />
             </div>
         );
     }
 
     return (
-        <div className="max-w-6xl mx-auto space-y-6">
-            <section className="relative overflow-hidden rounded-3xl border border-blue-900/20 bg-linear-to-br from-[#060E3A] via-[#0D2185] to-[#1D4ED8] text-white p-6 md:p-7">
-                <div className="absolute -top-20 -right-10 h-52 w-52 rounded-full bg-white/8 blur-3xl" />
-                <div className="absolute -bottom-14 -left-10 h-40 w-40 rounded-full bg-[#60A5FA]/20 blur-3xl" />
-                <div className="absolute top-1/2 right-1/3 h-36 w-36 rounded-full bg-blue-300/10 blur-2xl" />
-                <div className="relative flex flex-wrap items-end justify-between gap-4">
-                    <div>
-                        <p className="text-[11px] uppercase tracking-[0.2em] text-white/70 font-semibold">Your savings groups</p>
-                        <h1 className="text-2xl md:text-3xl font-semibold mt-1">My Groups</h1>
-                        <p className="text-sm text-white/80 mt-2">See all the groups you belong to and find new ones to join.</p>
-                    </div>
-
-                    <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 min-w-44">
-                        <p className="text-[11px] uppercase tracking-[0.18em] text-white/70 mb-1">Groups joined</p>
-                        <p className="text-2xl font-bold">{joinedCount}</p>
-                    </div>
-                </div>
-            </section>
-
+        <div className="max-w-2xl mx-auto space-y-4">
             {!!error && (
                 <div className="rounded-xl border border-red-100 bg-red-50 text-red-600 text-xs font-semibold p-3">
                     {error}
                 </div>
             )}
 
-            <section className="rounded-3xl border border-slate-200 bg-white overflow-hidden">
-                <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-                    <div>
-                        <h2 className="text-base font-semibold text-brand-navy inline-flex items-center gap-2"><Sparkles size={15} /> Groups I&apos;m In</h2>
-                        <p className="text-xs text-brand-gray mt-1">Tap a group to see details and make your payment.</p>
-                    </div>
+            {/* My Groups */}
+            <section>
+                <div className="mb-2.5 flex items-center justify-between">
+                    <h2 className="text-sm font-bold text-brand-navy inline-flex items-center gap-1.5">
+                        <Sparkles size={14} className="text-brand-primary" /> Groups I&apos;m In
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">{joinedCount}</span>
+                    </h2>
                 </div>
 
                 {joinedGroups.length === 0 ? (
-                    <div className="p-6 text-sm text-brand-gray">You haven&apos;t joined any groups yet. Find one below.</div>
+                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-brand-gray">
+                        You haven&apos;t joined any groups yet. Find one below.
+                    </div>
                 ) : (
-                    <div className="p-4 md:p-5 grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2.5">
                         {joinedGroups.map((group) => {
                             const contributed = contributionByGroup.get(group.id) ?? 0;
                             const currentDueDate = getCurrentCycleDueDate(group);
@@ -230,49 +200,31 @@ export default function GroupsPage() {
                                 <Link
                                     key={group.id}
                                     href={`/groups/${group.id}`}
-                                    className="rounded-2xl border border-slate-200 bg-linear-to-b from-white to-slate-50/70 p-4 hover:border-slate-300 transition-colors"
+                                    className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 transition-colors hover:border-slate-300"
                                 >
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            <div
-                                                className="h-11 w-11 rounded-xl grid place-items-center border border-white shadow-sm"
-                                                style={{ backgroundColor: `${group.color}24`, color: group.color }}
-                                            >
-                                                <Users size={18} />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p className="font-semibold text-brand-navy text-sm truncate">{group.name}</p>
-                                                <p className="text-[11px] text-brand-gray capitalize">{group.status}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2 shrink-0">
-                                            <span className="text-[11px] font-semibold text-brand-gray">{memberCount}/{group.max_members}</span>
-                                            <ChevronRight size={16} className="text-slate-400" />
-                                        </div>
+                                    <div
+                                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white shadow-sm"
+                                        style={{ backgroundColor: `${group.color}24`, color: group.color }}
+                                    >
+                                        <Users size={18} />
                                     </div>
-
-                                    <div className="mt-3 space-y-1">
-                                        <div className="h-1.5 rounded-full bg-blue-100 overflow-hidden">
-                                            <div className="h-full rounded-full bg-linear-to-r from-[#1D4ED8] to-[#60A5FA] transition-all" style={{ width: `${capacityPct}%` }} />
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center justify-between gap-2 mb-1">
+                                            <p className="truncate text-sm font-semibold text-brand-navy">{group.name}</p>
+                                            <span className="shrink-0 text-[10px] text-brand-gray">{memberCount}/{group.max_members}</span>
                                         </div>
-                                        <p className="text-[10px] text-brand-gray">{memberCount} of {group.max_members} members</p>
+                                        <div className="h-1.5 overflow-hidden rounded-full bg-blue-100">
+                                            <div className="h-full rounded-full bg-linear-to-r from-brand-primary to-brand-electric transition-all" style={{ width: `${capacityPct}%` }} />
+                                        </div>
+                                        <div className="mt-1.5 flex items-center justify-between">
+                                            <p className="text-[10px] capitalize text-brand-gray">{group.frequency} · <span className="font-semibold text-brand-navy">NGN {Number(group.contribution_amount).toLocaleString('en-NG')}</span></p>
+                                            <p className="text-[10px] text-brand-gray">Due: {formatScheduleDate(currentDueDate)}</p>
+                                        </div>
+                                        {contributed > 0 && (
+                                            <p className="mt-0.5 text-[10px] text-brand-gray">Paid: <span className="font-semibold text-brand-navy">NGN {contributed.toLocaleString('en-NG')}</span></p>
+                                        )}
                                     </div>
-
-                                    <div className="grid grid-cols-2 gap-3 mt-3 text-xs">
-                                        <div className="rounded-xl border border-slate-200 bg-white p-2.5">
-                                            <p className="text-brand-gray mb-1 inline-flex items-center gap-1"><Wallet size={12} /> Amount per round</p>
-                                            <p className="font-semibold text-brand-navy">NGN {Number(group.contribution_amount).toLocaleString('en-NG')}</p>
-                                        </div>
-                                        <div className="rounded-xl border border-slate-200 bg-white p-2.5">
-                                            <p className="text-brand-gray mb-1 inline-flex items-center gap-1"><Calendar size={12} /> How often</p>
-                                            <p className="font-semibold text-brand-navy capitalize">{group.frequency}</p>
-                                        </div>
-                                    </div>
-
-                                    <p className="text-xs text-brand-gray mt-3">
-                                        You&apos;ve paid: <span className="font-semibold text-brand-navy">NGN {contributed.toLocaleString('en-NG')}</span>
-                                    </p>
-                                    <p className="text-xs text-brand-gray mt-1">Next payment date: <span className="font-semibold text-brand-navy">{formatScheduleDate(currentDueDate)}</span></p>
+                                    <ChevronRight size={14} className="shrink-0 text-slate-300" />
                                 </Link>
                             );
                         })}
@@ -280,68 +232,67 @@ export default function GroupsPage() {
                 )}
             </section>
 
-            <section className="rounded-3xl border border-slate-200 bg-white p-4 md:p-5 space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                        <h2 className="font-semibold text-brand-navy inline-flex items-center gap-2"><Compass size={15} /> Find a Group to Join</h2>
-                        <p className="text-xs text-brand-gray">Search by group name or paste an invite code.</p>
-                    </div>
-                    <div className="relative w-80 max-w-full">
-                        {isSearching ? (
-                            <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 animate-spin" size={14} />
-                        ) : (
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                        )}
-                        <input
-                            type="text"
-                            value={joinSearch}
-                            onChange={(e) => setJoinSearch(e.target.value)}
-                            placeholder="Search by name or paste your invite code"
-                            className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
-                        />
-                    </div>
+            {/* Find a Group */}
+            <section>
+                <div className="mb-2.5 flex items-center justify-between">
+                    <h2 className="text-sm font-bold text-brand-navy inline-flex items-center gap-1.5">
+                        <Compass size={14} className="text-brand-primary" /> Find a Group
+                    </h2>
+                </div>
+
+                <div className="relative mb-3">
+                    {isSearching ? (
+                        <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 animate-spin" size={14} />
+                    ) : (
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                    )}
+                    <input
+                        type="text"
+                        value={joinSearch}
+                        onChange={(e) => setJoinSearch(e.target.value)}
+                        placeholder="Search by name or invite code"
+                        className="w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
+                    />
                 </div>
 
                 {filteredDiscoverGroups.length === 0 ? (
-                    <p className="text-sm text-brand-gray">{joinSearch.trim() ? 'No groups found. Check the name or invite code and try again.' : 'No open groups available right now.'}</p>
+                    <p className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-sm text-brand-gray">
+                        {joinSearch.trim() ? 'No groups match that name or code.' : 'No open groups available right now.'}
+                    </p>
                 ) : (
-                    <div className="space-y-2">
+                    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white divide-y divide-slate-100">
                         {filteredDiscoverGroups.map((group) => {
                             const memberCount = getMemberCount(group);
                             const spotsLeft = Math.max(group.max_members - memberCount, 0);
                             return (
-                                <div key={group.id} className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-linear-to-r from-slate-50 to-white p-3 sm:flex-row sm:items-center sm:justify-between">
-                                    <div className="min-w-0">
+                                <div key={group.id} className="flex items-center gap-3 p-3.5">
+                                    <div className="min-w-0 flex-1">
                                         <div className="flex items-center gap-2 flex-wrap">
                                             <p className="text-sm font-semibold text-brand-navy">{group.name}</p>
                                             <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${spotsLeft === 0 ? 'border-red-100 bg-red-50 text-red-600' : spotsLeft <= 2 ? 'border-amber-100 bg-amber-50 text-amber-700' : 'border-slate-200 bg-white text-slate-600'}`}>
-                                                <Users size={10} /> {memberCount}/{group.max_members}
+                                                <Users size={9} /> {memberCount}/{group.max_members}
                                             </span>
                                         </div>
-                                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                                            <p className="text-[11px] text-brand-gray">
-                                                Invite code: <span className="font-mono font-semibold text-brand-navy">{group.invite_code}</span>
+                                        <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                                            <p className="text-[10px] text-brand-gray">
+                                                Code: <span className="font-mono font-semibold text-brand-navy">{group.invite_code}</span>
                                             </p>
                                             <button
                                                 type="button"
                                                 onClick={() => void handleCopyCode(group.invite_code)}
-                                                title="Copy invite code"
-                                                className="inline-flex items-center gap-0.5 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 hover:border-slate-300 hover:text-brand-navy transition-colors"
+                                                className="inline-flex items-center gap-0.5 rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[9px] font-semibold text-slate-500 hover:border-slate-300"
                                             >
-                                                {copiedCode === group.invite_code
-                                                    ? <><Check size={10} className="text-emerald-500" /> Copied!</>
-                                                    : <><Copy size={10} /> Copy</>}
+                                                {copiedCode === group.invite_code ? <><Check size={9} className="text-emerald-500" /> Copied!</> : <><Copy size={9} /> Copy</>}
                                             </button>
-                                            <span className="text-[11px] text-brand-gray">· NGN {Number(group.contribution_amount).toLocaleString('en-NG')} · {group.frequency}</span>
+                                            <span className="text-[10px] text-brand-gray">· NGN {Number(group.contribution_amount).toLocaleString('en-NG')} · {group.frequency}</span>
                                         </div>
-                                        <p className="text-[11px] text-brand-gray mt-0.5">Next payment: {formatScheduleDate(getCurrentCycleDueDate(group))}</p>
                                     </div>
                                     <button
                                         onClick={() => void handleJoinGroup(group.id)}
                                         disabled={joining === group.id || spotsLeft === 0}
-                                        className="inline-flex items-center justify-center rounded-xl bg-[#1D4ED8] px-3 py-2 text-xs font-bold text-white hover:bg-[#1A43C2] disabled:cursor-not-allowed disabled:opacity-60"
+                                        className="shrink-0 inline-flex items-center justify-center rounded-xl bg-brand-primary px-3 py-2 text-xs font-bold text-white hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
                                     >
-                                        {joining === group.id ? 'Joining...' : spotsLeft === 0 ? 'Group full' : 'Join Group'}
+                                        {joining === group.id ? 'Joining...' : spotsLeft === 0 ? 'Full' : 'Join'}
                                     </button>
                                 </div>
                             );
