@@ -17,7 +17,7 @@ export async function GET(request: Request) {
 
     const { data: paymentRecord, error: paymentRecordError } = await auth.supabase
       .from("payment_records")
-      .select("id, user_id, group_id, amount, currency")
+      .select("id, user_id, group_id, amount, currency, contribution_id")
       .eq("reference", reference)
       .maybeSingle();
 
@@ -50,6 +50,14 @@ export async function GET(request: Request) {
 
       if (failUpdateError) {
         throw new Error(failUpdateError.message);
+      }
+
+      // Keep contributions in sync so the UI shows "Failed — please retry"
+      if (paymentRecord.contribution_id) {
+        await auth.supabase
+          .from("contributions")
+          .update({ status: "failed" })
+          .eq("id", paymentRecord.contribution_id);
       }
 
       return NextResponse.json({
