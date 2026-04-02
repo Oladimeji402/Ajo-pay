@@ -174,7 +174,7 @@ export default function AdminUserDetailPage() {
     return (
         <div className="space-y-4">
             <Link href="/admin/users" className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-gray transition-colors hover:text-brand-navy"><ArrowLeft size={14} /> Back to users</Link>
-            <div className="rounded-3xl border border-slate-200/70 bg-gradient-to-br from-white via-white to-slate-50 p-5 shadow-sm space-y-4">
+            <div className="rounded-2xl border border-slate-100 bg-white p-5 space-y-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                         <h1 className="text-xl font-bold text-brand-navy">{user.name || user.email}</h1>

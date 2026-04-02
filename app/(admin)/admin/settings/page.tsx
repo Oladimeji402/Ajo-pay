@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Activity, Save, Shield, Sparkles, Wifi, WifiOff } from 'lucide-react';
+import { Activity, Save, Shield, Wifi, WifiOff } from 'lucide-react';
 import { LastSynced } from '@/components/admin/LastSynced';
 import { getAdminEmail } from '@/lib/admin-auth';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -188,12 +188,12 @@ export default function AdminSettingsPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="inline-flex items-center gap-2 text-2xl font-bold text-brand-navy"><Sparkles size={20} className="text-amber-500" /> Admin Settings</h1>
+        <h1 className="text-2xl font-bold text-brand-navy">Admin Settings</h1>
         <LastSynced timestamp={lastSyncedAt} loading={loading || saving} />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-2xl border border-slate-200/70 bg-gradient-to-br from-white to-slate-50 p-4 shadow-sm">
+        <div className="rounded-2xl border border-slate-100 bg-white p-4">
           <p className="text-xs text-brand-gray">Last Webhook Activity</p>
           <p className="mt-1 text-sm font-semibold text-brand-navy">{lastWebhookReceivedAt ? new Date(lastWebhookReceivedAt).toLocaleString() : 'No payment activity yet'}</p>
         </div>
@@ -201,7 +201,7 @@ export default function AdminSettingsPage() {
           <p className="text-xs text-brand-gray">Recent Failed Transactions</p>
           <p className="mt-1 text-xl font-bold text-red-600">{failedTxCount}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200/70 bg-gradient-to-br from-white to-slate-50 p-4 shadow-sm">
+        <div className="rounded-2xl border border-slate-100 bg-white p-4">
           <p className="text-xs text-brand-gray">Pending Payout Queue</p>
           <p className="mt-1 text-xl font-bold text-brand-navy">{pendingPayoutCount}</p>
         </div>
@@ -215,7 +215,7 @@ export default function AdminSettingsPage() {
         </div>
       </div>
 
-      <div className="rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white via-white to-slate-50 p-5 shadow-sm">
+      <div className="rounded-2xl border border-slate-100 bg-white p-5">
         <h2 className="inline-flex items-center gap-1.5 text-base font-bold text-brand-navy"><Shield size={15} className="text-indigo-600" /> Admin Profile</h2>
         <p className="mt-1 text-xs text-slate-500">Update account details used in the admin workspace.</p>
 
