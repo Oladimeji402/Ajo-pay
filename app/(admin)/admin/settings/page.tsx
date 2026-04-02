@@ -8,6 +8,7 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useRealtimeSubscription } from '@/lib/hooks/useRealtimeSubscription';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
+import { formatNigeriaPhoneE164, isValidNigeriaPhoneLocal, normalizeNigeriaPhoneLocalInput, parseNigeriaPhoneToLocal } from '@/lib/phone';
 
 const SETTINGS_REALTIME_TABLES = ['payment_records', 'payouts', 'profiles'];
 const inputClassName = 'h-11 w-full rounded-xl border border-slate-200/80 bg-white px-3 text-sm text-brand-navy shadow-sm transition-all duration-200 placeholder:text-slate-400 hover:border-slate-300 hover:shadow focus:border-brand-primary/60 focus:outline-none focus:ring-4 focus:ring-brand-primary/15';
@@ -109,7 +110,7 @@ export default function AdminSettingsPage() {
 
         setProfile(adminProfile as AdminProfile);
         setName(adminProfile.name ?? '');
-        setPhone(adminProfile.phone ?? '');
+        setPhone(parseNigeriaPhoneToLocal(adminProfile.phone));
 
         const [activityRes, statsRes, failedTxRes] = await Promise.all([
           fetch('/api/admin/activity?limit=30', { cache: 'no-store' }),
@@ -161,18 +162,23 @@ export default function AdminSettingsPage() {
     setError('');
 
     try {
+      const normalizedPhone = normalizeNigeriaPhoneLocalInput(phone);
+      if (normalizedPhone && !isValidNigeriaPhoneLocal(normalizedPhone)) {
+        throw new Error('Enter a valid Nigerian mobile number (10 digits after +234).');
+      }
+
       const supabase = createSupabaseBrowserClient();
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
           name: name.trim(),
-          phone: phone.trim() || null,
+          phone: normalizedPhone ? formatNigeriaPhoneE164(normalizedPhone) : null,
         })
         .eq('id', profile.id);
 
       if (updateError) throw new Error(updateError.message);
 
-      setProfile((prev) => (prev ? { ...prev, name: name.trim(), phone: phone.trim() || null } : prev));
+      setProfile((prev) => (prev ? { ...prev, name: name.trim(), phone: normalizedPhone ? formatNigeriaPhoneE164(normalizedPhone) : null } : prev));
       notifySuccess(showToast, 'Admin profile updated successfully.');
     } catch (err) {
       notifyError(showToast, err, 'Unable to update admin profile.');
@@ -234,7 +240,18 @@ export default function AdminSettingsPage() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-semibold text-slate-600">Phone</label>
-            <input value={phone} onChange={(e) => setPhone(e.target.value)} className={inputClassName} />
+            <div className="flex h-11 w-full rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow focus-within:border-brand-primary/60 focus-within:ring-4 focus-within:ring-brand-primary/15">
+              <span className="inline-flex items-center border-r border-slate-200 px-3 text-sm font-semibold text-slate-600">+234</span>
+              <input
+                value={phone}
+                onChange={(e) => setPhone(normalizeNigeriaPhoneLocalInput(e.target.value))}
+                inputMode="numeric"
+                pattern="[0-9]{10}"
+                maxLength={10}
+                placeholder="8012345678"
+                className="h-full w-full rounded-r-xl bg-transparent px-3 text-sm text-brand-navy outline-none placeholder:text-slate-400"
+              />
+            </div>
           </div>
         </div>
 

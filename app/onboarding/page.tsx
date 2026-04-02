@@ -6,6 +6,7 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
+import { formatNigeriaPhoneE164, isValidNigeriaPhoneLocal, parseNigeriaPhoneToLocal } from '@/lib/phone';
 
 type GroupRow = {
     id: string;
@@ -67,13 +68,13 @@ export default function OnboardingPage() {
                 if (profileError) throw new Error(profileError.message);
 
                 if (profile?.name) setDisplayName(profile.name);
-                if (profile?.phone) setPhone(profile.phone);
+                if (profile?.phone) setPhone(parseNigeriaPhoneToLocal(profile.phone));
                 if (profile?.bank_account) setBankAccount(profile.bank_account);
                 if (profile?.bank_account_name) setResolvedAccountName(profile.bank_account_name);
 
                 // If phone is not in database but is in auth metadata, use that
                 if (!profile?.phone && user.user_metadata?.phone) {
-                    setPhone(user.user_metadata.phone);
+                    setPhone(parseNigeriaPhoneToLocal(user.user_metadata.phone as string));
                 }
 
                 const groupsJson = await groupsRes.json();
@@ -188,12 +189,17 @@ export default function OnboardingPage() {
         setError('');
 
         try {
+            const normalizedPhone = parseNigeriaPhoneToLocal(phone);
+            if (normalizedPhone && !isValidNigeriaPhoneLocal(normalizedPhone)) {
+                throw new Error('Enter a valid Nigerian mobile number (10 digits after +234).');
+            }
+
             const res = await fetch('/api/user/onboard', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: displayName.trim(),
-                    phone: phone.trim() || null,
+                    phone: normalizedPhone ? formatNigeriaPhoneE164(normalizedPhone) : null,
                     bankAccount: bankAccount.trim(),
                     bankName: banks.find((bank) => bank.code === bankCode)?.name ?? '',
                     bankAccountName: resolvedAccountName,

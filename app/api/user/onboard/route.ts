@@ -3,6 +3,7 @@ import { z } from "zod";
 import { badRequestResponse, requireUser, serverErrorResponse } from "@/lib/api/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { appendGroupMemberJoinToGoogleSheet } from "@/lib/google-sheets-sync";
+import { formatNigeriaPhoneE164, isValidNigeriaPhoneLocal, parseNigeriaPhoneToLocal } from "@/lib/phone";
 
 const onboardSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -33,7 +34,13 @@ export async function POST(request: Request) {
 
     const { name, phone, bankAccount, bankName, bankAccountName, groupId } = parsed.data;
     const trimmedName = name.trim();
-    const trimmedPhone = phone?.trim() || null;
+    const normalizedPhone = parseNigeriaPhoneToLocal(phone);
+
+    if (phone && !isValidNigeriaPhoneLocal(normalizedPhone)) {
+      return badRequestResponse("Phone number must be a valid Nigerian mobile number.");
+    }
+
+    const normalizedPhoneE164 = normalizedPhone ? formatNigeriaPhoneE164(normalizedPhone) : null;
 
     const adminSupabase = createSupabaseAdminClient();
 
@@ -42,7 +49,7 @@ export async function POST(request: Request) {
       .from("profiles")
       .update({
         name: trimmedName,
-        phone: trimmedPhone,
+        phone: normalizedPhoneE164,
         bank_account: bankAccount,
         bank_name: bankName.trim(),
         bank_account_name: bankAccountName.trim(),

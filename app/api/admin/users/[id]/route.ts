@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { badRequestResponse, requireAdmin, serverErrorResponse } from "@/lib/api/auth";
 import { logAdminAction } from "@/lib/admin-audit";
+import { formatNigeriaPhoneE164, isValidNigeriaPhoneLocal, parseNigeriaPhoneToLocal } from "@/lib/phone";
 
 const updateUserSchema = z.object({
   name: z.string().min(1).optional(),
@@ -122,7 +123,14 @@ export async function PATCH(request: Request, context: Context) {
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
 
     if (body.name !== undefined) updates.name = body.name!.trim();
-    if (body.phone !== undefined) updates.phone = body.phone ?? null;
+    if (body.phone !== undefined) {
+      const normalizedPhone = parseNigeriaPhoneToLocal(body.phone);
+      if (body.phone && !isValidNigeriaPhoneLocal(normalizedPhone)) {
+        return badRequestResponse("Phone number must be a valid Nigerian mobile number.");
+      }
+
+      updates.phone = normalizedPhone ? formatNigeriaPhoneE164(normalizedPhone) : null;
+    }
     if (body.status !== undefined) updates.status = body.status;
     if (body.kycLevel !== undefined) updates.kyc_level = body.kycLevel;
     if (body.role !== undefined) updates.role = body.role;

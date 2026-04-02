@@ -11,6 +11,7 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { notifySuccess } from '@/lib/toast';
 import { isDuplicateSignupWithoutError, mapAuthError } from '@/lib/auth-errors';
+import { formatNigeriaPhoneE164, isValidNigeriaPhoneLocal, normalizeNigeriaPhoneLocalInput } from '@/lib/phone';
 
 export default function SignUpPage() {
     const [isLoading, setIsLoading] = useState(false);
@@ -40,6 +41,15 @@ export default function SignUpPage() {
 
         const supabase = createSupabaseBrowserClient();
         const normalizedEmail = email.trim().toLowerCase();
+        const normalizedPhone = normalizeNigeriaPhoneLocalInput(phone);
+
+        if (!isValidNigeriaPhoneLocal(normalizedPhone)) {
+            const message = 'Enter a valid Nigerian mobile number (10 digits after +234).';
+            setError(message);
+            showToast(message, { type: 'error' });
+            setIsLoading(false);
+            return;
+        }
 
         const fullName = `${firstName} ${lastName}`.trim();
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
@@ -48,7 +58,7 @@ export default function SignUpPage() {
             options: {
                 data: {
                     name: fullName,
-                    phone,
+                    phone: formatNigeriaPhoneE164(normalizedPhone),
                 },
             },
         });
@@ -259,7 +269,26 @@ export default function SignUpPage() {
                 </div>
 
                 <Input label="Email address" type="email" autoComplete="email" placeholder="name@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                <Input label="Phone number" type="tel" autoComplete="tel" placeholder="+234 800 000 0000" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+                <div className="space-y-1 w-full">
+                    <label htmlFor="signup-phone" className="block text-sm font-semibold text-brand-navy">Phone number</label>
+                    <div className="flex rounded-lg border border-brand-border bg-white focus-within:border-brand-primary focus-within:ring-2 focus-within:ring-brand-primary/20">
+                        <span className="inline-flex items-center border-r border-brand-border px-3 text-sm font-semibold text-slate-600">+234</span>
+                        <input
+                            id="signup-phone"
+                            type="tel"
+                            autoComplete="tel-national"
+                            inputMode="numeric"
+                            pattern="[0-9]{10}"
+                            maxLength={10}
+                            placeholder="8012345678"
+                            value={phone}
+                            onChange={(e) => setPhone(normalizeNigeriaPhoneLocalInput(e.target.value))}
+                            className="block w-full rounded-r-lg bg-transparent px-4 py-3 text-brand-navy placeholder-slate-400 focus:outline-none"
+                            required
+                        />
+                    </div>
+                    <p className="text-xs text-slate-500">Enter 10 digits (without the leading 0).</p>
+                </div>
 
                 <div>
                     <div className="space-y-1 w-full">
