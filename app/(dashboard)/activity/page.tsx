@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Activity, ArrowDownLeft, ArrowUpRight, ChevronLeft, ChevronRight, Filter, Search, Waves } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, ChevronLeft, ChevronRight, Filter, Search } from 'lucide-react';
 
 const PAGE_SIZE = 20;
 
@@ -71,17 +71,18 @@ export default function ActivityPage() {
 
     return (
         <div className="max-w-5xl mx-auto space-y-6">
-            <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-linear-to-br from-brand-navy via-[#142B5E] to-brand-emerald p-6 text-white">
-                <div className="absolute -right-10 -top-14 h-48 w-48 rounded-full bg-white/10 blur-3xl" />
-                <div className="absolute -left-8 -bottom-12 h-36 w-36 rounded-full bg-emerald-300/20 blur-3xl" />
+            <section className="relative overflow-hidden rounded-3xl border border-blue-900/20 bg-linear-to-br from-[#060E3A] via-[#0D2185] to-[#1D4ED8] p-6 text-white">
+                <div className="absolute -right-10 -top-14 h-48 w-48 rounded-full bg-white/8 blur-3xl" />
+                <div className="absolute -left-8 -bottom-12 h-36 w-36 rounded-full bg-[#60A5FA]/20 blur-3xl" />
+                <div className="absolute top-1/2 right-1/4 h-28 w-28 rounded-full bg-blue-300/10 blur-2xl" />
                 <div className="relative flex flex-wrap items-end justify-between gap-4">
                     <div>
-                        <p className="text-[11px] uppercase tracking-[0.2em] text-white/70 font-semibold">Transaction Stream</p>
-                        <h1 className="text-2xl font-semibold mt-1 inline-flex items-center gap-2"><Activity size={20} /> Activity Timeline</h1>
-                        <p className="text-sm text-white/80 mt-2">Review contribution and payout movement in one continuous feed.</p>
+                        <p className="text-[11px] uppercase tracking-[0.2em] text-white/70 font-semibold">Your payment history</p>
+                        <h1 className="text-2xl font-semibold mt-1">Payments</h1>
+                        <p className="text-sm text-white/80 mt-2">All money you&apos;ve sent to groups and money you&apos;ve received.</p>
                     </div>
                     <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3">
-                        <p className="text-[11px] uppercase tracking-[0.18em] text-white/70 mb-1">Total Records</p>
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-white/70 mb-1">Total payments</p>
                         <p className="font-semibold text-lg">{total}</p>
                     </div>
                 </div>
@@ -98,7 +99,7 @@ export default function ActivityPage() {
                                 onClick={() => setFilter(item)}
                                 className={`px-3 py-1.5 text-xs font-semibold rounded-lg capitalize transition-colors ${filter === item ? 'bg-white text-brand-navy shadow-xs' : 'text-brand-gray'}`}
                             >
-                                {item}
+                                {item === 'all' ? 'All' : item === 'contribution' ? 'Money sent' : 'Money received'}
                             </button>
                         ))}
                     </div>
@@ -109,7 +110,7 @@ export default function ActivityPage() {
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search by group or reference"
+                            placeholder="Search by group name"
                             className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
                         />
                     </div>
@@ -124,7 +125,7 @@ export default function ActivityPage() {
                 ) : error ? (
                     <div className="rounded-xl border border-red-100 bg-red-50 text-red-600 p-3 text-sm font-semibold">{error}</div>
                 ) : filtered.length === 0 ? (
-                    <div className="rounded-xl border border-slate-100 bg-slate-50 p-5 text-sm text-brand-gray">No transactions found.</div>
+                    <div className="rounded-xl border border-slate-100 bg-slate-50 p-5 text-sm text-brand-gray">No payments found. Try a different filter.</div>
                 ) : (
                     <div className="space-y-2">
                         {filtered.map((tx) => {
@@ -137,7 +138,7 @@ export default function ActivityPage() {
                                         </div>
                                         <div className="min-w-0">
                                             <p className="text-sm font-semibold text-brand-navy truncate">{tx.groups?.name ?? 'Group'}</p>
-                                            <p className="text-[11px] text-brand-gray truncate">{new Date(tx.created_at).toLocaleString()} · {tx.reference}</p>
+                                            <p className="text-[11px] text-brand-gray truncate">{new Date(tx.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })} &middot; Ref: {tx.reference.slice(-8)}</p>
                                         </div>
                                     </div>
                                     <div className="text-right shrink-0">
@@ -145,7 +146,7 @@ export default function ActivityPage() {
                                             {isContribution ? '-' : '+'}NGN {Number(tx.amount).toLocaleString('en-NG')}
                                         </p>
                                         <p className="text-[11px] text-brand-gray capitalize inline-flex items-center gap-1 justify-end">
-                                            <Waves size={11} /> {tx.status}
+                                            {tx.status === 'success' ? '✓ Successful' : tx.status === 'pending' ? '⏳ Confirming' : '✗ Failed'}
                                         </p>
                                     </div>
                                 </div>
@@ -157,7 +158,7 @@ export default function ActivityPage() {
                 {totalPages > 1 && (
                     <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                         <p className="text-xs text-brand-gray">
-                            Page {page} of {totalPages} &middot; {total} records
+                            Page {page} of {totalPages} &middot; {total} payment{total === 1 ? '' : 's'}
                         </p>
                         <div className="flex items-center gap-1">
                             <button

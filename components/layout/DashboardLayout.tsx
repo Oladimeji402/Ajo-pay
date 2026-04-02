@@ -106,14 +106,14 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
     const sectionHeading = (() => {
         const labels: Record<string, string> = {
-            Dashboard: 'Dashboard Command Center',
-            Groups: 'Groups Workspace',
-            Activity: 'Activity Timeline',
-            Notifications: 'Notifications Inbox',
-            Settings: 'Account Settings',
+            Dashboard: 'Home',
+            Groups: 'My Groups',
+            Activity: 'Payments',
+            Notifications: 'Notifications',
+            Settings: 'Settings',
         };
 
-        return labels[currentSection] ?? `${currentSection} Workspace`;
+        return labels[currentSection] ?? currentSection;
     })();
 
     const handleSignOut = async () => {
@@ -129,19 +129,20 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     };
 
     return (
-        <div className="min-h-screen bg-linear-to-b from-slate-50 via-[#F3F6FA] to-white flex flex-col md:flex-row">
+        <div className="min-h-screen bg-linear-to-b from-[#EFF6FF] via-[#F0F5FF] to-white flex flex-col md:flex-row">
             <aside className="hidden md:flex w-72 shrink-0 sticky top-0 h-screen p-4">
-                <div className="relative w-full rounded-3xl border border-slate-200/70 bg-linear-to-b from-brand-navy via-[#172554] to-[#0B223D] text-white overflow-hidden flex flex-col">
-                    <div className="absolute -top-16 -right-16 h-44 w-44 rounded-full bg-brand-emerald/20 blur-3xl" />
+                <div className="relative w-full rounded-3xl border border-blue-900/20 bg-linear-to-b from-[#060E3A] via-[#0D2185] to-[#1D4ED8] text-white overflow-hidden flex flex-col">
+                    <div className="absolute -top-16 -right-16 h-44 w-44 rounded-full bg-blue-300/15 blur-3xl" />
                     <div className="absolute bottom-8 -left-12 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
+                    <div className="absolute top-1/2 -right-20 h-56 w-56 rounded-full bg-blue-400/10 blur-3xl" />
 
                     <div className="relative p-6 pb-5">
                         <BrandLogo />
-                        <p className="mt-4 text-[10px] uppercase tracking-[0.2em] text-slate-300 font-semibold">Member Workspace</p>
+                        <p className="mt-4 text-[10px] uppercase tracking-[0.2em] text-slate-300 font-semibold">Your savings</p>
                     </div>
 
                     <nav className="relative flex-1 overflow-y-auto px-4">
-                        <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] mb-2">Navigate</p>
+                        <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] mb-2">Menu</p>
                         <div className="space-y-1.5">
                             {navItems.map((item) => {
                                 const isActive = isPathActive(item.path);
@@ -157,7 +158,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                                         {isActive && (
                                             <motion.div
                                                 layoutId="sidebar-active"
-                                                className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full bg-brand-emerald"
+                                                className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full bg-[#60A5FA]"
                                             />
                                         )}
                                         {item.icon}
@@ -168,14 +169,14 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                         </div>
 
                         <div className="pt-6">
-                            <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] mb-2">Actions</p>
+                            <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] mb-2">Quick actions</p>
                             <div className="space-y-2">
-                                <Link href="/groups" className="w-full inline-flex items-center justify-between rounded-xl bg-linear-to-r from-brand-emerald to-emerald-500 px-3 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-emerald/25 hover:shadow-brand-emerald/45 transition-shadow">
-                                    Join a Group
+                                <Link href="/groups" className="w-full inline-flex items-center justify-between rounded-xl bg-white/95 px-3 py-2.5 text-sm font-semibold text-[#1D4ED8] shadow-lg shadow-black/20 hover:bg-white transition-all hover:shadow-black/30">
+                                    Find a Group
                                     <Plus size={16} />
                                 </Link>
-                                <Link href="/activity" className="w-full inline-flex items-center justify-between rounded-xl border border-white/15 bg-white/8 px-3 py-2.5 text-sm font-semibold text-slate-200 hover:text-white hover:bg-white/12 transition-colors">
-                                    Review Activity
+                                <Link href="/activity" className="w-full inline-flex items-center justify-between rounded-xl border border-white/20 bg-white/10 px-3 py-2.5 text-sm font-semibold text-slate-200 hover:text-white hover:bg-white/15 transition-colors">
+                                    View Payments
                                     <ArrowUpRight size={15} />
                                 </Link>
                             </div>
@@ -185,7 +186,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     <div className="relative p-4 pt-5 mt-auto">
                         <div className="rounded-2xl border border-white/10 bg-white/8 p-3.5">
                             <div className="flex items-center gap-3 mb-3">
-                                <div className="h-10 w-10 rounded-full bg-linear-to-br from-brand-emerald to-emerald-400 text-white font-bold text-sm grid place-items-center">
+                                <div className="h-10 w-10 rounded-full bg-linear-to-br from-[#60A5FA] to-[#1D4ED8] text-white font-bold text-sm grid place-items-center">
                                     {userInitial}
                                 </div>
                                 <div className="min-w-0">
@@ -218,9 +219,9 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                                 </span>
                             )}
                         </Link>
-                        <Link href="/groups" className="inline-flex items-center gap-2 rounded-xl bg-brand-navy px-3.5 py-2.5 text-sm font-semibold text-white hover:bg-brand-primary transition-colors">
+                        <Link href="/groups" className="inline-flex items-center gap-2 rounded-xl bg-[#1D4ED8] px-3.5 py-2.5 text-sm font-semibold text-white hover:bg-[#1A43C2] transition-colors">
                             <Plus size={15} />
-                            Join Group
+                            Find a Group
                         </Link>
                     </div>
                 </header>
@@ -265,8 +266,8 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                                         key={item.name}
                                         href={item.path}
                                         className={`-mt-5 flex flex-col items-center gap-0.5 rounded-xl px-1.5 py-2 text-[9px] font-bold transition-all ${isActive
-                                            ? 'bg-linear-to-b from-brand-emerald to-emerald-500 text-white shadow-lg shadow-brand-emerald/35'
-                                            : 'bg-linear-to-b from-brand-navy to-brand-primary text-white shadow-md shadow-slate-400/35'
+                                            ? 'bg-linear-to-b from-[#60A5FA] to-[#1D4ED8] text-white shadow-lg shadow-blue-500/40'
+                                            : 'bg-linear-to-b from-[#0C1A4D] to-[#1D4ED8] text-white shadow-md shadow-blue-900/30'
                                             }`}
                                     >
                                         <Plus size={16} />
@@ -286,7 +287,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                                         <span className="absolute right-1 top-0 h-1.5 w-1.5 rounded-full bg-brand-emerald" />
                                     )}
                                     <span className="uppercase tracking-[0.04em] leading-none whitespace-nowrap">{item.mobileLabel}</span>
-                                    {isActive && <span className="h-1 w-1 rounded-full bg-brand-emerald" />}
+                                    {isActive && <span className="h-1 w-1 rounded-full bg-brand-primary" />}
                                 </Link>
                             );
                         })}
