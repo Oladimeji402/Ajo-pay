@@ -229,6 +229,12 @@ export default function GroupDetailsPage() {
                                 throw new Error(verifyJson.error || 'Payment verification failed.');
                             }
 
+                            if (verifyJson.data?.status !== 'success') {
+                                await loadData();
+                                notifyError(showToast, new Error(verifyJson.data?.status ?? 'failed'), 'Payment was not successful. Please try again.');
+                                return;
+                            }
+
                             setReceipt({
                                 reference: response.reference,
                                 amount: Number(group.contribution_amount),
@@ -244,6 +250,7 @@ export default function GroupDetailsPage() {
                 },
                 onClose: () => {
                     notifyWarning(showToast, 'Payment window closed before completion.');
+                    void loadData();
                 },
             });
         } catch (err) {
@@ -379,11 +386,11 @@ export default function GroupDetailsPage() {
                     </div>
                     <button
                         onClick={handleContribution}
-                        disabled={paying}
+                        disabled={paying || currentCyclePaymentState.state === 'success'}
                         className="px-4 py-2.5 rounded-xl bg-[#1D4ED8] text-white text-sm font-semibold disabled:opacity-60 inline-flex items-center gap-1.5 hover:bg-[#1A43C2] transition-colors"
                     >
                         <ArrowUpRight size={14} />
-                        {paying ? 'Processing...' : 'Pay now'}
+                        {paying ? 'Processing...' : currentCyclePaymentState.state === 'success' ? 'Paid ✓' : 'Pay now'}
                     </button>
                 </div>
 
