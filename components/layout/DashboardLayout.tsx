@@ -145,7 +145,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                         <p className="mt-4 text-[10px] uppercase tracking-[0.2em] text-slate-300 font-semibold">Your savings</p>
                     </div>
 
-                    <nav className="relative flex-1 overflow-y-auto px-4">
+                    <nav className="sidebar-nav relative flex-1 overflow-y-auto px-4">
                         <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] mb-2">Menu</p>
                         <div className="space-y-1.5">
                             {navItems.map((item) => {
