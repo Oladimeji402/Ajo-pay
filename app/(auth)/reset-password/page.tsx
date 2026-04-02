@@ -174,7 +174,7 @@ function ResetPasswordContent() {
         return (
             <section aria-labelledby="reset-success-title" className="space-y-6">
                 <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0f766e]">All done</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1D4ED8]">All done</p>
                     <h2 id="reset-success-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>
                         Password updated.
                     </h2>
@@ -188,7 +188,7 @@ function ResetPasswordContent() {
                     transition={{ type: 'spring', stiffness: 260, damping: 22 }}
                     className="flex h-20 w-20 items-center justify-center rounded-2xl bg-slate-50"
                 >
-                    <CheckCircle2 size={32} className="text-[#0f766e]" />
+                    <CheckCircle2 size={32} className="text-[#1D4ED8]" />
                 </motion.div>
                 <Button onClick={() => router.push('/login')} className="w-full">
                     Sign in
@@ -200,7 +200,7 @@ function ResetPasswordContent() {
     return (
         <section aria-labelledby="reset-title" className="space-y-6">
             <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0f766e]">Password reset</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1D4ED8]">Password reset</p>
                 <h2 id="reset-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>
                     {isOtpVerified ? 'Set a new password.' : 'Verify your OTP.'}
                 </h2>
@@ -358,7 +358,7 @@ export default function ResetPasswordPage() {
             fallback={
                 <section aria-labelledby="reset-title" className="space-y-6">
                     <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0f766e]">Password reset</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1D4ED8]">Password reset</p>
                         <h2 id="reset-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>
                             Loading reset form...
                         </h2>

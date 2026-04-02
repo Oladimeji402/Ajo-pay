@@ -65,7 +65,7 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
                             transition={{ delay: 0.15, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                             className="mt-auto"
                         >
-                            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#0f766e]">
+                            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#60A5FA]">
                                 Ajo — the way it should be
                             </p>
                             <h1 className="mt-4 text-[2.6rem] font-semibold leading-[1.08] tracking-[-0.02em] text-white" style={{ fontFamily: 'var(--font-auth-heading)' }}>

@@ -21,9 +21,9 @@ export const HowItWorks = () => {
       title: 'Join or Create a Group',
       description: 'Browse verified Ajo groups or create your own and invite friends, family, or colleagues.',
       icon: <Search size={20} />,
-      gradient: 'from-brand-emerald to-emerald-400',
-      accentLight: 'bg-brand-emerald/10',
-      accentText: 'text-brand-emerald',
+      gradient: 'from-[#0C1A4D] to-[#1D4ED8]',
+      accentLight: 'bg-brand-primary/10',
+      accentText: 'text-brand-primary',
       tag: 'Community',
     },
     {
@@ -31,9 +31,9 @@ export const HowItWorks = () => {
       title: 'Automate Contributions',
       description: 'Link your bank account or card. Set a schedule and we handle automatic deductions — you never miss a turn.',
       icon: <CreditCard size={20} />,
-      gradient: 'from-purple-500 to-violet-600',
-      accentLight: 'bg-purple-500/10',
-      accentText: 'text-purple-600',
+      gradient: 'from-[#1D4ED8] to-[#60A5FA]',
+      accentLight: 'bg-brand-primary/10',
+      accentText: 'text-brand-primary',
       tag: 'Automation',
     },
     {
@@ -41,9 +41,9 @@ export const HowItWorks = () => {
       title: 'Receive Your Payout',
       description: 'When it\'s your rotation, receive the full pot instantly — direct to your bank account or wallet.',
       icon: <Wallet size={20} />,
-      gradient: 'from-amber-500 to-orange-500',
-      accentLight: 'bg-amber-500/10',
-      accentText: 'text-amber-600',
+      gradient: 'from-[#3B82F6] to-[#93C5FD]',
+      accentLight: 'bg-brand-primary/10',
+      accentText: 'text-brand-primary',
       tag: 'Payout',
     },
   ];
@@ -52,7 +52,7 @@ export const HowItWorks = () => {
     <section id="how-it-works" className="py-24 lg:py-36 bg-white relative overflow-hidden">
       {/* Subtle background accent */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-primary/[0.02] rounded-full blur-[120px] -mr-64 -mt-64 pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-brand-emerald/[0.025] rounded-full blur-[100px] -ml-48 -mb-48 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-brand-primary/[0.025] rounded-full blur-[100px] -ml-48 -mb-48 pointer-events-none" />
 
       <Container className="relative z-10">
         <div className="grid lg:grid-cols-[1fr_1.35fr] gap-16 lg:gap-24 items-start">
@@ -71,7 +71,7 @@ export const HowItWorks = () => {
 
               <h2 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-extrabold text-brand-navy leading-[1.1] tracking-tight mb-5">
                 Start saving in{' '}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-primary to-brand-emerald">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-primary to-brand-electric">
                   4 simple steps
                 </span>
               </h2>
@@ -87,21 +87,21 @@ export const HowItWorks = () => {
                   'Fully automated — zero manual work',
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-2.5">
-                    <CheckCircle2 size={15} className="text-brand-emerald flex-shrink-0" />
+                    <CheckCircle2 size={15} className="text-brand-primary flex-shrink-0" />
                     <span className="text-[13.5px] text-brand-gray font-medium">{item}</span>
                   </div>
                 ))}
               </div>
 
-              {/* Stats pills */}
+              {/* Trust pills */}
               <div className="flex items-center gap-3 mt-10">
                 <div className="px-4 py-2.5 bg-brand-primary/[0.06] rounded-xl border border-brand-primary/10">
-                  <p className="text-[13px] font-extrabold text-brand-navy">50K+</p>
-                  <p className="text-[10px] text-brand-gray">Active Savers</p>
+                  <p className="text-[13px] font-extrabold text-brand-navy">Free</p>
+                  <p className="text-[10px] text-brand-gray">No hidden fees</p>
                 </div>
-                <div className="px-4 py-2.5 bg-brand-emerald/[0.06] rounded-xl border border-brand-emerald/10">
-                  <p className="text-[13px] font-extrabold text-brand-navy">₦2B+</p>
-                  <p className="text-[10px] text-brand-gray">Total Saved</p>
+                <div className="px-4 py-2.5 bg-brand-primary/[0.06] rounded-xl border border-brand-primary/10">
+                  <p className="text-[13px] font-extrabold text-brand-navy">Secure</p>
+                  <p className="text-[10px] text-brand-gray">Verified payouts</p>
                 </div>
               </div>
             </motion.div>
@@ -110,7 +110,7 @@ export const HowItWorks = () => {
           {/* ─── Right — Steps timeline ─── */}
           <div className="relative">
             {/* Connecting vertical line */}
-            <div className="absolute top-5 bottom-5 left-[23px] w-px bg-gradient-to-b from-brand-primary/30 via-brand-emerald/20 to-transparent" />
+            <div className="absolute top-5 bottom-5 left-[23px] w-px bg-gradient-to-b from-brand-primary/30 via-brand-primary/15 to-transparent" />
 
             <div className="space-y-4">
               {steps.map((step, i) => (

@@ -56,7 +56,7 @@ export default function ForgotPasswordPage() {
         return (
             <section aria-labelledby="email-sent-title" className="space-y-6">
                 <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0f766e]">Email sent</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1D4ED8]">Email sent</p>
                     <h2 id="email-sent-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>
                         Check your inbox.
                     </h2>
@@ -77,7 +77,7 @@ export default function ForgotPasswordPage() {
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ delay: 0.3, type: 'spring', stiffness: 300 }}
-                        className="absolute -top-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-[#0f766e] shadow-md"
+                        className="absolute -top-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-[#1D4ED8] shadow-md"
                     >
                         <CheckCircle2 size={13} className="text-white" />
                     </motion.div>
@@ -96,7 +96,7 @@ export default function ForgotPasswordPage() {
                 <div className="space-y-3">
                     <button
                         onClick={() => router.push(`/reset-password?email=${encodeURIComponent(email.trim())}`)}
-                        className="inline-flex w-full items-center justify-center rounded-xl border border-[#0f766e]/20 bg-[#0f766e]/5 px-4 py-2.5 text-sm font-semibold text-[#0f766e] hover:bg-[#0f766e]/10 transition-colors"
+                        className="inline-flex w-full items-center justify-center rounded-xl border border-[#1D4ED8]/20 bg-[#1D4ED8]/5 px-4 py-2.5 text-sm font-semibold text-[#1D4ED8] hover:bg-[#1D4ED8]/10 transition-colors"
                     >
                         I have the OTP code
                     </button>
@@ -123,7 +123,7 @@ export default function ForgotPasswordPage() {
     return (
         <section aria-labelledby="forgot-title" className="space-y-6">
             <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0f766e]">Password recovery</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1D4ED8]">Password recovery</p>
                 <h2 id="forgot-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>
                     Forgot your password?
                 </h2>
