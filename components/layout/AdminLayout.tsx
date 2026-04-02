@@ -114,7 +114,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
             </div>
 
             {/* Nav Items */}
-            <nav className="grow px-4 py-6 space-y-1 overflow-y-auto">
+            <nav className="sidebar-nav grow px-4 py-6 space-y-1 overflow-y-auto">
                 <p className="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] mb-3">Management</p>
                 {navItems.map((item) => {
                     const isActive = pathname === item.path || (item.path !== '/admin' && pathname.startsWith(item.path));
