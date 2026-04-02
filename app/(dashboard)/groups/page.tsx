@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Users, Search, Calendar, Wallet, ChevronRight, Loader2, Sparkles, Compass, Layers3, Copy, Check } from 'lucide-react';
+import { Users, Search, Calendar, Wallet, ChevronRight, Loader2, Sparkles, Compass, Copy, Check } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
 import { formatScheduleDate, getCurrentCycleDueDate } from '@/lib/ajo-schedule';
@@ -185,19 +185,20 @@ export default function GroupsPage() {
 
     return (
         <div className="max-w-6xl mx-auto space-y-6">
-            <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-linear-to-br from-brand-navy via-[#182D63] to-brand-emerald text-white p-6 md:p-7">
-                <div className="absolute -top-20 -right-10 h-52 w-52 rounded-full bg-white/10 blur-3xl" />
-                <div className="absolute -bottom-14 -left-10 h-40 w-40 rounded-full bg-emerald-300/20 blur-3xl" />
+            <section className="relative overflow-hidden rounded-3xl border border-blue-900/20 bg-linear-to-br from-[#060E3A] via-[#0D2185] to-[#1D4ED8] text-white p-6 md:p-7">
+                <div className="absolute -top-20 -right-10 h-52 w-52 rounded-full bg-white/8 blur-3xl" />
+                <div className="absolute -bottom-14 -left-10 h-40 w-40 rounded-full bg-[#60A5FA]/20 blur-3xl" />
+                <div className="absolute top-1/2 right-1/3 h-36 w-36 rounded-full bg-blue-300/10 blur-2xl" />
                 <div className="relative flex flex-wrap items-end justify-between gap-4">
                     <div>
-                        <p className="text-[11px] uppercase tracking-[0.2em] text-white/70 font-semibold">Group Workspace</p>
-                        <h1 className="text-2xl md:text-3xl font-semibold mt-1">Your savings circles, organized.</h1>
-                        <p className="text-sm text-white/80 mt-2">Track active memberships and discover new circles that match your contribution rhythm.</p>
+                        <p className="text-[11px] uppercase tracking-[0.2em] text-white/70 font-semibold">Your savings groups</p>
+                        <h1 className="text-2xl md:text-3xl font-semibold mt-1">My Groups</h1>
+                        <p className="text-sm text-white/80 mt-2">See all the groups you belong to and find new ones to join.</p>
                     </div>
 
-                    <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 min-w-56">
-                        <p className="text-[11px] uppercase tracking-[0.18em] text-white/70 mb-2">Membership Pulse</p>
-                        <p className="text-sm inline-flex items-center gap-2"><Layers3 size={14} /> Joined Groups: <span className="font-semibold">{joinedCount}</span></p>
+                    <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 min-w-44">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-white/70 mb-1">Groups joined</p>
+                        <p className="text-2xl font-bold">{joinedCount}</p>
                     </div>
                 </div>
             </section>
@@ -211,13 +212,13 @@ export default function GroupsPage() {
             <section className="rounded-3xl border border-slate-200 bg-white overflow-hidden">
                 <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
                     <div>
-                        <h2 className="text-base font-semibold text-brand-navy inline-flex items-center gap-2"><Sparkles size={15} /> My Active Circles</h2>
-                        <p className="text-xs text-brand-gray mt-1">Your joined groups with quick contribution and cycle context.</p>
+                        <h2 className="text-base font-semibold text-brand-navy inline-flex items-center gap-2"><Sparkles size={15} /> Groups I&apos;m In</h2>
+                        <p className="text-xs text-brand-gray mt-1">Tap a group to see details and make your payment.</p>
                     </div>
                 </div>
 
                 {joinedGroups.length === 0 ? (
-                    <div className="p-6 text-sm text-brand-gray">You are not in any groups yet.</div>
+                    <div className="p-6 text-sm text-brand-gray">You haven&apos;t joined any groups yet. Find one below.</div>
                 ) : (
                     <div className="p-4 md:p-5 grid md:grid-cols-2 gap-4">
                         {joinedGroups.map((group) => {
@@ -251,27 +252,27 @@ export default function GroupsPage() {
                                     </div>
 
                                     <div className="mt-3 space-y-1">
-                                        <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                                            <div className="h-full rounded-full bg-linear-to-r from-brand-primary to-brand-emerald transition-all" style={{ width: `${capacityPct}%` }} />
+                                        <div className="h-1.5 rounded-full bg-blue-100 overflow-hidden">
+                                            <div className="h-full rounded-full bg-linear-to-r from-[#1D4ED8] to-[#60A5FA] transition-all" style={{ width: `${capacityPct}%` }} />
                                         </div>
                                         <p className="text-[10px] text-brand-gray">{memberCount} of {group.max_members} members</p>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-3 mt-3 text-xs">
                                         <div className="rounded-xl border border-slate-200 bg-white p-2.5">
-                                            <p className="text-brand-gray mb-1 inline-flex items-center gap-1"><Wallet size={12} /> Per Cycle</p>
+                                            <p className="text-brand-gray mb-1 inline-flex items-center gap-1"><Wallet size={12} /> Amount per round</p>
                                             <p className="font-semibold text-brand-navy">NGN {Number(group.contribution_amount).toLocaleString('en-NG')}</p>
                                         </div>
                                         <div className="rounded-xl border border-slate-200 bg-white p-2.5">
-                                            <p className="text-brand-gray mb-1 inline-flex items-center gap-1"><Calendar size={12} /> Frequency</p>
+                                            <p className="text-brand-gray mb-1 inline-flex items-center gap-1"><Calendar size={12} /> How often</p>
                                             <p className="font-semibold text-brand-navy capitalize">{group.frequency}</p>
                                         </div>
                                     </div>
 
                                     <p className="text-xs text-brand-gray mt-3">
-                                        Total contributed: <span className="font-semibold text-brand-navy">NGN {contributed.toLocaleString('en-NG')}</span>
+                                        You&apos;ve paid: <span className="font-semibold text-brand-navy">NGN {contributed.toLocaleString('en-NG')}</span>
                                     </p>
-                                    <p className="text-xs text-brand-gray mt-1">Current collection date: <span className="font-semibold text-brand-navy">{formatScheduleDate(currentDueDate)}</span></p>
+                                    <p className="text-xs text-brand-gray mt-1">Next payment date: <span className="font-semibold text-brand-navy">{formatScheduleDate(currentDueDate)}</span></p>
                                 </Link>
                             );
                         })}
@@ -282,8 +283,8 @@ export default function GroupsPage() {
             <section className="rounded-3xl border border-slate-200 bg-white p-4 md:p-5 space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h2 className="font-semibold text-brand-navy inline-flex items-center gap-2"><Compass size={15} /> Discover and Join</h2>
-                        <p className="text-xs text-brand-gray">Search by group name or invite code.</p>
+                        <h2 className="font-semibold text-brand-navy inline-flex items-center gap-2"><Compass size={15} /> Find a Group to Join</h2>
+                        <p className="text-xs text-brand-gray">Search by group name or paste an invite code.</p>
                     </div>
                     <div className="relative w-80 max-w-full">
                         {isSearching ? (
@@ -295,14 +296,14 @@ export default function GroupsPage() {
                             type="text"
                             value={joinSearch}
                             onChange={(e) => setJoinSearch(e.target.value)}
-                            placeholder="Search by name or paste invite code"
+                            placeholder="Search by name or paste your invite code"
                             className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
                         />
                     </div>
                 </div>
 
                 {filteredDiscoverGroups.length === 0 ? (
-                    <p className="text-sm text-brand-gray">No available groups match your search.</p>
+                    <p className="text-sm text-brand-gray">{joinSearch.trim() ? 'No groups found. Check the name or invite code and try again.' : 'No open groups available right now.'}</p>
                 ) : (
                     <div className="space-y-2">
                         {filteredDiscoverGroups.map((group) => {
@@ -319,7 +320,7 @@ export default function GroupsPage() {
                                         </div>
                                         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                                             <p className="text-[11px] text-brand-gray">
-                                                Code: <span className="font-mono font-semibold text-brand-navy">{group.invite_code}</span>
+                                                Invite code: <span className="font-mono font-semibold text-brand-navy">{group.invite_code}</span>
                                             </p>
                                             <button
                                                 type="button"
@@ -333,12 +334,12 @@ export default function GroupsPage() {
                                             </button>
                                             <span className="text-[11px] text-brand-gray">· NGN {Number(group.contribution_amount).toLocaleString('en-NG')} · {group.frequency}</span>
                                         </div>
-                                        <p className="text-[11px] text-brand-gray mt-0.5">Current collection date: {formatScheduleDate(getCurrentCycleDueDate(group))}</p>
+                                        <p className="text-[11px] text-brand-gray mt-0.5">Next payment: {formatScheduleDate(getCurrentCycleDueDate(group))}</p>
                                     </div>
                                     <button
                                         onClick={() => void handleJoinGroup(group.id)}
                                         disabled={joining === group.id || spotsLeft === 0}
-                                        className="inline-flex items-center justify-center rounded-xl bg-brand-emerald px-3 py-2 text-xs font-bold text-white hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+                                        className="inline-flex items-center justify-center rounded-xl bg-[#1D4ED8] px-3 py-2 text-xs font-bold text-white hover:bg-[#1A43C2] disabled:cursor-not-allowed disabled:opacity-60"
                                     >
                                         {joining === group.id ? 'Joining...' : spotsLeft === 0 ? 'Group full' : 'Join Group'}
                                     </button>

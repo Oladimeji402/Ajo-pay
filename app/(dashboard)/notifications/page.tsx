@@ -139,37 +139,47 @@ export default function NotificationsPage() {
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
-            <section className="rounded-3xl border border-slate-200 bg-white p-6">
-                <div className="flex flex-wrap items-start justify-between gap-4">
+            <section className="relative overflow-hidden rounded-3xl border border-blue-900/20 bg-linear-to-br from-[#060E3A] via-[#0D2185] to-[#1D4ED8] p-6 text-white">
+                <div className="absolute -right-10 -top-14 h-48 w-48 rounded-full bg-white/8 blur-3xl" />
+                <div className="absolute -left-8 -bottom-12 h-36 w-36 rounded-full bg-[#60A5FA]/20 blur-3xl" />
+                <div className="relative flex flex-wrap items-end justify-between gap-4">
                     <div>
-                        <p className="text-[11px] uppercase tracking-[0.2em] text-brand-gray font-semibold">Updates and alerts</p>
-                        <h1 className="mt-2 text-2xl font-semibold text-brand-navy">Notifications</h1>
-                        <p className="mt-2 text-sm text-slate-500">Payment confirmations, account security updates, and group activity will appear here.</p>
+                        <p className="text-[11px] uppercase tracking-[0.2em] text-white/70 font-semibold">Updates &amp; Alerts</p>
+                        <h1 className="mt-1 text-2xl font-semibold inline-flex items-center gap-2"><Bell size={20} /> Notifications</h1>
+                        <p className="text-sm text-white/80 mt-2">Payment confirmations, account security updates, and group activity.</p>
+                    </div>
+                    <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-white/70 mb-1">Unread</p>
+                        <p className="font-semibold text-lg">{unreadCount}</p>
+                    </div>
+                </div>
+            </section>
+
+            <section className="rounded-3xl border border-slate-200 bg-white p-5">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="mt-1 flex flex-wrap gap-2">
+                        {FILTERS.map((filter) => (
+                            <button
+                                key={filter.key}
+                                type="button"
+                                onClick={() => setActiveFilter(filter.key)}
+                                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${activeFilter === filter.key
+                                    ? 'border-[#1D4ED8] bg-[#1D4ED8] text-white'
+                                    : 'border-slate-200 bg-white text-brand-navy hover:bg-blue-50 hover:border-blue-200'}`}
+                            >
+                                {filter.label}
+                            </button>
+                        ))}
                     </div>
                     <button
                         type="button"
                         onClick={markAllAsRead}
                         disabled={saving === 'all' || unreadCount === 0}
-                        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-brand-navy hover:bg-slate-50 disabled:opacity-60"
+                        className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3.5 py-2.5 text-sm font-semibold text-[#1D4ED8] hover:bg-blue-100 disabled:opacity-60"
                     >
                         <CheckCheck size={15} />
                         Mark all as read
                     </button>
-                </div>
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                    {FILTERS.map((filter) => (
-                        <button
-                            key={filter.key}
-                            type="button"
-                            onClick={() => setActiveFilter(filter.key)}
-                            className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${activeFilter === filter.key
-                                ? 'border-brand-navy bg-brand-navy text-white'
-                                : 'border-slate-200 bg-white text-brand-navy hover:bg-slate-50'}`}
-                        >
-                            {filter.label}
-                        </button>
-                    ))}
                 </div>
             </section>
 
@@ -191,7 +201,7 @@ export default function NotificationsPage() {
                         const BadgeIcon = badge.icon;
 
                         return (
-                            <article key={item.id} className={`rounded-2xl border p-4 ${item.read ? 'border-slate-200 bg-white' : 'border-emerald-200 bg-emerald-50/60'}`}>
+                            <article key={item.id} className={`rounded-2xl border p-4 ${item.read ? 'border-slate-200 bg-white' : 'border-blue-200 bg-blue-50/50'}`}>
                                 <div className="flex flex-wrap items-start justify-between gap-3">
                                     <div className="space-y-2">
                                         <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${badge.className}`}>
@@ -253,8 +263,8 @@ export default function NotificationsPage() {
                             </div>
                             <div className="grid gap-3 sm:grid-cols-2">
                                 <div>
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Type</p>
-                                    <p className="mt-1 text-sm font-medium text-brand-navy">{selectedNotification.type}</p>
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Category</p>
+                                    <p className="mt-1 text-sm font-medium capitalize text-brand-navy">{selectedNotification.type.replace(/_/g, ' ')}</p>
                                 </div>
                                 <div>
                                     <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Time</p>
@@ -270,6 +280,13 @@ export default function NotificationsPage() {
                                 </div>
                             )}
                         </div>
+                        <button
+                            type="button"
+                            onClick={() => setSelectedNotification(null)}
+                            className="mt-5 w-full rounded-xl bg-[#1D4ED8] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1A43C2]"
+                        >
+                            Close
+                        </button>
                     </div>
                 </div>
             )}

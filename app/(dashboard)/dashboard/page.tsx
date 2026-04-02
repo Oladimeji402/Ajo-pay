@@ -236,32 +236,30 @@ export default function DashboardPage() {
 
     return (
         <div className="max-w-6xl mx-auto space-y-6">
-            <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-linear-to-br from-brand-navy via-[#16214A] to-brand-emerald p-6 md:p-8 text-white">
-                <div className="absolute -top-20 -right-14 h-52 w-52 rounded-full bg-white/10 blur-2xl" />
-                <div className="absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-emerald-300/10 blur-3xl" />
+            <section className="relative overflow-hidden rounded-3xl border border-blue-900/20 bg-linear-to-br from-[#060E3A] via-[#0D2185] to-[#1D4ED8] p-6 md:p-8 text-white">
+                <div className="absolute -top-20 -right-14 h-52 w-52 rounded-full bg-white/8 blur-2xl" />
+                <div className="absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-[#60A5FA]/20 blur-3xl" />
+                <div className="absolute top-1/3 right-1/3 h-32 w-32 rounded-full bg-blue-300/10 blur-2xl" />
                 <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                     <div className="space-y-2">
-                        <p className="text-[11px] uppercase tracking-[0.22em] text-white/70 font-semibold">Member Action Console</p>
+                        <p className="text-[11px] uppercase tracking-[0.22em] text-white/70 font-semibold">Good day</p>
                         <h1 className="text-2xl md:text-3xl font-semibold leading-tight">
-                            Savings Control Room
+                            Welcome back, {profile?.name || 'Member'} 👋
                         </h1>
                         <p className="text-sm text-white/80 max-w-xl">
-                            {profile?.name || 'Member'}, your savings rhythm is at{' '}
-                            <span className="relative group/tooltip inline-block">
-                                <span className="font-semibold text-white cursor-help underline decoration-dotted decoration-white/50">{momentumScore}% momentum</span>
-                                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 rounded-xl border border-white/20 bg-brand-navy px-3 py-2 text-[11px] text-white/80 shadow-lg opacity-0 group-hover/tooltip:opacity-100 transition-opacity z-20 text-left leading-relaxed">
-                                    Momentum = the percentage of your active groups where you have already paid your contribution for the current cycle.
-                                    <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-brand-navy" />
-                                </span>
-                            </span>. Focus on today&apos;s due cycles to keep payouts on track.
+                            {groupsAwaitingContribution > 0
+                                ? `You have ${groupsAwaitingContribution} group${groupsAwaitingContribution === 1 ? '' : 's'} waiting for your payment. Pay now to keep your savings on track.`
+                                : activeGroups > 0
+                                    ? `You are all caught up! Your ${activeGroups} active group${activeGroups === 1 ? '' : 's'} ${activeGroups === 1 ? 'is' : 'are'} on track.`
+                                    : 'Join a savings group to start saving with others.'}
                         </p>
                     </div>
 
-                    <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-sm px-4 py-3 min-w-60">
-                        <p className="text-[11px] uppercase tracking-[0.2em] text-white/70 mb-2">Tonight&apos;s Checklist</p>
+                    <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-sm px-4 py-3 min-w-52">
+                        <p className="text-[11px] uppercase tracking-[0.2em] text-white/70 mb-2">Today&apos;s summary</p>
                         <div className="space-y-2 text-sm">
                             <p className="flex items-center justify-between gap-4">
-                                <span className="inline-flex items-center gap-2"><CalendarClock size={14} /> Groups due</span>
+                                <span className="inline-flex items-center gap-2"><CalendarClock size={14} /> Payments due</span>
                                 <strong>{groupsAwaitingContribution}</strong>
                             </p>
                             <p className="flex items-center justify-between gap-4">
@@ -273,42 +271,42 @@ export default function DashboardPage() {
                 </div>
             </section>
 
-            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <section className="grid gap-4 grid-cols-2 xl:grid-cols-4">
                 <article className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <p className="text-[11px] uppercase tracking-wide text-brand-gray mb-2 inline-flex items-center gap-1"><Wallet size={13} /> Contributed So Far</p>
+                    <p className="text-[11px] uppercase tracking-wide text-brand-gray mb-2 inline-flex items-center gap-1"><Wallet size={13} /> Total Saved</p>
                     <p className="text-xl font-semibold text-brand-navy">{formatCurrency(profile?.total_contributed ?? 0)}</p>
                 </article>
 
                 <article className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <p className="text-[11px] uppercase tracking-wide text-brand-gray mb-2 inline-flex items-center gap-1"><ArrowDownLeft size={13} /> Received So Far</p>
+                    <p className="text-[11px] uppercase tracking-wide text-brand-gray mb-2 inline-flex items-center gap-1"><ArrowDownLeft size={13} /> Money Received</p>
                     <p className="text-xl font-semibold text-brand-navy">{formatCurrency(profile?.total_received ?? 0)}</p>
                 </article>
 
                 <article className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <p className="text-[11px] uppercase tracking-wide text-brand-gray mb-2 inline-flex items-center gap-1"><Users size={13} /> Active Groups</p>
+                    <p className="text-[11px] uppercase tracking-wide text-brand-gray mb-2 inline-flex items-center gap-1"><Users size={13} /> My Groups</p>
                     <p className="text-xl font-semibold text-brand-navy">{activeGroups}</p>
                 </article>
 
-                <article className="rounded-2xl border border-slate-200 bg-linear-to-br from-amber-50 to-orange-50 p-4">
-                    <p className="text-[11px] uppercase tracking-wide text-amber-700 mb-2 inline-flex items-center gap-1"><AlertTriangle size={13} /> Awaiting My Contribution</p>
-                    <p className="text-xl font-semibold text-amber-900">{groupsAwaitingContribution}</p>
+                <article className="rounded-2xl border border-blue-100 bg-linear-to-br from-blue-50 to-[#EFF6FF] p-4">
+                    <p className="text-[11px] uppercase tracking-wide text-blue-600 mb-2 font-semibold inline-flex items-center gap-1"><AlertTriangle size={13} /> Needs Payment</p>
+                    <p className="text-xl font-bold text-brand-navy">{groupsAwaitingContribution}</p>
                 </article>
             </section>
 
             <section className="rounded-3xl border border-slate-200 bg-white overflow-hidden">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
                     <div>
-                        <h2 className="text-base font-semibold text-brand-navy">Action Center</h2>
-                        <p className="text-xs text-brand-gray">High-priority cycles that need your attention now.</p>
+                        <h2 className="text-base font-semibold text-brand-navy">Payments due</h2>
+                        <p className="text-xs text-brand-gray">Groups waiting for your payment right now.</p>
                     </div>
-                    <Link href="/groups" className="text-xs font-bold text-brand-primary">Open all groups</Link>
+                    <Link href="/groups" className="text-xs font-bold text-[#1D4ED8]">See all groups</Link>
                 </div>
 
                 <div className="p-4 md:p-5 space-y-3">
                     {actionQueue.length === 0 ? (
                         <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 inline-flex items-center gap-2">
                             <CheckCircle2 size={16} />
-                            You are clear for this cycle. No pending group payments.
+                            You&apos;re all up to date! No payments due right now.
                         </div>
                     ) : (
                         actionQueue.map((group) => {
@@ -320,10 +318,10 @@ export default function DashboardPage() {
                                     <div className="min-w-0">
                                         <p className="text-sm font-semibold text-brand-navy truncate">{group.name}</p>
                                         <p className="text-xs text-brand-gray mt-0.5">
-                                            Cycle {group.current_cycle} of {group.total_cycles} · {formatCurrency(group.contribution_amount)}
+                                            Round {group.current_cycle} of {group.total_cycles} &middot; Pay {formatCurrency(group.contribution_amount)}
                                         </p>
                                         <p className="text-[11px] text-brand-gray mt-1">
-                                            Collection date: {formatScheduleDate(dueDate)}
+                                            Pay by: {formatScheduleDate(dueDate)}
                                             {state === 'overdue' ? ` · ${dueWindow.daysOverdue} day${dueWindow.daysOverdue === 1 ? '' : 's'} late` : ''}
                                         </p>
                                     </div>
@@ -333,7 +331,7 @@ export default function DashboardPage() {
                                             {state === 'pending' ? <Clock3 size={12} /> : state === 'failed' || state === 'overdue' ? <AlertTriangle size={12} /> : <CircleDashed size={12} />}
                                             {getContributionStateLabel(state)}
                                         </span>
-                                        <Link href={`/groups/${group.id}`} className="inline-flex items-center justify-center rounded-lg bg-brand-navy px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-brand-primary">
+                                        <Link href={`/groups/${group.id}`} className="inline-flex items-center justify-center rounded-lg bg-[#1D4ED8] px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-[#1A43C2]">
                                             {state === 'failed' ? 'Retry payment' : 'Pay now'}
                                         </Link>
                                     </div>
@@ -346,8 +344,8 @@ export default function DashboardPage() {
 
             <section className="rounded-3xl border border-slate-200 bg-white overflow-hidden">
                 <div className="border-b border-slate-100 px-5 py-4">
-                    <h2 className="text-base font-semibold text-brand-navy">Cycle Radar</h2>
-                    <p className="text-xs text-brand-gray">A compact map of where each group stands in the current rotation.</p>
+                    <h2 className="text-base font-semibold text-brand-navy">My Savings Groups</h2>
+                    <p className="text-xs text-brand-gray">See where each group is in its savings cycle.</p>
                 </div>
 
                 {groups.length === 0 ? (
@@ -372,15 +370,15 @@ export default function DashboardPage() {
                                         </span>
                                     </div>
 
-                                    <p className="mt-2 text-[11px] text-brand-gray">Collection date: {formatScheduleDate(dueDate)}</p>
+                                    <p className="mt-2 text-[11px] text-brand-gray">Next payment: {formatScheduleDate(dueDate)}</p>
 
                                     <div className="mt-4 space-y-1.5">
                                         <div className="flex items-center justify-between text-[11px] text-brand-gray">
-                                            <span>Cycle progress</span>
+                                            <span>Progress</span>
                                             <span>{group.current_cycle} / {group.total_cycles}</span>
                                         </div>
-                                        <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
-                                            <div className="h-full rounded-full bg-linear-to-r from-brand-primary to-brand-emerald" style={{ width: `${progress}%` }} />
+                                        <div className="h-2 rounded-full bg-blue-100 overflow-hidden">
+                                            <div className="h-full rounded-full bg-linear-to-r from-[#1D4ED8] to-[#60A5FA]" style={{ width: `${progress}%` }} />
                                         </div>
                                     </div>
                                 </Link>
@@ -394,8 +392,8 @@ export default function DashboardPage() {
                 <div className="rounded-3xl border border-slate-200 bg-white overflow-hidden">
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
                         <div>
-                            <h2 className="text-base font-semibold text-brand-navy">Activity Timeline</h2>
-                            <p className="text-xs text-brand-gray">Most recent records from verified payment activity.</p>
+                            <h2 className="text-base font-semibold text-brand-navy">Recent Payments</h2>
+                            <p className="text-xs text-brand-gray">Your latest payment activity.</p>
                         </div>
                         <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1">
                             {(['all', 'contribution', 'payout'] as const).map((item) => (
@@ -404,7 +402,7 @@ export default function DashboardPage() {
                                     onClick={() => setActivityFilter(item)}
                                     className={`px-2.5 py-1 text-[11px] rounded-lg font-semibold capitalize transition-colors ${activityFilter === item ? 'bg-white text-brand-navy shadow-xs' : 'text-brand-gray'}`}
                                 >
-                                    {item}
+                                    {item === 'all' ? 'All' : item === 'contribution' ? 'Sent' : 'Received'}
                                 </button>
                             ))}
                         </div>
@@ -412,7 +410,7 @@ export default function DashboardPage() {
 
                     <div className="p-4 md:p-5 space-y-2">
                         {filteredActivity.length === 0 ? (
-                            <p className="text-sm text-brand-gray">No transactions found for this filter.</p>
+                            <p className="text-sm text-brand-gray">No payments found.</p>
                         ) : (
                             filteredActivity.map((tx) => {
                                 const isContribution = tx.type === 'contribution';
@@ -441,18 +439,18 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="rounded-3xl border border-slate-200 bg-linear-to-b from-slate-50 to-white p-5">
-                    <h3 className="text-sm font-semibold text-brand-navy">Quick Access</h3>
-                    <p className="text-xs text-brand-gray mt-1">Jump to key screens without breaking focus.</p>
+                    <h3 className="text-sm font-semibold text-brand-navy">Quick links</h3>
+                    <p className="text-xs text-brand-gray mt-1">Jump to any section.</p>
 
                     <div className="mt-4 space-y-2">
                         <Link href="/groups" className="block rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-brand-navy hover:bg-slate-50">
-                            Discover and join groups
+                            Find &amp; join a group
                         </Link>
                         <Link href="/activity" className="block rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-brand-navy hover:bg-slate-50">
-                            Open full transaction history
+                            See all payments
                         </Link>
                         <Link href="/settings" className="block rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-brand-navy hover:bg-slate-50">
-                            Update payout bank settings
+                            Update bank details
                         </Link>
                     </div>
                 </div>

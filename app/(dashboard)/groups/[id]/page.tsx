@@ -300,15 +300,15 @@ export default function GroupDetailsPage() {
                 <ArrowLeft size={14} /> Back to Groups
             </Link>
 
-            <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-linear-to-br from-brand-navy via-[#173069] to-brand-emerald text-white p-6">
-                <div className="absolute -right-10 -top-14 h-48 w-48 rounded-full bg-white/10 blur-3xl" />
-                <div className="absolute -left-10 -bottom-14 h-40 w-40 rounded-full bg-emerald-300/20 blur-3xl" />
+            <section className="relative overflow-hidden rounded-3xl border border-blue-900/20 bg-linear-to-br from-[#060E3A] via-[#0D2185] to-[#1D4ED8] text-white p-6">
+                <div className="absolute -right-10 -top-14 h-48 w-48 rounded-full bg-white/8 blur-3xl" />
+                <div className="absolute -left-10 -bottom-14 h-40 w-40 rounded-full bg-[#60A5FA]/20 blur-3xl" />
 
                 <div className="relative flex items-start justify-between gap-4 flex-wrap">
                     <div>
-                        <p className="text-[11px] uppercase tracking-[0.2em] text-white/70 font-semibold">Group Command Deck</p>
+                        <p className="text-[11px] uppercase tracking-[0.2em] text-white/70 font-semibold">Group details</p>
                         <h1 className="text-2xl font-semibold mt-1">{group.name}</h1>
-                        <p className="text-sm text-white/80 capitalize mt-1">{group.status} · {group.frequency}</p>
+                        <p className="text-sm text-white/80 capitalize mt-1">{group.status} &middot; {group.frequency} payments</p>
                     </div>
                     <button
                         onClick={handleCopyCode}
@@ -328,7 +328,7 @@ export default function GroupDetailsPage() {
 
                 <div className="grid sm:grid-cols-3 gap-3 mt-5">
                     <div className="rounded-xl border border-white/20 bg-white/10 p-3">
-                        <p className="text-[11px] text-white/80 inline-flex items-center gap-1"><Wallet size={12} /> Per cycle</p>
+                        <p className="text-[11px] text-white/80 inline-flex items-center gap-1"><Wallet size={12} /> Amount per round</p>
                         <p className="font-semibold text-white">NGN {Number(group.contribution_amount).toLocaleString('en-NG')}</p>
                     </div>
                     <div className="rounded-xl border border-white/20 bg-white/10 p-3">
@@ -336,32 +336,32 @@ export default function GroupDetailsPage() {
                         <p className="font-semibold text-white">{group.members.length} / {group.max_members}</p>
                     </div>
                     <div className="rounded-xl border border-white/20 bg-white/10 p-3">
-                        <p className="text-[11px] text-white/80 inline-flex items-center gap-1"><Calendar size={12} /> Cycle</p>
-                        <p className="font-semibold text-white">{group.current_cycle} / {group.total_cycles}</p>
+                        <p className="text-[11px] text-white/80 inline-flex items-center gap-1"><Calendar size={12} /> Round</p>
+                        <p className="font-semibold text-white">{group.current_cycle} of {group.total_cycles}</p>
                     </div>
                 </div>
 
                 <div className="mt-4 rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-sm text-white/90">
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-white/60">Collection timing</p>
-                    <p className="mt-1 font-semibold">Current cycle date: {formatScheduleDate(currentCyclePaymentState.dueDate)}</p>
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-white/60">When to pay</p>
+                    <p className="mt-1 font-semibold">Pay by: {formatScheduleDate(currentCyclePaymentState.dueDate)}</p>
                     <p className="mt-1 text-xs text-white/75">
                         {currentCyclePaymentState.state === 'overdue'
-                            ? `This contribution is ${currentCyclePaymentState.dueWindow.daysOverdue} day${currentCyclePaymentState.dueWindow.daysOverdue === 1 ? '' : 's'} overdue.`
+                            ? `You are ${currentCyclePaymentState.dueWindow.daysOverdue} day${currentCyclePaymentState.dueWindow.daysOverdue === 1 ? '' : 's'} late. Please pay as soon as possible.`
                             : currentCyclePaymentState.state === 'scheduled'
-                                ? `Collection day is in ${currentCyclePaymentState.dueWindow.daysUntilDue} day${currentCyclePaymentState.dueWindow.daysUntilDue === 1 ? '' : 's'}. You can still pay early.`
+                                ? `Payment is in ${currentCyclePaymentState.dueWindow.daysUntilDue} day${currentCyclePaymentState.dueWindow.daysUntilDue === 1 ? '' : 's'}. You can pay early.`
                                 : currentCyclePaymentState.state === 'success'
-                                    ? 'You have already covered this cycle.'
+                                    ? 'You have already paid for this round. Great job!'
                                     : currentCyclePaymentState.state === 'pending'
-                                        ? 'Your payment is pending verification.'
+                                        ? 'Your payment is being confirmed. This may take a few minutes.'
                                         : currentCyclePaymentState.state === 'failed'
-                                            ? 'Your last payment attempt failed and needs another try.'
-                                            : 'This cycle is due now.'}
+                                            ? 'Your last payment did not go through. Please try again.'
+                                            : 'Your payment is due now.'}
                     </p>
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-2">
                     <Link href={`/groups/${group.id}/payout-schedule`} className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm font-semibold text-white hover:bg-white/15 transition-colors">
-                        <Calendar size={14} /> View payout schedule
+                        <Calendar size={14} /> Payout schedule
                     </Link>
                     {userMember && group.status !== 'completed' && (
                         <button onClick={() => setShowLeaveModal(true)} className="inline-flex items-center gap-2 rounded-xl border border-red-200/30 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-50 hover:bg-red-500/20 transition-colors">
@@ -374,43 +374,43 @@ export default function GroupDetailsPage() {
             <section className="bg-white border border-slate-200 rounded-3xl p-5 space-y-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h2 className="font-semibold text-brand-navy inline-flex items-center gap-2"><Sparkles size={15} /> Cycle Contribution</h2>
-                        <p className="text-xs text-brand-gray">Real-time payment via Paystack inline checkout.</p>
+                        <h2 className="font-semibold text-brand-navy">Make your payment</h2>
+                        <p className="text-xs text-brand-gray">Pay securely via Paystack. Your payment is confirmed instantly.</p>
                     </div>
                     <button
                         onClick={handleContribution}
                         disabled={paying}
-                        className="px-4 py-2 rounded-xl bg-brand-emerald text-white text-sm font-semibold disabled:opacity-60 inline-flex items-center gap-1.5"
+                        className="px-4 py-2.5 rounded-xl bg-[#1D4ED8] text-white text-sm font-semibold disabled:opacity-60 inline-flex items-center gap-1.5 hover:bg-[#1A43C2] transition-colors"
                     >
                         <ArrowUpRight size={14} />
-                        {paying ? 'Processing...' : 'Make Contribution'}
+                        {paying ? 'Processing...' : 'Pay now'}
                     </button>
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-3 text-sm">
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                        <p className="text-xs text-brand-gray">My Position</p>
-                        <p className="font-semibold text-brand-navy">{userMember?.position ? `#${userMember.position}` : 'Not assigned'}</p>
+                        <p className="text-xs text-brand-gray">My payout position</p>
+                        <p className="font-semibold text-brand-navy">{userMember?.position ? `#${userMember.position} in line` : 'Not assigned yet'}</p>
                     </div>
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                        <p className="text-xs text-brand-gray">Total Contributed (This Group)</p>
+                        <p className="text-xs text-brand-gray">Total I&apos;ve paid (this group)</p>
                         <p className="font-semibold text-brand-navy">NGN {totalContributed.toLocaleString('en-NG')}</p>
                     </div>
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
-                        <p className="text-xs text-brand-gray">Current cycle status</p>
-                        <p className="font-semibold text-brand-navy capitalize">{currentCyclePaymentState.state}</p>
+                        <p className="text-xs text-brand-gray">This round&apos;s payment status</p>
+                        <p className="font-semibold text-brand-navy capitalize">{currentCyclePaymentState.state === 'success' ? 'Paid ✓' : currentCyclePaymentState.state === 'pending' ? 'Confirming...' : currentCyclePaymentState.state === 'failed' ? 'Failed — please retry' : currentCyclePaymentState.state === 'overdue' ? 'Overdue' : currentCyclePaymentState.state === 'scheduled' ? 'Not due yet' : 'Due now'}</p>
                     </div>
                 </div>
 
-                <div className="rounded-xl border border-emerald-100 bg-emerald-50 text-emerald-800 px-3 py-2 text-xs inline-flex items-center gap-1.5">
-                    <ShieldCheck size={13} /> Payments are verified server-side before contribution status is marked successful.
+                <div className="rounded-xl border border-blue-100 bg-blue-50 text-blue-800 px-3 py-2 text-xs inline-flex items-center gap-1.5">
+                    <ShieldCheck size={13} /> Your payment is safe. We verify every transaction before marking it as successful.
                 </div>
 
                 {error && <div className="rounded-xl border border-red-100 bg-red-50 text-red-600 text-xs font-semibold p-3">{error}</div>}
             </section>
 
             <section className="bg-white border border-slate-200 rounded-3xl p-5">
-                <h3 className="font-semibold text-brand-navy mb-3">Members</h3>
+                <h3 className="font-semibold text-brand-navy mb-3">Group members</h3>
                 <div className="space-y-2">
                     {group.members.map((member) => (
                         <div key={member.id} className="flex items-center justify-between px-3 py-2 rounded-xl border border-slate-200 bg-linear-to-r from-slate-50 to-white text-sm">
@@ -418,7 +418,7 @@ export default function GroupDetailsPage() {
                                 {member.profiles?.name || member.profiles?.email || member.user_id}
                                 {member.user_id === currentUserId ? ' (You)' : ''}
                             </p>
-                            <p className="text-xs text-brand-gray">Position #{member.position}</p>
+                            <p className="text-xs text-brand-gray">Payout position #{member.position}</p>
                         </div>
                     ))}
                 </div>
@@ -430,7 +430,7 @@ export default function GroupDetailsPage() {
                         <div className="flex items-start justify-between gap-3">
                             <div>
                                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-600">Payment confirmed</p>
-                                <h2 className="mt-2 text-2xl font-semibold text-brand-navy">Receipt ready</h2>
+                                <h2 className="mt-2 text-2xl font-semibold text-brand-navy">Payment successful!</h2>
                             </div>
                             <div className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-50 text-emerald-600">
                                 <CheckCircle2 size={22} />
@@ -462,14 +462,14 @@ export default function GroupDetailsPage() {
                                 onClick={() => window.print()}
                                 className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-navy hover:bg-slate-50"
                             >
-                                Download / print receipt
+                                Save receipt
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setReceipt(null)}
-                                className="flex-1 rounded-xl bg-brand-navy px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-primary"
+                                className="flex-1 rounded-xl bg-[#1D4ED8] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1A43C2]"
                             >
-                                Close
+                                Done
                             </button>
                         </div>
                     </div>
@@ -490,7 +490,7 @@ export default function GroupDetailsPage() {
                         </div>
 
                         <p className="mt-4 text-sm leading-relaxed text-slate-600">
-                            You will lose your active membership in this circle. You can only join again later if there is still space available.
+                            If you leave, you will lose your spot in this group. You can only rejoin later if a space is still available.
                         </p>
 
                         <div className="mt-5 flex flex-wrap gap-2">
@@ -500,7 +500,7 @@ export default function GroupDetailsPage() {
                                 disabled={leavingGroup}
                                 className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-navy hover:bg-slate-50 disabled:opacity-60"
                             >
-                                Cancel
+                                No, stay
                             </button>
                             <button
                                 type="button"
@@ -508,7 +508,7 @@ export default function GroupDetailsPage() {
                                 disabled={leavingGroup}
                                 className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
                             >
-                                {leavingGroup ? 'Leaving...' : 'Confirm leave'}
+                                {leavingGroup ? 'Leaving...' : 'Yes, leave group'}
                             </button>
                         </div>
                     </div>

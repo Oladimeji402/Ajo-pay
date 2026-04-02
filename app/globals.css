@@ -1,18 +1,21 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  
-  --color-brand-primary: #1B2F6B;
-  --color-brand-primary-hover: #16275A;
-  --color-brand-navy: #0F172A;
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Syne", ui-sans-serif, system-ui, sans-serif;
+
+  --color-brand-primary: #1D4ED8;
+  --color-brand-primary-hover: #1A43C2;
+  --color-brand-navy: #0C1A4D;
   --color-brand-emerald: #0F766E;
   --color-brand-emerald-hover: #0C5E57;
-  --color-brand-soft-blue: #E8EEF8;
+  --color-brand-azure: #3B82F6;
+  --color-brand-electric: #60A5FA;
+  --color-brand-soft-blue: #DBEAFE;
   --color-brand-gray: #64748b;
-  --color-brand-light: #F8FAFC;
-  --color-brand-border: #E2E8F0;
+  --color-brand-light: #EFF6FF;
+  --color-brand-border: #BFDBFE;
   --color-brand-disabled: #CBD5E1;
   --color-brand-footer-text: #CBD5E1;
 }
@@ -20,6 +23,10 @@
 @layer base {
   body {
     @apply font-sans text-brand-navy bg-white antialiased;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
   }
 }
 
