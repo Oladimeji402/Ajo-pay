@@ -24,14 +24,14 @@ export const Security = () => {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
           >
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-emerald/15 border border-brand-emerald/20 mb-6">
-              <ShieldCheck size={12} className="text-brand-emerald" />
-              <span className="text-[11px] font-bold text-brand-emerald uppercase tracking-[0.1em]">Security First</span>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-electric/15 border border-brand-electric/20 mb-6">
+              <ShieldCheck size={12} className="text-brand-electric" />
+              <span className="text-[11px] font-bold text-brand-electric uppercase tracking-[0.1em]">Security First</span>
             </div>
 
             <h3 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold mb-6 tracking-tight leading-tight">
               Your trust is our{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-emerald to-emerald-400">greatest asset.</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-electric to-[#93C5FD]">greatest asset.</span>
             </h3>
             <p className="text-slate-400 text-[15px] mb-10 leading-relaxed max-w-lg">
               We use the same encryption standards as major global banks. Your money and data are protected by multiple layers of security.
@@ -52,7 +52,7 @@ export const Security = () => {
                   transition={{ delay: i * 0.1 }}
                   className="flex gap-4 group"
                 >
-                  <div className="w-10 h-10 bg-brand-emerald/10 rounded-xl flex items-center justify-center flex-shrink-0 text-brand-emerald group-hover:bg-brand-emerald/20 transition-colors">
+                  <div className="w-10 h-10 bg-brand-electric/10 rounded-xl flex items-center justify-center flex-shrink-0 text-brand-electric group-hover:bg-brand-electric/20 transition-colors">
                     {item.icon}
                   </div>
                   <div>
@@ -75,10 +75,10 @@ export const Security = () => {
               {/* Top Row Cards */}
               <div className="grid grid-cols-2 gap-4 mb-4">
                 {[
-                  { icon: <ShieldCheck size={22} />, title: 'Secure Vault', sub: 'Isolated storage', color: 'bg-brand-emerald/15 text-brand-emerald' },
+                  { icon: <ShieldCheck size={22} />, title: 'Secure Vault', sub: 'Isolated storage', color: 'bg-brand-electric/15 text-brand-electric' },
                   { icon: <Lock size={22} />, title: 'SSL Certified', sub: 'Encrypted traffic', color: 'bg-brand-primary/20 text-blue-300' },
-                  { icon: <Fingerprint size={22} />, title: 'Biometric Auth', sub: 'Fingerprint & Face ID', color: 'bg-purple-500/15 text-purple-300' },
-                  { icon: <KeyRound size={22} />, title: '2FA Protected', sub: 'Multi-factor auth', color: 'bg-amber-500/15 text-amber-300' },
+                  { icon: <Fingerprint size={22} />, title: 'Biometric Auth', sub: 'Fingerprint & Face ID', color: 'bg-brand-electric/10 text-brand-electric' },
+                  { icon: <KeyRound size={22} />, title: '2FA Protected', sub: 'Multi-factor auth', color: 'bg-brand-primary/15 text-blue-200' },
                 ].map((card, i) => (
                   <motion.div
                     key={i}
@@ -103,18 +103,18 @@ export const Security = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.6 }}
-                className="p-5 bg-gradient-to-r from-brand-emerald/15 to-brand-emerald/5 rounded-2xl border border-brand-emerald/15 flex items-center gap-4"
+                className="p-5 bg-gradient-to-r from-brand-electric/15 to-brand-primary/10 rounded-2xl border border-brand-electric/20 flex items-center gap-4"
               >
-                <div className="w-11 h-11 bg-brand-emerald rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-brand-emerald/25">
+                <div className="w-11 h-11 bg-brand-primary rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-brand-primary/30">
                   <ShieldCheck size={20} className="text-white" />
                 </div>
                 <div>
                   <p className="text-[13px] font-bold text-white">Verified Secure Platform</p>
-                  <p className="text-[11px] text-brand-emerald">Bank-grade infrastructure & 256-bit SSL</p>
+                  <p className="text-[11px] text-brand-electric">Bank-grade infrastructure &amp; 256-bit SSL</p>
                 </div>
                 <div className="ml-auto flex items-center gap-1">
                   {[1, 2, 3].map(i => (
-                    <div key={i} className="w-1.5 h-1.5 bg-brand-emerald rounded-full animate-pulse" style={{ animationDelay: `${i * 200}ms` }} />
+                    <div key={i} className="w-1.5 h-1.5 bg-brand-electric rounded-full animate-pulse" style={{ animationDelay: `${i * 200}ms` }} />
                   ))}
                 </div>
               </motion.div>
@@ -144,16 +144,16 @@ export const Security = () => {
                 </div>
                 <div className="ml-auto flex items-center gap-1.5">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect width="24" height="24" rx="12" fill="#22c55e" fillOpacity="0.15" />
-                    <path d="M7 12.5l3.5 3.5L17 9" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <rect width="24" height="24" rx="12" fill="#3B82F6" fillOpacity="0.15" />
+                    <path d="M7 12.5l3.5 3.5L17 9" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
-                  <span className="text-[10px] text-brand-emerald font-semibold">SSL Secured</span>
+                  <span className="text-[10px] text-brand-electric font-semibold">SSL Secured</span>
                 </div>
               </motion.div>
             </div>
 
             {/* Floating orb decorations */}
-            <div className="absolute -top-6 -right-6 w-24 h-24 bg-brand-emerald/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -top-6 -right-6 w-24 h-24 bg-brand-primary/10 rounded-full blur-2xl pointer-events-none" />
             <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-brand-primary/10 rounded-full blur-3xl pointer-events-none" />
           </motion.div>
         </div>

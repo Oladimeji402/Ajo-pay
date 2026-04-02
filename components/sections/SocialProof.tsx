@@ -19,7 +19,7 @@ const testimonials = [
     role: 'Business Owner, Abuja',
     content: 'I was skeptical about digital Ajo at first, but bank-grade security and transparent records gave me the peace of mind I needed. Highly recommended!',
     rating: 5,
-    color: '#0F766E',
+    color: '#1D4ED8',
     initials: 'CE',
   },
   {
@@ -27,7 +27,7 @@ const testimonials = [
     role: 'Civil Servant, Kano',
     content: 'The best part is the community. I joined a group of fellow professionals and we\'ve been saving consistently for over a year now.',
     rating: 5,
-    color: '#7c3aed',
+    color: '#2563EB',
     initials: 'IK',
   },
   {
@@ -35,23 +35,23 @@ const testimonials = [
     role: 'Teacher, Port Harcourt',
     content: 'Finally, a savings platform that actually works for real Nigerians. My group has completed three full cycles without a single issue.',
     rating: 5,
-    color: '#b45309',
+    color: '#3B82F6',
     initials: 'AO',
   },
   {
     name: 'Bola T.',
     role: 'Nurse, Ibadan',
-    content: 'The instant payout feature is amazing. Got my ₦500,000 rotation within minutes of the schedule. I trust Subtech Ajo Solution completely.',
+    content: 'The instant payout feature is amazing. Got my ₦500,000 rotation within minutes of the schedule. I trust AjoPay completely.',
     rating: 5,
-    color: '#0e7490',
+    color: '#1B2F6B',
     initials: 'BT',
   },
   {
     name: 'Emeka D.',
     role: 'Entrepreneur, Enugu',
-    content: 'Managing 15 members used to be stressful. Now Subtech Ajo Solution handles reminders, deductions, and payouts automatically. Game changer!',
+    content: 'Managing 15 members used to be stressful. Now AjoPay handles reminders, deductions, and payouts automatically. Game changer!',
     rating: 5,
-    color: '#be185d',
+    color: '#60A5FA',
     initials: 'ED',
   },
 ];
@@ -65,7 +65,7 @@ const TestimonialCard = ({ t }: { t: typeof testimonials[0] }) => (
     </p>
     <div className="flex items-center gap-0.5 mb-4">
       {[...Array(t.rating)].map((_, i) => (
-        <Star key={i} size={12} className="fill-amber-400 text-amber-400" />
+        <Star key={i} size={12} className="fill-brand-primary text-brand-primary" />
       ))}
     </div>
     <div className="flex items-center gap-3 pt-4 border-t border-slate-50">
@@ -100,14 +100,14 @@ export const SocialProof = () => {
           viewport={{ once: true }}
           className="text-center max-w-2xl mx-auto mb-14"
         >
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/[0.08] border border-amber-500/15 mb-5">
-            <Star size={12} className="text-amber-500 fill-amber-500" />
-            <span className="text-[11px] font-bold text-amber-600 uppercase tracking-[0.1em]">Testimonials</span>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-primary/[0.08] border border-brand-primary/15 mb-5">
+            <Star size={12} className="text-brand-primary fill-brand-primary" />
+            <span className="text-[11px] font-bold text-brand-primary uppercase tracking-[0.1em]">Testimonials</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-brand-navy mb-4 tracking-tight">
-            Loved by{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-500">
-              thousands of savers
+            What our{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-primary to-brand-electric">
+              members are saying
             </span>
           </h2>
 
@@ -115,12 +115,11 @@ export const SocialProof = () => {
           <div className="flex items-center justify-center gap-3">
             <div className="flex items-center gap-0.5">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} size={18} className="fill-amber-400 text-amber-400" />
+                <Star key={i} size={18} className="fill-brand-primary text-brand-primary" />
               ))}
             </div>
             <div className="h-4 w-px bg-slate-200" />
-            <span className="text-[13px] font-bold text-brand-navy">4.9 / 5</span>
-            <span className="text-[13px] text-brand-gray">· App Store & Play Store</span>
+            <span className="text-[13px] font-bold text-brand-navy">Member reviews</span>
           </div>
         </motion.div>
       </Container>

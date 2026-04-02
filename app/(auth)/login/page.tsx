@@ -62,12 +62,12 @@ function LoginContent() {
         <section aria-labelledby="login-title" className="space-y-6">
 
             <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0f766e]">Sign in</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1D4ED8]">Sign in</p>
                 <h2 id="login-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>
                     Welcome back.
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                    Your circle is waiting.
+                    Enter your details to continue.
                 </p>
             </div>
 
@@ -149,7 +149,7 @@ function LoginContent() {
                     New to Subtech Ajo Solution?{' '}
                     <Link
                         href="/signup"
-                        className="font-semibold text-brand-navy hover:text-[#0f766e] transition-colors"
+                        className="font-semibold text-brand-navy hover:text-[#1D4ED8] transition-colors"
                     >
                         Create an account
                     </Link>
@@ -163,7 +163,7 @@ export default function LoginPage() {
         <Suspense fallback={
             <section aria-labelledby="login-title" className="space-y-6">
                 <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0f766e]">Sign in</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1D4ED8]">Sign in</p>
                     <h2 id="login-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy">
                         Welcome back.
                     </h2>

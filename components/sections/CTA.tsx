@@ -8,11 +8,11 @@ import Link from 'next/link';
 
 export const CTA = () => {
     const avatarColors = [
-        { bg: '#1B2F6B', text: 'OJ' },
-        { bg: '#0F766E', text: 'CE' },
-        { bg: '#7c3aed', text: 'IK' },
-        { bg: '#0e7490', text: 'BT' },
-        { bg: '#b45309', text: 'AU' },
+        { bg: '#0C1A4D', text: 'OJ' },
+        { bg: '#1D4ED8', text: 'CE' },
+        { bg: '#2563EB', text: 'IK' },
+        { bg: '#3B82F6', text: 'BT' },
+        { bg: '#60A5FA', text: 'AU' },
     ];
 
     return (
@@ -27,7 +27,7 @@ export const CTA = () => {
                 >
                     {/* Background */}
                     <div className="absolute inset-0 bg-[#030d1f]" />
-                    <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-brand-emerald/[0.07] rounded-full -mr-48 -mt-64 blur-[120px] pointer-events-none" />
+                    <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-brand-primary/[0.07] rounded-full -mr-48 -mt-64 blur-[120px] pointer-events-none" />
                     <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-brand-primary/[0.12] rounded-full -ml-48 -mb-64 blur-[100px] pointer-events-none" />
                     <div
                         className="absolute inset-0 opacity-[0.025]"
@@ -41,17 +41,17 @@ export const CTA = () => {
                             {/* ─── Left — Copy ─── */}
                             <div>
                                 {/* Live badge */}
-                                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-emerald/[0.10] border border-brand-emerald/[0.18] mb-7">
+                                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-primary/[0.15] border border-brand-primary/[0.25] mb-7">
                                     <span className="relative flex h-2 w-2">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-emerald opacity-75" />
-                                        <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-emerald" />
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-electric opacity-75" />
+                                        <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-electric" />
                                     </span>
-                                    <span className="text-[12px] font-semibold text-brand-emerald">Join 50,000+ Nigerian Savers</span>
+                                    <span className="text-[12px] font-semibold text-brand-electric">Join Nigerian Savers — it&apos;s free</span>
                                 </div>
 
                                 <h2 className="text-[2.4rem] sm:text-[3rem] lg:text-[3.5rem] font-extrabold text-white leading-[1.06] tracking-[-0.025em] mb-5">
                                     Your savings goal<br />
-                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-emerald via-emerald-400 to-cyan-400">
+                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#60A5FA] to-[#93C5FD]">
                                         starts right here.
                                     </span>
                                 </h2>
@@ -92,16 +92,7 @@ export const CTA = () => {
                                             </div>
                                         ))}
                                     </div>
-                                    <div>
-                                        <div className="flex items-center gap-0.5 mb-0.5">
-                                            {[...Array(5)].map((_, i) => (
-                                                <svg key={i} className="w-2.5 h-2.5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
-                                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                                </svg>
-                                            ))}
-                                        </div>
-                                        <p className="text-[11.5px] text-slate-500">Rated 4.9 / 5 by 50k+ users</p>
-                                    </div>
+                                    <p className="text-[11.5px] text-slate-500">Be part of the AjoPay community</p>
                                 </div>
                             </div>
 
@@ -111,18 +102,18 @@ export const CTA = () => {
                                     <p className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.12em] mb-4">Why people trust us</p>
                                     <div className="space-y-3 mb-6">
                                         {[
-                                            { icon: <ShieldCheck size={15} />, label: 'NDIC Insured Funds', color: 'text-brand-emerald', bg: 'bg-brand-emerald/10' },
-                                            { icon: <CheckCircle2 size={15} />, label: 'Zero Hidden Fees', color: 'text-blue-400', bg: 'bg-blue-400/10' },
-                                            { icon: <Smartphone size={15} />, label: 'iOS & Android App', color: 'text-purple-400', bg: 'bg-purple-400/10' },
-                                            { icon: <TrendingUp size={15} />, label: '99.9% Payout Rate', color: 'text-amber-400', bg: 'bg-amber-400/10' },
-                                            { icon: <Users size={15} />, label: 'Verified Group Members', color: 'text-cyan-400', bg: 'bg-cyan-400/10' },
+                                            { icon: <ShieldCheck size={15} />, label: 'Secure & Transparent', color: 'text-brand-electric', bg: 'bg-brand-electric/10' },
+                                            { icon: <CheckCircle2 size={15} />, label: 'Zero Hidden Fees', color: 'text-brand-electric', bg: 'bg-brand-electric/10' },
+                                            { icon: <Smartphone size={15} />, label: 'Mobile Friendly', color: 'text-brand-electric', bg: 'bg-brand-electric/10' },
+                                            { icon: <TrendingUp size={15} />, label: 'Automated Scheduling', color: 'text-brand-electric', bg: 'bg-brand-electric/10' },
+                                            { icon: <Users size={15} />, label: 'Verified Group Members', color: 'text-brand-electric', bg: 'bg-brand-electric/10' },
                                         ].map((item, i) => (
                                             <div key={i} className="flex items-center gap-3 p-2.5 bg-white/[0.03] rounded-xl border border-white/[0.05]">
                                                 <div className={`w-7 h-7 ${item.bg} rounded-lg flex items-center justify-center flex-shrink-0 ${item.color}`}>
                                                     {item.icon}
                                                 </div>
                                                 <span className="text-[12.5px] text-slate-300 font-medium">{item.label}</span>
-                                                <CheckCircle2 size={11} className="text-brand-emerald ml-auto flex-shrink-0" />
+                                                <CheckCircle2 size={11} className="text-brand-electric ml-auto flex-shrink-0" />
                                             </div>
                                         ))}
                                     </div>
@@ -130,12 +121,12 @@ export const CTA = () => {
                                     {/* Mini stat */}
                                     <div className="border-t border-white/[0.07] pt-4 grid grid-cols-2 gap-4">
                                         <div>
-                                            <p className="text-[1.1rem] font-extrabold text-white">₦2B+</p>
-                                            <p className="text-[10px] text-slate-500 mt-0.5">Total saved</p>
+                                            <p className="text-[1.1rem] font-extrabold text-white">Free</p>
+                                            <p className="text-[10px] text-slate-500 mt-0.5">No hidden fees</p>
                                         </div>
                                         <div>
-                                            <p className="text-[1.1rem] font-extrabold text-white">200+</p>
-                                            <p className="text-[10px] text-slate-500 mt-0.5">Active groups</p>
+                                            <p className="text-[1.1rem] font-extrabold text-white">Live</p>
+                                            <p className="text-[10px] text-slate-500 mt-0.5">Active now</p>
                                         </div>
                                     </div>
                                 </div>

@@ -149,7 +149,7 @@ export default function SignUpPage() {
         return (
             <section aria-labelledby="verify-title" className="space-y-6">
                 <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0f766e]">Step 2 of 2</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1D4ED8]">Step 2 of 2</p>
                     <h2 id="verify-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>Check your inbox.</h2>
                     <p className="mt-1 text-sm text-slate-500">
                         We sent a 6-digit code to{' '}
@@ -213,7 +213,7 @@ export default function SignUpPage() {
                                 setError('');
                                 setNotice('');
                             }}
-                            className="font-semibold text-brand-navy hover:text-[#0f766e] transition-colors"
+                            className="font-semibold text-brand-navy hover:text-[#1D4ED8] transition-colors"
                         >
                             Go back and edit
                         </button>
@@ -226,8 +226,8 @@ export default function SignUpPage() {
     return (
         <section aria-labelledby="signup-title" className="space-y-5">
             <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0f766e]">Step 1 of 2</p>
-                <h2 id="signup-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>Join your circle.</h2>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1D4ED8]">Step 1 of 2</p>
+                <h2 id="signup-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>Create your account.</h2>
                 <p className="mt-1 text-sm text-slate-500">Create your Subtech Ajo Solution account.</p>
             </div>
 
@@ -361,7 +361,7 @@ export default function SignUpPage() {
                     Already have an account?{' '}
                     <Link
                         href="/login"
-                        className="font-semibold text-brand-navy hover:text-[#0f766e] transition-colors"
+                        className="font-semibold text-brand-navy hover:text-[#1D4ED8] transition-colors"
                     >
                         Sign in
                     </Link>
