@@ -186,8 +186,16 @@ export default function GroupsPage() {
                 </div>
 
                 {joinedGroups.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-brand-gray">
-                        You haven&apos;t joined any groups yet. Find one below.
+                    <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-5">
+                        <div className="flex items-start gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-primary/10">
+                                <Users size={18} className="text-brand-primary" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-sm font-bold text-brand-navy">You haven&apos;t joined any groups yet</p>
+                                <p className="mt-0.5 text-xs text-brand-gray">Search below for a group to join, or ask your group admin to share their invite code.</p>
+                            </div>
+                        </div>
                     </div>
                 ) : (
                     <div className="space-y-2.5">

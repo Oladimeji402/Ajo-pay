@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
     AlertTriangle,
     ArrowLeft,
@@ -47,8 +47,10 @@ type MobileSettingsView = 'menu' | 'profile' | 'bank' | 'email' | 'password' | '
 
 export default function SettingsPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const verificationRequestId = useRef(0);
     const hasEditedBankDetails = useRef(false);
+    const bankSectionRef = useRef<HTMLDivElement>(null);
     const { showToast } = useToast();
 
     const [loading, setLoading] = useState(true);
@@ -78,6 +80,18 @@ export default function SettingsPage() {
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [mobileView, setMobileView] = useState<MobileSettingsView>('menu');
+
+    // Auto-focus the bank section when ?tab=bank is present in the URL
+    useEffect(() => {
+        if (searchParams.get('tab') === 'bank') {
+            setMobileView('bank');
+            // On desktop, scroll the bank section into view after data loads
+            const timer = setTimeout(() => {
+                bankSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 400);
+            return () => clearTimeout(timer);
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         const run = async () => {
@@ -704,7 +718,7 @@ export default function SettingsPage() {
                     <p className="mt-1 text-[11px] text-slate-500">This is the email you use to log in. To change it, use the section below.</p>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-linear-to-b from-slate-50 to-white p-4 space-y-4">
+                <div ref={bankSectionRef} className="rounded-2xl border border-slate-200 bg-linear-to-b from-slate-50 to-white p-4 space-y-4">
                     <div className="inline-flex items-center gap-2">
                         <Landmark size={15} className="text-brand-gray" />
                         <h3 className="text-sm font-semibold text-brand-navy">Bank Account (for payouts)</h3>
