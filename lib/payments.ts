@@ -56,15 +56,27 @@ export function mapPaystackTransactionStatus(status: string | null | undefined) 
   const normalized = String(status ?? "").trim().toLowerCase();
 
   if (normalized === "success") {
-    return { providerStatus: normalized, resolvedStatus: "success" as const, terminal: true };
+    return {
+      providerStatus: normalized,
+      resolvedStatus: "success" as const,
+      terminal: true as const,
+    };
   }
 
   if (normalized === "abandoned") {
-    return { providerStatus: normalized, resolvedStatus: "abandoned" as const, terminal: true };
+    return {
+      providerStatus: normalized,
+      resolvedStatus: "abandoned" as const,
+      terminal: true as const,
+    };
   }
 
   if (normalized === "failed" || normalized === "reversed") {
-    return { providerStatus: normalized, resolvedStatus: "failed" as const, terminal: true };
+    return {
+      providerStatus: normalized,
+      resolvedStatus: "failed" as const,
+      terminal: true as const,
+    };
   }
 
   if (
@@ -74,10 +86,18 @@ export function mapPaystackTransactionStatus(status: string | null | undefined) 
     || normalized === "queued"
     || normalized === ""
   ) {
-    return { providerStatus: normalized || "pending", resolvedStatus: "pending" as const, terminal: false };
+    return {
+      providerStatus: normalized || "pending",
+      resolvedStatus: "pending" as const,
+      terminal: false as const,
+    };
   }
 
-  return { providerStatus: normalized, resolvedStatus: "pending" as const, terminal: false };
+  return {
+    providerStatus: normalized,
+    resolvedStatus: "pending" as const,
+    terminal: false as const,
+  };
 }
 
 export async function markContributionPaymentSuccess(params: MarkPaymentSuccessParams): Promise<PaymentSuccessResult> {
