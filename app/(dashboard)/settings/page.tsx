@@ -6,6 +6,7 @@ import {
     AlertTriangle,
     ArrowLeft,
     Building2,
+    ChevronDown,
     ChevronRight,
     CheckCircle2,
     Copy,
@@ -17,6 +18,7 @@ import {
     LogOut,
     Mail,
     Save,
+    Search,
     ShieldCheck,
     Trash2,
     User,
@@ -79,6 +81,12 @@ export default function SettingsPage() {
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [mobileView, setMobileView] = useState<MobileSettingsView>('menu');
+    const [bankSearch, setBankSearch] = useState('');
+    const [bankDropdownOpen, setBankDropdownOpen] = useState(false);
+    const bankComboboxRef = useRef<HTMLDivElement>(null);
+    const [mobileBankSearch, setMobileBankSearch] = useState('');
+    const [mobileBankDropdownOpen, setMobileBankDropdownOpen] = useState(false);
+    const mobileBankComboboxRef = useRef<HTMLDivElement>(null);
 
     // Auto-focus the bank section when ?tab=bank is present in the URL
     useEffect(() => {
@@ -98,6 +106,22 @@ export default function SettingsPage() {
         }, 400);
 
         return () => window.clearTimeout(timer);
+    }, []);
+
+    // Close bank combobox dropdowns when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (bankComboboxRef.current && !bankComboboxRef.current.contains(e.target as Node)) {
+                setBankDropdownOpen(false);
+                setBankSearch('');
+            }
+            if (mobileBankComboboxRef.current && !mobileBankComboboxRef.current.contains(e.target as Node)) {
+                setMobileBankDropdownOpen(false);
+                setMobileBankSearch('');
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
     useEffect(() => {
@@ -235,6 +259,23 @@ export default function SettingsPage() {
             clearTimeout(timeout);
         };
     }, [bankCode, bankAccount]);
+
+    const filteredBanks = useMemo(() => {
+        const q = bankSearch.trim().toLowerCase();
+        if (!q) return banks;
+        return banks.filter((b) => b.name.toLowerCase().includes(q));
+    }, [banks, bankSearch]);
+
+    const mobileFilteredBanks = useMemo(() => {
+        const q = mobileBankSearch.trim().toLowerCase();
+        if (!q) return banks;
+        return banks.filter((b) => b.name.toLowerCase().includes(q));
+    }, [banks, mobileBankSearch]);
+
+    const selectedBankLabel = useMemo(() => {
+        if (!bankCode) return null;
+        return banks.find((b) => b.code === bankCode)?.name ?? null;
+    }, [banks, bankCode]);
 
     const canSave = useMemo(() => {
         const account = bankAccount.trim();
@@ -564,22 +605,63 @@ export default function SettingsPage() {
                                 <h3 className="font-semibold text-brand-navy">Bank Account</h3>
                                 <div>
                                     <label className="block text-xs font-semibold text-brand-gray mb-1">Bank</label>
-                                    <select
-                                        value={bankCode}
-                                        onChange={(e) => {
-                                            hasEditedBankDetails.current = true;
-                                            setBankCode(e.target.value);
-                                            setResolvedAccountName('');
-                                            setVerificationError('');
-                                        }}
-                                        className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-sm"
-                                        disabled={banksLoading}
-                                    >
-                                        <option value="">{banksLoading ? 'Loading banks...' : 'Select your bank'}</option>
-                                        {banks.map((bank) => (
-                                            <option key={`${bank.code}-${bank.name}`} value={bank.code}>{bank.name}</option>
-                                        ))}
-                                    </select>
+                                    <div ref={mobileBankComboboxRef} className="relative">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (!banksLoading) {
+                                                    setMobileBankDropdownOpen((o) => !o);
+                                                    setMobileBankSearch('');
+                                                }
+                                            }}
+                                            disabled={banksLoading}
+                                            className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-sm text-left flex items-center justify-between gap-2 disabled:opacity-60"
+                                        >
+                                            <span className={bankCode ? 'text-brand-navy' : 'text-slate-400'}>
+                                                {banksLoading ? 'Loading banks...' : (banks.find((b) => b.code === bankCode)?.name ?? 'Select your bank')}
+                                            </span>
+                                            <ChevronDown size={14} className="text-slate-400 shrink-0" />
+                                        </button>
+                                        {mobileBankDropdownOpen && (
+                                            <div className="absolute z-50 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg overflow-hidden">
+                                                <div className="p-2 border-b border-slate-100">
+                                                    <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-2 py-1.5">
+                                                        <Search size={13} className="text-slate-400 shrink-0" />
+                                                        <input
+                                                            autoFocus
+                                                            value={mobileBankSearch}
+                                                            onChange={(e) => setMobileBankSearch(e.target.value)}
+                                                            placeholder="Type to search bank..."
+                                                            className="w-full bg-transparent text-sm focus:outline-none"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <ul className="max-h-48 overflow-y-auto">
+                                                    {mobileFilteredBanks.length === 0 && (
+                                                        <li className="px-3 py-2 text-xs text-slate-400">No bank found</li>
+                                                    )}
+                                                    {mobileFilteredBanks.map((bank) => (
+                                                        <li
+                                                            key={`${bank.code}-${bank.name}`}
+                                                            onClick={() => {
+                                                                hasEditedBankDetails.current = true;
+                                                                setBankCode(bank.code);
+                                                                setResolvedAccountName('');
+                                                                setVerificationError('');
+                                                                setMobileBankDropdownOpen(false);
+                                                                setMobileBankSearch('');
+                                                            }}
+                                                            className={`px-3 py-2 text-sm cursor-pointer hover:bg-slate-50 ${
+                                                                bank.code === bankCode ? 'text-brand-primary font-semibold bg-slate-50' : 'text-brand-navy'
+                                                            }`}
+                                                        >
+                                                            {bank.name}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="block text-xs font-semibold text-brand-gray mb-1">Bank Account</label>
@@ -734,24 +816,63 @@ export default function SettingsPage() {
                     <div className="grid gap-4 md:grid-cols-2">
                         <div>
                             <label className="block text-xs font-semibold text-brand-gray mb-1">Bank</label>
-                            <div className="relative">
-                                <Building2 size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                <select
-                                    value={bankCode}
-                                    onChange={(e) => {
-                                        hasEditedBankDetails.current = true;
-                                        setBankCode(e.target.value);
-                                        setResolvedAccountName('');
-                                        setVerificationError('');
+                            <div ref={bankComboboxRef} className="relative">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (!banksLoading) {
+                                            setBankDropdownOpen((o) => !o);
+                                            setBankSearch('');
+                                        }
                                     }}
-                                    className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm"
                                     disabled={banksLoading}
+                                    className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-left flex items-center justify-between gap-2 disabled:opacity-60"
                                 >
-                                    <option value="">{banksLoading ? 'Loading banks...' : 'Select your bank'}</option>
-                                    {banks.map((bank) => (
-                                        <option key={`${bank.code}-${bank.name}`} value={bank.code}>{bank.name}</option>
-                                    ))}
-                                </select>
+                                    <Building2 size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                    <span className={bankCode ? 'text-brand-navy' : 'text-slate-400'}>
+                                        {banksLoading ? 'Loading banks...' : (selectedBankLabel ?? 'Select your bank')}
+                                    </span>
+                                    <ChevronDown size={14} className="text-slate-400 shrink-0" />
+                                </button>
+                                {bankDropdownOpen && (
+                                    <div className="absolute z-50 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg overflow-hidden">
+                                        <div className="p-2 border-b border-slate-100">
+                                            <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-2 py-1.5">
+                                                <Search size={13} className="text-slate-400 shrink-0" />
+                                                <input
+                                                    autoFocus
+                                                    value={bankSearch}
+                                                    onChange={(e) => setBankSearch(e.target.value)}
+                                                    placeholder="Type to search bank..."
+                                                    className="w-full bg-transparent text-sm focus:outline-none"
+                                                />
+                                            </div>
+                                        </div>
+                                        <ul className="max-h-52 overflow-y-auto">
+                                            {filteredBanks.length === 0 && (
+                                                <li className="px-3 py-2 text-xs text-slate-400">No bank found</li>
+                                            )}
+                                            {filteredBanks.map((bank) => (
+                                                <li
+                                                    key={`${bank.code}-${bank.name}`}
+                                                    onClick={() => {
+                                                        hasEditedBankDetails.current = true;
+                                                        setBankCode(bank.code);
+                                                        setResolvedAccountName('');
+                                                        setVerificationError('');
+                                                        setBankDropdownOpen(false);
+                                                        setBankSearch('');
+                                                    }}
+                                                    className={`px-3 py-2 text-sm cursor-pointer hover:bg-slate-50 ${
+                                                        bank.code === bankCode ? 'text-brand-primary font-semibold bg-slate-50' : 'text-brand-navy'
+                                                    }`}
+                                                >
+                                                    {bank.name}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
