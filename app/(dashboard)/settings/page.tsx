@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import {
     AlertTriangle,
     ArrowLeft,
@@ -47,7 +47,6 @@ type MobileSettingsView = 'menu' | 'profile' | 'bank' | 'email' | 'password' | '
 
 export default function SettingsPage() {
     const router = useRouter();
-    const searchParams = useSearchParams();
     const verificationRequestId = useRef(0);
     const hasEditedBankDetails = useRef(false);
     const bankSectionRef = useRef<HTMLDivElement>(null);
@@ -83,15 +82,23 @@ export default function SettingsPage() {
 
     // Auto-focus the bank section when ?tab=bank is present in the URL
     useEffect(() => {
-        if (searchParams.get('tab') === 'bank') {
-            setMobileView('bank');
-            // On desktop, scroll the bank section into view after data loads
-            const timer = setTimeout(() => {
-                bankSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 400);
-            return () => clearTimeout(timer);
+        if (typeof window === 'undefined') {
+            return;
         }
-    }, [searchParams]);
+
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('tab') !== 'bank') {
+            return;
+        }
+
+        setMobileView('bank');
+
+        const timer = window.setTimeout(() => {
+            bankSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 400);
+
+        return () => window.clearTimeout(timer);
+    }, []);
 
     useEffect(() => {
         const run = async () => {
