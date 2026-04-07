@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Users, Search, Wallet, Calendar, ChevronRight, Loader2, Sparkles, Compass, Copy, Check } from 'lucide-react';
+import { Users, Search, ChevronRight, Loader2, Sparkles, Compass, Copy, Check } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
 import { formatScheduleDate, getCurrentCycleDueDate } from '@/lib/ajo-schedule';
@@ -30,7 +30,7 @@ type ContributionRow = {
     id: string;
     group_id: string;
     amount: number;
-    status: 'pending' | 'success' | 'failed';
+    status: 'pending' | 'success' | 'failed' | 'abandoned';
 };
 
 export default function GroupsPage() {

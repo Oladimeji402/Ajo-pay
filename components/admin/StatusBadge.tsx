@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-type StatusType = 'Active' | 'Suspended' | 'Pending' | 'Done' | 'Paid' | 'Upcoming' | 'Your Turn' | 'Received' | 'Success' | 'Failed' | 'Completed';
+type StatusType = 'Active' | 'Suspended' | 'Pending' | 'Done' | 'Paid' | 'Upcoming' | 'Your Turn' | 'Received' | 'Success' | 'Failed' | 'Completed' | 'Abandoned';
 
 interface StatusBadgeProps {
     status: StatusType | string;
@@ -21,6 +21,8 @@ export const StatusBadge = ({ status }: StatusBadgeProps) => {
             case 'Pending':
             case 'Your Turn':
                 return 'bg-amber-50 text-amber-600 border-amber-100';
+            case 'Abandoned':
+                return 'bg-orange-50 text-orange-600 border-orange-100';
             case 'Suspended':
             case 'Failed':
                 return 'bg-red-50 text-red-600 border-red-100';

@@ -9,7 +9,7 @@ type TransactionRow = {
     id: string;
     type: 'contribution' | 'payout';
     amount: number;
-    status: 'pending' | 'success' | 'failed';
+    status: 'pending' | 'success' | 'failed' | 'abandoned';
     reference: string;
     created_at: string;
     groups?: {
@@ -132,8 +132,8 @@ export default function ActivityPage() {
                                         <p className={`text-sm font-bold ${isContribution ? 'text-brand-navy' : 'text-emerald-600'}`}>
                                             {isContribution ? '-' : '+'}NGN {Number(tx.amount).toLocaleString('en-NG')}
                                         </p>
-                                        <p className={`text-[10px] font-medium ${tx.status === 'success' ? 'text-emerald-600' : tx.status === 'pending' ? 'text-amber-600' : 'text-rose-600'}`}>
-                                            {tx.status === 'success' ? 'Successful' : tx.status === 'pending' ? 'Confirming' : 'Failed'}
+                                        <p className={`text-[10px] font-medium ${tx.status === 'success' ? 'text-emerald-600' : tx.status === 'pending' ? 'text-amber-600' : tx.status === 'abandoned' ? 'text-orange-600' : 'text-rose-600'}`}>
+                                            {tx.status === 'success' ? 'Successful' : tx.status === 'pending' ? 'Confirming' : tx.status === 'abandoned' ? 'Expired' : 'Failed'}
                                         </p>
                                     </div>
                                 </div>

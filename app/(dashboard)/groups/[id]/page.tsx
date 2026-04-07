@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Users, Wallet, Calendar, Loader2, Sparkles, ShieldCheck, ArrowUpRight, CheckCircle2, LogOut, TriangleAlert, Copy, Check } from 'lucide-react';
+import { ArrowLeft, Users, Wallet, Calendar, Loader2, ShieldCheck, ArrowUpRight, CheckCircle2, LogOut, TriangleAlert, Copy, Check } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { openPaystackInline } from '@/lib/paystack-inline';
 import { useToast } from '@/components/ui/Toast';
@@ -41,7 +41,7 @@ type GroupDetail = {
 type ContributionRow = {
     id: string;
     amount: number;
-    status: string;
+    status: 'pending' | 'success' | 'failed' | 'abandoned';
     cycle_number: number;
     created_at: string;
 };
@@ -162,6 +162,10 @@ export default function GroupDetailsPage() {
             return { state: 'failed' as const, dueDate, dueWindow };
         }
 
+        if (currentCycleContributions.some((item) => item.status === 'abandoned')) {
+            return { state: 'abandoned' as const, dueDate, dueWindow };
+        }
+
         return {
             state: dueWindow.phase === 'overdue' ? 'overdue' as const : dueWindow.phase === 'scheduled' ? 'scheduled' as const : 'due' as const,
             dueDate,
@@ -231,6 +235,14 @@ export default function GroupDetailsPage() {
 
                             if (verifyJson.data?.status !== 'success') {
                                 await loadData();
+                                if (verifyJson.data?.status === 'pending') {
+                                    notifyWarning(showToast, 'Payment is still awaiting confirmation. We will keep checking automatically.');
+                                    return;
+                                }
+                                if (verifyJson.data?.status === 'abandoned') {
+                                    notifyWarning(showToast, 'This payment attempt expired before completion. Please try again.');
+                                    return;
+                                }
                                 notifyError(showToast, new Error(verifyJson.data?.status ?? 'failed'), 'Payment was not successful. Please try again.');
                                 return;
                             }
@@ -360,8 +372,10 @@ export default function GroupDetailsPage() {
                                     ? 'You have already paid for this round. Great job!'
                                     : currentCyclePaymentState.state === 'pending'
                                         ? 'Your payment is being confirmed. This may take a few minutes.'
-                                        : currentCyclePaymentState.state === 'failed'
-                                            ? 'Your last payment did not go through. Please try again.'
+                                    : currentCyclePaymentState.state === 'failed'
+                                        ? 'Your last payment did not go through. Please try again.'
+                                        : currentCyclePaymentState.state === 'abandoned'
+                                            ? 'Your last payment attempt expired before completion. Please try again.'
                                             : 'Your payment is due now.'}
                     </p>
                 </div>
@@ -405,7 +419,7 @@ export default function GroupDetailsPage() {
                     </div>
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
                         <p className="text-xs text-brand-gray">This round&apos;s payment status</p>
-                        <p className="font-semibold text-brand-navy capitalize">{currentCyclePaymentState.state === 'success' ? 'Paid ✓' : currentCyclePaymentState.state === 'pending' ? 'Confirming...' : currentCyclePaymentState.state === 'failed' ? 'Failed — please retry' : currentCyclePaymentState.state === 'overdue' ? 'Overdue' : currentCyclePaymentState.state === 'scheduled' ? 'Not due yet' : 'Due now'}</p>
+                        <p className="font-semibold text-brand-navy capitalize">{currentCyclePaymentState.state === 'success' ? 'Paid ✓' : currentCyclePaymentState.state === 'pending' ? 'Confirming...' : currentCyclePaymentState.state === 'failed' ? 'Failed — please retry' : currentCyclePaymentState.state === 'abandoned' ? 'Expired — please retry' : currentCyclePaymentState.state === 'overdue' ? 'Overdue' : currentCyclePaymentState.state === 'scheduled' ? 'Not due yet' : 'Due now'}</p>
                     </div>
                 </div>
 

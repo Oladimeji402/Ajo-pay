@@ -48,7 +48,7 @@ type Contribution = {
     group_id: string;
     cycle_number: number;
     amount: number;
-    status: 'pending' | 'success' | 'failed';
+    status: 'pending' | 'success' | 'failed' | 'abandoned';
     created_at: string;
 };
 
@@ -138,7 +138,7 @@ export default function DashboardPage() {
     const activeGroups = useMemo(() => groups.filter((group) => group.status === 'active').length, [groups]);
 
     const currentCycleStatusByGroup = useMemo(() => {
-        const map = new Map<string, 'success' | 'pending' | 'failed' | 'scheduled' | 'due' | 'overdue'>();
+        const map = new Map<string, 'success' | 'pending' | 'failed' | 'abandoned' | 'scheduled' | 'due' | 'overdue'>();
 
         for (const group of groups) {
             const currentCycleContributions = contributions
@@ -160,6 +160,11 @@ export default function DashboardPage() {
                 continue;
             }
 
+            if (currentCycleContributions.some((item) => item.status === 'abandoned')) {
+                map.set(group.id, 'abandoned');
+                continue;
+            }
+
             const dueWindow = getDueWindow(getCurrentCycleDueDate(group));
             map.set(group.id, dueWindow.phase === 'overdue' ? 'overdue' : dueWindow.phase === 'scheduled' ? 'scheduled' : 'due');
         }
@@ -178,7 +183,7 @@ export default function DashboardPage() {
         return groups
             .filter((group) => {
                 const status = currentCycleStatusByGroup.get(group.id);
-                return status === 'due' || status === 'failed' || status === 'overdue';
+                return status === 'due' || status === 'failed' || status === 'abandoned' || status === 'overdue';
             })
             .sort((a, b) => Number(a.current_cycle) - Number(b.current_cycle));
     }, [groups, currentCycleStatusByGroup]);
@@ -201,19 +206,21 @@ export default function DashboardPage() {
 
     const formatCurrency = (value: number) => `NGN ${Number(value).toLocaleString('en-NG')}`;
 
-    const getContributionStateLabel = (state: 'success' | 'pending' | 'failed' | 'scheduled' | 'due' | 'overdue') => {
+    const getContributionStateLabel = (state: 'success' | 'pending' | 'failed' | 'abandoned' | 'scheduled' | 'due' | 'overdue') => {
         if (state === 'success') return 'Paid';
         if (state === 'pending') return 'Pending verification';
         if (state === 'failed') return 'Payment failed';
+        if (state === 'abandoned') return 'Payment expired';
         if (state === 'scheduled') return 'Upcoming';
         if (state === 'overdue') return 'Overdue';
         return 'Due now';
     };
 
-    const getContributionStateStyle = (state: 'success' | 'pending' | 'failed' | 'scheduled' | 'due' | 'overdue') => {
+    const getContributionStateStyle = (state: 'success' | 'pending' | 'failed' | 'abandoned' | 'scheduled' | 'due' | 'overdue') => {
         if (state === 'success') return 'bg-emerald-50 text-emerald-700 border-emerald-100';
         if (state === 'pending') return 'bg-amber-50 text-amber-700 border-amber-100';
         if (state === 'failed') return 'bg-rose-50 text-rose-700 border-rose-100';
+        if (state === 'abandoned') return 'bg-orange-50 text-orange-700 border-orange-100';
         if (state === 'scheduled') return 'bg-sky-50 text-sky-700 border-sky-100';
         if (state === 'overdue') return 'bg-rose-50 text-rose-700 border-rose-100';
         return 'bg-blue-50 text-blue-700 border-blue-100';
@@ -458,7 +465,7 @@ export default function DashboardPage() {
                             const state = currentCycleStatusByGroup.get(group.id) ?? 'due';
                             const dueDate = getCurrentCycleDueDate(group);
                             const dueWindow = getDueWindow(dueDate);
-                            const isUrgent = state === 'overdue' || state === 'failed';
+                            const isUrgent = state === 'overdue' || state === 'failed' || state === 'abandoned';
                             return (
                                 <div
                                     key={group.id}
@@ -481,7 +488,7 @@ export default function DashboardPage() {
                                         href={`/groups/${group.id}`}
                                         className={`inline-flex shrink-0 items-center justify-center rounded-xl px-3 py-2 text-[11px] font-bold text-white transition-colors ${isUrgent ? 'bg-rose-500 hover:bg-rose-600' : 'bg-brand-primary hover:bg-brand-primary-hover'}`}
                                     >
-                                        {state === 'failed' ? 'Retry' : 'Pay Now'}
+                                        {state === 'failed' || state === 'abandoned' ? 'Retry' : 'Pay Now'}
                                     </Link>
                                 </div>
                             );
