@@ -26,6 +26,7 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess, notifyWarning } from '@/lib/toast';
 import { mapAuthError } from '@/lib/auth-errors';
+import { formatNigeriaPhoneE164, isValidNigeriaPhoneLocal, normalizeNigeriaPhoneLocalInput, parseNigeriaPhoneToLocal } from '@/lib/phone';
 
 type Profile = {
     id: string;
@@ -48,6 +49,7 @@ export default function SettingsPage() {
     const router = useRouter();
     const verificationRequestId = useRef(0);
     const hasEditedBankDetails = useRef(false);
+    const bankSectionRef = useRef<HTMLDivElement>(null);
     const { showToast } = useToast();
 
     const [loading, setLoading] = useState(true);
@@ -77,6 +79,26 @@ export default function SettingsPage() {
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [mobileView, setMobileView] = useState<MobileSettingsView>('menu');
+
+    // Auto-focus the bank section when ?tab=bank is present in the URL
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('tab') !== 'bank') {
+            return;
+        }
+
+        setMobileView('bank');
+
+        const timer = window.setTimeout(() => {
+            bankSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 400);
+
+        return () => window.clearTimeout(timer);
+    }, []);
 
     useEffect(() => {
         const run = async () => {
@@ -130,7 +152,7 @@ export default function SettingsPage() {
                 setName(profile.name ?? '');
                 setEmail(profile.email ?? user.email ?? '');
                 setPendingEmail(profile.email ?? user.email ?? '');
-                setPhone(profile.phone ?? '');
+                setPhone(parseNigeriaPhoneToLocal(profile.phone));
                 setBankAccount(profile.bank_account ?? '');
                 setResolvedAccountName(profile.bank_account_name ?? '');
                 setBanks(uniqueBanks);
@@ -245,6 +267,12 @@ export default function SettingsPage() {
 
         const trimmedAccount = bankAccount.trim();
         const hasAccount = trimmedAccount.length > 0;
+        const normalizedPhone = normalizeNigeriaPhoneLocalInput(phone);
+
+        if (normalizedPhone && !isValidNigeriaPhoneLocal(normalizedPhone)) {
+            notifyWarning(showToast, 'Enter a valid Nigerian mobile number (10 digits after +234).');
+            return;
+        }
 
         if (hasAccount && !canSave) {
             notifyWarning(showToast, 'Complete bank verification before saving account changes.');
@@ -264,7 +292,7 @@ export default function SettingsPage() {
                 .from('profiles')
                 .update({
                     name: name.trim(),
-                    phone: phone.trim() || null,
+                    phone: normalizedPhone ? formatNigeriaPhoneE164(normalizedPhone) : null,
                     bank_account: hasAccount ? trimmedAccount : null,
                     bank_name: selectedBankName,
                     bank_account_name: hasAccount ? resolvedAccountName : null,
@@ -510,7 +538,18 @@ export default function SettingsPage() {
                                 </div>
                                 <div>
                                     <label className="block text-xs font-semibold text-brand-gray mb-1">Phone</label>
-                                    <input value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm" />
+                                    <div className="flex rounded-xl border border-slate-200 bg-slate-50">
+                                        <span className="inline-flex items-center border-r border-slate-200 px-3 text-sm font-semibold text-slate-600">+234</span>
+                                        <input
+                                            value={phone}
+                                            onChange={(e) => setPhone(normalizeNigeriaPhoneLocalInput(e.target.value))}
+                                            inputMode="numeric"
+                                            pattern="[0-9]{10}"
+                                            maxLength={10}
+                                            className="w-full rounded-r-xl bg-transparent px-3 py-2 text-sm focus:outline-none"
+                                            placeholder="8012345678"
+                                        />
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="block text-xs font-semibold text-brand-gray mb-1">Email</label>
@@ -661,11 +700,18 @@ export default function SettingsPage() {
 
                     <div>
                         <label className="block text-xs font-semibold text-brand-gray mb-1">Phone</label>
-                        <input
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
-                        />
+                        <div className="flex rounded-xl border border-slate-200 bg-slate-50 focus-within:ring-2 focus-within:ring-brand-primary/20">
+                            <span className="inline-flex items-center border-r border-slate-200 px-3 text-sm font-semibold text-slate-600">+234</span>
+                            <input
+                                value={phone}
+                                onChange={(e) => setPhone(normalizeNigeriaPhoneLocalInput(e.target.value))}
+                                inputMode="numeric"
+                                pattern="[0-9]{10}"
+                                maxLength={10}
+                                className="w-full rounded-r-xl bg-transparent px-3 py-2 text-sm focus:outline-none"
+                                placeholder="8012345678"
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -679,7 +725,7 @@ export default function SettingsPage() {
                     <p className="mt-1 text-[11px] text-slate-500">This is the email you use to log in. To change it, use the section below.</p>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-linear-to-b from-slate-50 to-white p-4 space-y-4">
+                <div ref={bankSectionRef} className="rounded-2xl border border-slate-200 bg-linear-to-b from-slate-50 to-white p-4 space-y-4">
                     <div className="inline-flex items-center gap-2">
                         <Landmark size={15} className="text-brand-gray" />
                         <h3 className="text-sm font-semibold text-brand-navy">Bank Account (for payouts)</h3>

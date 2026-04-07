@@ -12,6 +12,8 @@ import {
     Eye,
     EyeOff,
     FileText,
+    Landmark,
+    Phone,
     Search,
     Share2,
     Users,
@@ -24,6 +26,8 @@ import { formatScheduleDate, getCurrentCycleDueDate, getDueWindow } from '@/lib/
 
 type Profile = {
     name: string;
+    phone: string | null;
+    bank_account: string | null;
     total_contributed: number;
     total_received: number;
 };
@@ -88,7 +92,7 @@ export default function DashboardPage() {
                 const [profileRes, groupsRes, contributionsRes, transactionsRes] = await Promise.all([
                     supabase
                         .from('profiles')
-                        .select('name, total_contributed, total_received')
+                        .select('name, phone, bank_account, total_contributed, total_received')
                         .eq('id', user.id)
                         .maybeSingle(),
                     fetch('/api/groups', { cache: 'no-store' }),
@@ -368,6 +372,79 @@ export default function DashboardPage() {
                     ))}
                 </div>
             </section>
+
+            {/* Profile completion nudge card */}
+            {(() => {
+                const items = [
+                    {
+                        done: !!profile?.phone,
+                        icon: Phone,
+                        label: 'Add your phone number',
+                        sub: 'Get WhatsApp payment receipts',
+                        href: '/settings',
+                    },
+                    {
+                        done: !!profile?.bank_account,
+                        icon: Landmark,
+                        label: 'Link a bank account',
+                        sub: 'Required to receive your payout',
+                        href: '/settings?tab=bank',
+                    },
+                    {
+                        done: groups.length > 0,
+                        icon: Users,
+                        label: 'Join your first group',
+                        sub: 'Start saving with your circle',
+                        href: '/groups',
+                    },
+                ];
+                const allDone = items.every((item) => item.done);
+                if (allDone) return null;
+                const completedCount = items.filter((item) => item.done).length;
+                return (
+                    <section className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
+                        <div className="mb-3 flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-bold text-brand-navy">Complete your profile</p>
+                                <p className="text-[11px] text-brand-gray">{completedCount}/{items.length} done</p>
+                            </div>
+                            <div className="flex gap-1">
+                                {items.map((item, i) => (
+                                    <div key={i} className={`h-1.5 w-6 rounded-full ${item.done ? 'bg-brand-primary' : 'bg-slate-200'}`} />
+                                ))}
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            {items.map((item) => {
+                                const Icon = item.icon;
+                                return (
+                                    <Link
+                                        key={item.label}
+                                        href={item.href}
+                                        className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors ${item.done
+                                                ? 'border-emerald-100 bg-white/60 opacity-60 pointer-events-none'
+                                                : 'border-blue-100 bg-white hover:border-blue-200'
+                                            }`}
+                                    >
+                                        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${item.done ? 'bg-emerald-50' : 'bg-brand-primary/10'
+                                            }`}>
+                                            {item.done
+                                                ? <CheckCircle2 size={15} className="text-emerald-600" />
+                                                : <Icon size={15} className="text-brand-primary" />
+                                            }
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className={`text-xs font-semibold ${item.done ? 'text-slate-400 line-through' : 'text-brand-navy'}`}>{item.label}</p>
+                                            <p className="text-[10px] text-brand-gray">{item.sub}</p>
+                                        </div>
+                                        {!item.done && <ChevronRight size={13} className="shrink-0 text-slate-300" />}
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    </section>
+                );
+            })()}
 
             {/* Payments Due */}
             {actionQueue.length > 0 ? (

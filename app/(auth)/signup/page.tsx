@@ -12,6 +12,7 @@ import { useToast } from '@/components/ui/Toast';
 import { notifySuccess } from '@/lib/toast';
 import { isDuplicateSignupWithoutError, mapAuthError } from '@/lib/auth-errors';
 
+
 export default function SignUpPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
@@ -20,10 +21,8 @@ export default function SignUpPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [password, setPassword] = useState('');
     const [agreedToTerms, setAgreedToTerms] = useState(false);
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
+    const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
-    const [phone, setPhone] = useState('');
     const [otp, setOtp] = useState('');
     const [pendingEmail, setPendingEmail] = useState('');
     const [verificationMode, setVerificationMode] = useState(false);
@@ -41,14 +40,12 @@ export default function SignUpPage() {
         const supabase = createSupabaseBrowserClient();
         const normalizedEmail = email.trim().toLowerCase();
 
-        const fullName = `${firstName} ${lastName}`.trim();
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
             email: normalizedEmail,
             password,
             options: {
                 data: {
-                    name: fullName,
-                    phone,
+                    name: fullName.trim(),
                 },
             },
         });
@@ -113,8 +110,8 @@ export default function SignUpPage() {
         }
 
         setIsVerified(true);
-        notifySuccess(showToast, 'Email verified successfully. Continue onboarding.');
-        router.push('/onboarding');
+        notifySuccess(showToast, 'Email verified! Welcome — redirecting to your dashboard.');
+        router.push('/dashboard');
     };
 
     const handleResendOtp = async () => {
@@ -158,7 +155,7 @@ export default function SignUpPage() {
         return (
             <section aria-labelledby="verify-title" className="space-y-6">
                 <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1D4ED8]">Step 2 of 2</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1D4ED8]">One more step</p>
                     <h2 id="verify-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>Check your inbox.</h2>
                     <p className="mt-1 text-sm text-slate-500">
                         We sent a 6-digit code to{' '}
@@ -195,7 +192,7 @@ export default function SignUpPage() {
                         {isVerifying || isVerified ? (
                             <span className="flex items-center gap-2">
                                 <Loader2 size={16} className="animate-spin" />
-                                {isVerified ? 'Verified — redirecting...' : 'Verifying...'}
+                                {isVerified ? 'Verified — redirecting to dashboard...' : 'Verifying...'}
                             </span>
                         ) : 'Verify & continue'}
                     </Button>
@@ -235,9 +232,9 @@ export default function SignUpPage() {
     return (
         <section aria-labelledby="signup-title" className="space-y-5">
             <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1D4ED8]">Step 1 of 2</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1D4ED8]">Sign up</p>
                 <h2 id="signup-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>Create your account.</h2>
-                <p className="mt-1 text-sm text-slate-500">Create your Subtech Ajo Solution account.</p>
+                <p className="mt-1 text-sm text-slate-500">Start saving with your community in minutes.</p>
             </div>
 
             {notice && (
@@ -253,13 +250,9 @@ export default function SignUpPage() {
             )}
 
             <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-                <div className="grid grid-cols-2 gap-3">
-                    <Input label="First name" type="text" autoComplete="given-name" placeholder="John" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
-                    <Input label="Last name" type="text" autoComplete="family-name" placeholder="Doe" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
-                </div>
+                <Input label="Full name" type="text" autoComplete="name" placeholder="Your full name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
 
                 <Input label="Email address" type="email" autoComplete="email" placeholder="name@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                <Input label="Phone number" type="tel" autoComplete="tel" placeholder="+234 800 000 0000" value={phone} onChange={(e) => setPhone(e.target.value)} required />
 
                 <div>
                     <div className="space-y-1 w-full">
@@ -379,7 +372,7 @@ export default function SignUpPage() {
             {isVerified && (
                 <p className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
                     <CheckCircle2 size={16} />
-                    Email verified successfully. Redirecting to onboarding.
+                    Email verified. Redirecting to your dashboard.
                 </p>
             )}
         </section>
