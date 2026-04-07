@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { badRequestResponse, requireUser, serverErrorResponse } from "@/lib/api/auth";
-import { markContributionPaymentSuccess } from "@/lib/payments";
+import {
+  mapPaystackTransactionStatus,
+  markContributionPaymentSuccess,
+  markContributionPaymentTerminalStatus,
+} from "@/lib/payments";
 import { verifyPaystackTransaction } from "@/lib/paystack";
 
 export async function GET(request: Request) {
@@ -17,7 +21,7 @@ export async function GET(request: Request) {
 
     const { data: paymentRecord, error: paymentRecordError } = await auth.supabase
       .from("payment_records")
-      .select("id, user_id, group_id, amount, currency, contribution_id")
+      .select("id, user_id, group_id, amount, currency")
       .eq("reference", reference)
       .maybeSingle();
 
@@ -34,35 +38,24 @@ export async function GET(request: Request) {
     }
 
     const verifyData = await verifyPaystackTransaction(reference);
+    const mappedStatus = mapPaystackTransactionStatus(verifyData.status);
 
-    if (verifyData.status !== "success") {
-      const { error: failUpdateError } = await auth.supabase
-        .from("payment_records")
-        .update({
-          status: "failed",
-          provider_reference: verifyData.reference,
-          metadata: {
-            gatewayResponse: verifyData.gateway_response,
-            verifyStatus: verifyData.status,
-          },
-        })
-        .eq("reference", reference);
+    if (mappedStatus.resolvedStatus !== "success") {
+      if (mappedStatus.terminal) {
+        const terminalResult = await markContributionPaymentTerminalStatus({
+          reference,
+          status: mappedStatus.resolvedStatus,
+          providerPayload: verifyData as unknown as Record<string, unknown>,
+        });
 
-      if (failUpdateError) {
-        throw new Error(failUpdateError.message);
-      }
-
-      // Keep contributions in sync so the UI shows "Failed — please retry"
-      if (paymentRecord.contribution_id) {
-        await auth.supabase
-          .from("contributions")
-          .update({ status: "failed" })
-          .eq("id", paymentRecord.contribution_id);
+        if (terminalResult.notFound) {
+          return NextResponse.json({ error: "Payment record not found." }, { status: 404 });
+        }
       }
 
       return NextResponse.json({
         data: {
-          status: verifyData.status,
+          status: mappedStatus.resolvedStatus,
           reference,
         },
       });

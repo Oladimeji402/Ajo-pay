@@ -306,6 +306,7 @@ export default function AdminTransactionsPage() {
             <option value="all">All Status</option>
             <option value="success">Success</option>
             <option value="pending">Pending</option>
+            <option value="abandoned">Abandoned</option>
             <option value="failed">Failed</option>
           </select>
           <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }} className="rounded-xl border border-slate-200 px-3 py-2 text-sm">

@@ -4,5 +4,11 @@
   "installCommand": "npm install",
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "crons": [
+    {
+      "path": "/api/internal/payments/reconcile",
+      "schedule": "*/15 * * * *"
+    }
+  ]
 }

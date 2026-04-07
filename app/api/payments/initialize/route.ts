@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { badRequestResponse, requireUser, serverErrorResponse } from "@/lib/api/auth";
+import { getPendingPaymentExpiryDate } from "@/lib/payments";
 import { initializePaystackTransaction } from "@/lib/paystack";
 
 const initPaymentSchema = z.object({
@@ -101,6 +102,7 @@ export async function POST(request: Request) {
     });
 
     let contributionId = existingContribution?.id ?? null;
+    const expiresAtIso = getPendingPaymentExpiryDate().toISOString();
 
     if (contributionId) {
       const { error: contributionUpdateError } = await auth.supabase
@@ -147,6 +149,7 @@ export async function POST(request: Request) {
       currency: "NGN",
       status: "pending",
       reference,
+      expires_at: expiresAtIso,
       metadata: {
         cycleNumber,
       },
