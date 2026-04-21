@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Bell, CheckCheck, Clock3, Loader2, Settings, ShieldCheck, Users, Wallet, X } from 'lucide-react';
+import { Bell, BookOpen, CheckCheck, Clock3, Layers, Loader2, Settings, ShieldCheck, Target, Users, Wallet, X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
 
@@ -26,21 +26,38 @@ const FILTERS: Array<{ key: NotificationCategory; label: string }> = [
     { key: 'account', label: 'Account' },
 ];
 
-function getNotificationCategory(type: string): NotificationCategory {
-    if (type === 'payment_success') return 'transaction';
-    if (type === 'group_leave') return 'group';
-    if (type === 'password_changed') return 'security';
-    if (type === 'email_change_requested') return 'account';
-    if (type.includes('reminder')) return 'reminder';
-    return 'account';
+function getNotificationMeta(type: string): {
+    category: NotificationCategory;
+    badge: { label: string; icon: React.ElementType; className: string };
+} {
+    switch (type) {
+        case 'passbook_activated':
+            return { category: 'transaction', badge: { label: 'Passbook', icon: BookOpen, className: 'bg-amber-50 text-amber-700 border-amber-200' } };
+        case 'payment_success':
+            return { category: 'transaction', badge: { label: 'Transaction', icon: Wallet, className: 'bg-blue-50 text-blue-700 border-blue-200' } };
+        case 'individual_savings_paid':
+            return { category: 'transaction', badge: { label: 'Savings', icon: Target, className: 'bg-purple-50 text-purple-700 border-purple-200' } };
+        case 'bulk_payment_confirmed':
+            return { category: 'transaction', badge: { label: 'Bulk Pay', icon: Layers, className: 'bg-indigo-50 text-indigo-700 border-indigo-200' } };
+        case 'group_leave':
+            return { category: 'group', badge: { label: 'Group', icon: Users, className: 'bg-emerald-50 text-emerald-700 border-emerald-200' } };
+        case 'password_changed':
+            return { category: 'security', badge: { label: 'Security', icon: ShieldCheck, className: 'bg-red-50 text-red-700 border-red-200' } };
+        case 'email_change_requested':
+            return { category: 'account', badge: { label: 'Account', icon: Settings, className: 'bg-slate-100 text-slate-700 border-slate-200' } };
+        default:
+            if (type.includes('reminder')) {
+                return { category: 'reminder', badge: { label: 'Reminder', icon: Clock3, className: 'bg-amber-50 text-amber-700 border-amber-200' } };
+            }
+            if (type.includes('group')) {
+                return { category: 'group', badge: { label: 'Group', icon: Users, className: 'bg-emerald-50 text-emerald-700 border-emerald-200' } };
+            }
+            return { category: 'account', badge: { label: 'Account', icon: Settings, className: 'bg-slate-100 text-slate-700 border-slate-200' } };
+    }
 }
 
-function getCategoryBadge(category: NotificationCategory) {
-    if (category === 'transaction') return { label: 'Transaction', icon: Wallet, className: 'bg-blue-50 text-blue-700 border-blue-200' };
-    if (category === 'reminder') return { label: 'Reminder', icon: Clock3, className: 'bg-amber-50 text-amber-700 border-amber-200' };
-    if (category === 'security') return { label: 'Security', icon: ShieldCheck, className: 'bg-red-50 text-red-700 border-red-200' };
-    if (category === 'group') return { label: 'Group', icon: Users, className: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
-    return { label: 'Account', icon: Settings, className: 'bg-slate-100 text-slate-700 border-slate-200' };
+function getNotificationCategory(type: string): NotificationCategory {
+    return getNotificationMeta(type).category;
 }
 
 export default function NotificationsPage() {
@@ -184,8 +201,7 @@ export default function NotificationsPage() {
             ) : (
                 <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white divide-y divide-slate-100">
                     {filteredNotifications.map((item) => {
-                        const category = getNotificationCategory(item.type);
-                        const badge = getCategoryBadge(category);
+                        const { badge } = getNotificationMeta(item.type);
                         const BadgeIcon = badge.icon;
 
                         return (

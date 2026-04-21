@@ -18,6 +18,7 @@ import {
     Share2,
     Users,
     Wallet,
+    Target,
 } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/Toast';
@@ -54,11 +55,12 @@ type Contribution = {
 
 type Transaction = {
     id: string;
-    type: 'contribution' | 'payout';
+    type: 'contribution' | 'payout' | 'individual_savings' | 'bulk_contribution' | 'passbook_activation';
     amount: number;
     status: string;
     created_at: string;
     groups?: { id: string; name: string } | null;
+    metadata?: Record<string, unknown> | null;
 };
 
 export default function DashboardPage() {
@@ -69,8 +71,8 @@ export default function DashboardPage() {
     const [groups, setGroups] = useState<Group[]>([]);
     const [contributions, setContributions] = useState<Contribution[]>([]);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [individualSavingsTotal, setIndividualSavingsTotal] = useState(0);
     const [savedVisible, setSavedVisible] = useState(true);
-    const [receivedVisible, setReceivedVisible] = useState(true);
     const { showToast } = useToast();
 
     useEffect(() => {
@@ -89,7 +91,7 @@ export default function DashboardPage() {
                     return;
                 }
 
-                const [profileRes, groupsRes, contributionsRes, transactionsRes] = await Promise.all([
+                const [profileRes, groupsRes, contributionsRes, transactionsRes, savingsRes] = await Promise.all([
                     supabase
                         .from('profiles')
                         .select('name, phone, bank_account, total_contributed, total_received')
@@ -98,6 +100,7 @@ export default function DashboardPage() {
                     fetch('/api/groups', { cache: 'no-store' }),
                     fetch('/api/contributions', { cache: 'no-store' }),
                     fetch('/api/transactions?page=1&pageSize=8', { cache: 'no-store' }),
+                    fetch('/api/savings/goals', { cache: 'no-store' }),
                 ]);
 
                 if (profileRes.error) {
@@ -124,6 +127,14 @@ export default function DashboardPage() {
                 setGroups(Array.isArray(groupsJson.data) ? groupsJson.data : []);
                 setContributions(Array.isArray(contributionsJson.data) ? contributionsJson.data : []);
                 setTransactions(Array.isArray(txJson.data) ? txJson.data : []);
+
+                // Individual savings total (passbook may not be activated — 403 is fine)
+                if (savingsRes.ok) {
+                    const savingsJson = await savingsRes.json();
+                    const goalsTotal = (Array.isArray(savingsJson.data) ? savingsJson.data : [])
+                        .reduce((sum: number, g: { total_saved: number }) => sum + Number(g.total_saved ?? 0), 0);
+                    setIndividualSavingsTotal(goalsTotal);
+                }
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Unable to load dashboard.');
                 notifyError(showToast, err, 'Failed to load dashboard. Please refresh.');
@@ -247,7 +258,7 @@ export default function DashboardPage() {
 
     const quickActions = [
         {
-            href: actionQueue.length > 0 ? `/groups/${actionQueue[0]?.id}` : '/groups',
+            href: '/pay',
             icon: CreditCard,
             label: 'Pay Now',
             bg: 'bg-brand-primary',
@@ -256,11 +267,11 @@ export default function DashboardPage() {
             onClick: undefined,
         },
         {
-            href: '/groups',
-            icon: Search,
-            label: 'Find Group',
-            bg: 'bg-purple-50',
-            color: 'text-purple-600',
+            href: '/savings',
+            icon: Target,
+            label: 'Savings',
+            bg: 'bg-emerald-50',
+            color: 'text-emerald-600',
             badge: undefined,
             onClick: undefined,
         },
@@ -268,8 +279,8 @@ export default function DashboardPage() {
             href: firstGroupId ? `/groups/${firstGroupId}` : '/groups',
             icon: Users,
             label: 'My Groups',
-            bg: 'bg-emerald-50',
-            color: 'text-emerald-600',
+            bg: 'bg-purple-50',
+            color: 'text-purple-600',
             badge: groups.length > 0 ? groups.length : undefined,
             onClick: undefined,
         },
@@ -302,48 +313,29 @@ export default function DashboardPage() {
 
                 <p className="relative text-[11px] font-medium text-white/60 mb-4">Your savings overview</p>
 
-                <div className="relative grid grid-cols-2 gap-3">
-                    {/* Total Saved */}
-                    <div className="rounded-2xl border border-white/10 bg-white/10 p-3.5 backdrop-blur-sm">
-                        <div className="mb-2.5 flex items-center justify-between">
-                            <div className="flex items-center gap-1.5">
-                                <Wallet size={12} className="text-white/60" />
-                                <span className="text-[11px] font-medium text-white/70">Total Saved</span>
-                            </div>
-                            <button
-                                onClick={() => setSavedVisible((v) => !v)}
-                                className="text-white/50 transition-colors hover:text-white/90"
-                                aria-label={savedVisible ? 'Hide total saved' : 'Show total saved'}
-                            >
-                                {savedVisible ? <Eye size={13} /> : <EyeOff size={13} />}
-                            </button>
+                {/* Total Saved — full width card */}
+                <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur-sm">
+                    <div className="mb-2 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                            <Wallet size={12} className="text-white/60" />
+                            <span className="text-[11px] font-medium text-white/70">Total Saved</span>
                         </div>
-                        <p className="text-[17px] font-bold leading-tight tracking-tight">
-                            {savedVisible ? formatCurrency(profile?.total_contributed ?? 0) : '••••••'}
-                        </p>
-                        <p className="mt-1 text-[10px] text-white/40">Contributions</p>
+                        <button
+                            onClick={() => setSavedVisible((v) => !v)}
+                            className="text-white/50 transition-colors hover:text-white/90"
+                            aria-label={savedVisible ? 'Hide total saved' : 'Show total saved'}
+                        >
+                            {savedVisible ? <Eye size={13} /> : <EyeOff size={13} />}
+                        </button>
                     </div>
-
-                    {/* Money Received */}
-                    <div className="rounded-2xl border border-white/10 bg-white/10 p-3.5 backdrop-blur-sm">
-                        <div className="mb-2.5 flex items-center justify-between">
-                            <div className="flex items-center gap-1.5">
-                                <ArrowDownLeft size={12} className="text-white/60" />
-                                <span className="text-[11px] font-medium text-white/70">Received</span>
-                            </div>
-                            <button
-                                onClick={() => setReceivedVisible((v) => !v)}
-                                className="text-white/50 transition-colors hover:text-white/90"
-                                aria-label={receivedVisible ? 'Hide received amount' : 'Show received amount'}
-                            >
-                                {receivedVisible ? <Eye size={13} /> : <EyeOff size={13} />}
-                            </button>
-                        </div>
-                        <p className="text-[17px] font-bold leading-tight tracking-tight">
-                            {receivedVisible ? formatCurrency(profile?.total_received ?? 0) : '••••••'}
-                        </p>
-                        <p className="mt-1 text-[10px] text-white/40">Payout earnings</p>
-                    </div>
+                    <p className="text-[22px] font-bold leading-tight tracking-tight">
+                        {savedVisible ? formatCurrency((profile?.total_contributed ?? 0) + individualSavingsTotal) : '••••••'}
+                    </p>
+                    {/* Subtle received indicator below the main amount */}
+                    <p className="mt-2 text-[10px] text-white/50 flex items-center gap-1">
+                        <ArrowDownLeft size={9} />
+                        Received: {formatCurrency(profile?.total_received ?? 0)} in payouts
+                    </p>
                 </div>
 
                 {/* Stats chips */}
@@ -589,21 +581,30 @@ export default function DashboardPage() {
                             <p className="p-4 text-sm text-brand-gray">No transactions found.</p>
                         ) : (
                             filteredActivity.slice(0, 5).map((tx) => {
-                                const isContribution = tx.type === 'contribution';
+                                const isContributionLike = tx.type === 'contribution' || tx.type === 'individual_savings' || tx.type === 'bulk_contribution' || tx.type === 'passbook_activation';
+                                const txLabel = tx.type === 'contribution'
+                                    ? (tx.groups?.name ?? 'Group contribution')
+                                    : tx.type === 'payout'
+                                        ? (tx.groups?.name ? `${tx.groups.name} payout` : 'Payout')
+                                        : tx.type === 'individual_savings'
+                                            ? 'Individual savings'
+                                            : tx.type === 'bulk_contribution'
+                                                ? 'Bulk savings payment'
+                                                : 'Passbook activation';
                                 return (
                                     <div key={tx.id} className="flex items-center gap-3 px-4 py-3">
-                                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${isContribution ? 'bg-blue-50' : 'bg-emerald-50'}`}>
-                                            {isContribution ? <ArrowUpRight size={16} className="text-blue-600" /> : <ArrowDownLeft size={16} className="text-emerald-600" />}
+                                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${isContributionLike ? 'bg-blue-50' : 'bg-emerald-50'}`}>
+                                            {isContributionLike ? <ArrowUpRight size={16} className="text-blue-600" /> : <ArrowDownLeft size={16} className="text-emerald-600" />}
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <p className="truncate text-sm font-semibold text-brand-navy">{tx.groups?.name ?? 'Group'}</p>
+                                            <p className="truncate text-sm font-semibold text-brand-navy">{txLabel}</p>
                                             <p className="text-[10px] text-brand-gray">
                                                 {new Date(tx.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
                                             </p>
                                         </div>
                                         <div className="text-right">
-                                            <p className={`text-sm font-bold ${isContribution ? 'text-brand-navy' : 'text-emerald-600'}`}>
-                                                {isContribution ? '-' : '+'}{formatCurrency(tx.amount)}
+                                            <p className={`text-sm font-bold ${isContributionLike ? 'text-brand-navy' : 'text-emerald-600'}`}>
+                                                {isContributionLike ? '-' : '+'}{formatCurrency(tx.amount)}
                                             </p>
                                             <p className="text-[10px] capitalize text-brand-gray">{tx.status}</p>
                                         </div>

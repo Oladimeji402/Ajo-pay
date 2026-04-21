@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { isAdminAuthenticated } from '@/lib/admin-auth';
 import { Loader2 } from 'lucide-react';
 
@@ -11,20 +10,19 @@ interface AdminGuardProps {
 
 export const AdminGuard = ({ children }: AdminGuardProps) => {
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-    const router = useRouter();
 
     useEffect(() => {
         const checkAuth = async () => {
             const authStatus = await isAdminAuthenticated();
             if (!authStatus) {
-                router.push('/admin-login');
+                window.location.href = '/admin-login';
             } else {
                 setIsAuthenticated(true);
             }
         };
 
         void checkAuth();
-    }, [router]);
+    }, []);
 
     if (isAuthenticated === null) {
         return (

@@ -2,6 +2,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { verifyPaystackTransaction } from "@/lib/paystack";
 import { isWhatsappConfigured, sendGroupReceipt } from "@/lib/whatsapp";
 import { appendContributionPaymentToGoogleSheet } from "@/lib/google-sheets-sync";
+import { generatePassbookSlots } from "@/lib/ajo-schedule";
 
 type PaymentSuccessResult = {
   ok: boolean;
@@ -239,7 +240,7 @@ export async function markContributionPaymentTerminalStatus(params: MarkPaymentT
 
   const { data: paymentRecord, error: paymentError } = await supabase
     .from("payment_records")
-    .select("id, contribution_id, status, metadata")
+    .select("id, contribution_id, status, metadata, type")
     .eq("reference", params.reference)
     .maybeSingle();
 
@@ -294,6 +295,28 @@ export async function markContributionPaymentTerminalStatus(params: MarkPaymentT
     }
   }
 
+  const now = new Date().toISOString();
+  const paymentType = String(paymentRecord.type ?? "");
+
+  // Bulk: never leave allocation rows stuck in pending after Paystack failed / abandoned.
+  if (paymentType === "bulk_contribution") {
+    await supabase
+      .from("payment_allocations")
+      .update({ status: "failed", processed_at: now })
+      .eq("parent_reference", params.reference)
+      .eq("status", "pending");
+  }
+
+  // Individual savings: clear the reserved passbook slot so the user can pay again.
+  if (paymentType === "individual_savings") {
+    const slotStatus = params.status === "abandoned" ? "abandoned" : "failed";
+    await supabase
+      .from("individual_savings_contributions")
+      .update({ status: slotStatus })
+      .eq("paystack_reference", params.reference)
+      .eq("status", "pending");
+  }
+
   return {
     ok: true,
     status: params.status,
@@ -338,6 +361,344 @@ export async function reconcilePendingContributionPayment(reference: string) {
     status: mappedStatus.resolvedStatus,
     terminal: false,
     result: null,
+  };
+}
+
+export async function markPassbookActivated(params: {
+  reference: string;
+  userId: string;
+}): Promise<{ ok: boolean; idempotent?: boolean }> {
+  const supabase = createSupabaseAdminClient();
+
+  // Idempotency check 1: payment_record already success for this reference.
+  const { data: existingRecord } = await supabase
+    .from("payment_records")
+    .select("status")
+    .eq("reference", params.reference)
+    .eq("type", "passbook_activation")
+    .maybeSingle();
+
+  if (existingRecord?.status === "success") {
+    return { ok: true, idempotent: true };
+  }
+
+  // Idempotency check 2: profile already activated.
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("id, passbook_activated")
+    .eq("id", params.userId)
+    .maybeSingle();
+
+  if (profileError) throw new Error(profileError.message);
+  if (!profile) return { ok: false };
+  if (profile.passbook_activated) {
+    // Mark the payment record success even if profile was already set (catch duplicates).
+    await supabase
+      .from("payment_records")
+      .update({ status: "success" })
+      .eq("reference", params.reference);
+    return { ok: true, idempotent: true };
+  }
+
+  // Mark the payment_record success FIRST so any concurrent webhook call
+  // sees it immediately and bails out on idempotency check 1.
+  const { error: recordUpdateError } = await supabase
+    .from("payment_records")
+    .update({ status: "success" })
+    .eq("reference", params.reference)
+    .eq("status", "pending"); // Only update if still pending — prevents race
+
+  if (recordUpdateError) throw new Error(recordUpdateError.message);
+
+  // Now activate the profile.
+  const { error: updateError } = await supabase
+    .from("profiles")
+    .update({
+      passbook_activated: true,
+      passbook_activated_at: new Date().toISOString(),
+      passbook_reference: params.reference,
+    })
+    .eq("id", params.userId)
+    .eq("passbook_activated", false); // Conditional update — safe against race
+
+  if (updateError) throw new Error(updateError.message);
+
+  // Write to the passbook ledger. ON CONFLICT DO NOTHING prevents duplicate
+  // entries if this function is somehow called twice with the same reference.
+  await supabase.from("passbook_entries").upsert(
+    {
+      user_id: params.userId,
+      entry_type: "passbook_activation",
+      source_id: null,
+      source_table: "payment_records",
+      amount: 500,
+      direction: "debit",
+      status: "success",
+      reference: params.reference,
+      description: "One-time passbook activation fee",
+      happened_at: new Date().toISOString(),
+    },
+    { onConflict: "reference", ignoreDuplicates: true },
+  );
+
+  return { ok: true };
+}
+
+export async function markIndividualSavingsPaymentSuccess(params: {
+  reference: string;
+}): Promise<{ ok: boolean; idempotent?: boolean; notFound?: boolean }> {
+  const supabase = createSupabaseAdminClient();
+
+  // Look up the payment record.
+  const { data: pr } = await supabase
+    .from("payment_records")
+    .select("id, user_id, status, metadata, amount")
+    .eq("reference", params.reference)
+    .eq("type", "individual_savings")
+    .maybeSingle();
+
+  if (!pr) return { ok: false, notFound: true };
+  if (pr.status === "success") return { ok: true, idempotent: true };
+
+  const goalId = (pr.metadata as Record<string, unknown>)?.goalId as string | undefined;
+  const periodIndex = (pr.metadata as Record<string, unknown>)?.periodIndex as number | undefined;
+
+  if (!goalId || periodIndex === undefined) {
+    console.error("[ISG] payment_record missing goalId/periodIndex in metadata", pr.id);
+    return { ok: false };
+  }
+
+  // Mark the payment_record success first (idempotency guard).
+  await supabase
+    .from("payment_records")
+    .update({ status: "success" })
+    .eq("reference", params.reference)
+    .eq("status", "pending");
+
+  // Update the individual_savings_contributions slot.
+  const now = new Date().toISOString();
+  const { error: contribError } = await supabase
+    .from("individual_savings_contributions")
+    .update({
+      status: "success",
+      paid_at: now,
+    })
+    .eq("goal_id", goalId)
+    .eq("period_index", periodIndex)
+    .eq("paystack_reference", params.reference);
+
+  if (contribError) {
+    console.error("[ISG] Failed to update individual_savings_contributions:", contribError.message);
+  }
+
+  // Write to the unified passbook ledger.
+  await supabase.from("passbook_entries").upsert(
+    {
+      user_id: pr.user_id,
+      entry_type: "individual_savings",
+      source_id: pr.id,
+      source_table: "individual_savings_contributions",
+      goal_id: goalId,
+      amount: pr.amount,
+      direction: "debit",
+      status: "success",
+      reference: params.reference,
+      description: `Individual savings payment`,
+      happened_at: now,
+    },
+    { onConflict: "reference", ignoreDuplicates: true },
+  );
+
+  return { ok: true };
+}
+
+export async function markBulkPaymentSuccess(params: {
+  reference: string;
+}): Promise<{
+  ok: boolean;
+  idempotent?: boolean;
+  notFound?: boolean;
+  /** Set after processing: counts allocations still not success for this bulk reference */
+  pendingAllocationCount?: number;
+  failedAllocationCount?: number;
+}> {
+  const supabase = createSupabaseAdminClient();
+
+  // Load parent payment record.
+  const { data: parentRecord } = await supabase
+    .from("payment_records")
+    .select("id, user_id, status")
+    .eq("reference", params.reference)
+    .eq("type", "bulk_contribution")
+    .maybeSingle();
+
+  if (!parentRecord) return { ok: false, notFound: true };
+
+  // Keep processing allocations even if parent is already success.
+  // This prevents partial-processing scenarios where one allocation succeeded
+  // and another remained pending due to a transient failure.
+  if (parentRecord.status !== "success") {
+    await supabase
+      .from("payment_records")
+      .update({ status: "success" })
+      .eq("reference", params.reference)
+      .eq("status", "pending");
+  }
+
+  // Fetch all pending allocations for this bulk reference.
+  const { data: allocations } = await supabase
+    .from("payment_allocations")
+    .select("id, target_type, target_id, allocated_amount, user_id")
+    .eq("parent_reference", params.reference)
+    .eq("status", "pending");
+
+  if (!allocations?.length) {
+    const { data: summary } = await supabase
+      .from("payment_allocations")
+      .select("status")
+      .eq("parent_reference", params.reference);
+    const pendingAllocationCount = (summary ?? []).filter((r) => r.status === "pending").length;
+    const failedAllocationCount = (summary ?? []).filter((r) => r.status === "failed").length;
+    return {
+      ok: true,
+      idempotent: parentRecord.status === "success",
+      pendingAllocationCount,
+      failedAllocationCount,
+    };
+  }
+
+  const now = new Date().toISOString();
+
+  for (const alloc of allocations) {
+    try {
+      if (alloc.target_type === "individual_goal") {
+        const allocationReference = `${params.reference}-alloc-${alloc.id}`;
+        // Load the goal's schedule metadata.
+        const { data: goal } = await supabase
+          .from("individual_savings_goals")
+          .select("id, savings_start_date, target_date, frequency")
+          .eq("id", alloc.target_id)
+          .maybeSingle();
+
+        if (!goal) {
+          await supabase
+            .from("payment_allocations")
+            .update({ status: "failed", processed_at: now })
+            .eq("id", alloc.id);
+          continue;
+        }
+
+        // Find the next unpaid period slot.
+        const slots = generatePassbookSlots(goal.savings_start_date, goal.target_date, goal.frequency as "daily" | "weekly" | "monthly");
+
+        const { data: paidRows } = await supabase
+          .from("individual_savings_contributions")
+          .select("period_index")
+          .eq("goal_id", goal.id)
+          .eq("status", "success");
+
+        const paidIndices = new Set((paidRows ?? []).map((r) => r.period_index as number));
+        const targetSlot = slots.find((s) => !paidIndices.has(s.periodIndex));
+
+        if (!targetSlot) {
+          await supabase
+            .from("payment_allocations")
+            .update({ status: "failed", processed_at: now })
+            .eq("id", alloc.id);
+          continue;
+        }
+
+        // Upsert the contribution slot as paid.
+        await supabase.from("individual_savings_contributions").upsert(
+          {
+            goal_id: goal.id,
+            user_id: alloc.user_id,
+            amount: alloc.allocated_amount,
+            period_label: targetSlot.periodLabel,
+            period_index: targetSlot.periodIndex,
+            period_date: targetSlot.periodDate,
+            status: "success",
+            paystack_reference: allocationReference,
+            payment_record_id: parentRecord.id,
+            paid_at: now,
+          },
+          { onConflict: "goal_id,period_index" },
+        );
+
+        // Write to the unified passbook ledger. Use allocation id to keep reference unique.
+        await supabase.from("passbook_entries").upsert(
+          {
+            user_id: alloc.user_id,
+            entry_type: "individual_savings",
+            source_id: parentRecord.id,
+            source_table: "individual_savings_contributions",
+            goal_id: goal.id,
+            amount: alloc.allocated_amount,
+            direction: "debit",
+            status: "success",
+            reference: `${params.reference}-alloc-${alloc.id}`,
+            description: `Individual savings — ${targetSlot.periodLabel}`,
+            happened_at: now,
+          },
+          { onConflict: "reference", ignoreDuplicates: true },
+        );
+
+        await supabase
+          .from("payment_allocations")
+          .update({ status: "success", processed_at: now })
+          .eq("id", alloc.id);
+
+      } else if (alloc.target_type === "group") {
+        const { data: group } = await supabase
+          .from("groups")
+          .select("id, name, current_cycle")
+          .eq("id", alloc.target_id)
+          .maybeSingle();
+
+        await supabase.from("passbook_entries").upsert(
+          {
+            user_id: alloc.user_id,
+            entry_type: "group_contribution",
+            source_id: parentRecord.id,
+            source_table: "payment_records",
+            group_id: alloc.target_id,
+            amount: alloc.allocated_amount,
+            direction: "debit",
+            status: "success",
+            reference: `${params.reference}-alloc-${alloc.id}`,
+            period_label: `Round ${group?.current_cycle ?? 1}`,
+            description: `Group contribution — ${group?.name ?? "Unknown"}`,
+            happened_at: now,
+          },
+          { onConflict: "reference", ignoreDuplicates: true },
+        );
+
+        await supabase
+          .from("payment_allocations")
+          .update({ status: "success", processed_at: now })
+          .eq("id", alloc.id);
+      }
+    } catch (err) {
+      console.error("[bulk] Failed to process allocation:", alloc.id, err);
+      await supabase
+        .from("payment_allocations")
+        .update({ status: "failed", processed_at: now })
+        .eq("id", alloc.id);
+    }
+  }
+
+  const { data: summary } = await supabase
+    .from("payment_allocations")
+    .select("status")
+    .eq("parent_reference", params.reference);
+  const pendingAllocationCount = (summary ?? []).filter((r) => r.status === "pending").length;
+  const failedAllocationCount = (summary ?? []).filter((r) => r.status === "failed").length;
+
+  return {
+    ok: true,
+    idempotent: parentRecord.status === "success",
+    pendingAllocationCount,
+    failedAllocationCount,
   };
 }
 

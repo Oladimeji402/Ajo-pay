@@ -15,6 +15,7 @@ import {
     LogOut,
     Menu,
     X,
+    CalendarDays,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { adminLogout, getAdminEmail } from '@/lib/admin-auth';
@@ -89,6 +90,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
         { name: 'Users', icon: <Users size={20} />, path: '/admin/users', badge: newUsersTodayCount },
         { name: 'Groups', icon: <UsersRound size={20} />, path: '/admin/groups' },
         { name: 'Payouts', icon: <Banknote size={20} />, path: '/admin/payouts', badge: pendingPayoutsCount },
+        { name: 'Festive Periods', icon: <CalendarDays size={20} />, path: '/admin/festive-periods' },
         { name: 'Transactions', icon: <History size={20} />, path: '/admin/transactions' },
         { name: 'Audit Log', icon: <ScrollText size={20} />, path: '/admin/audit-log' },
         { name: 'Security', icon: <Shield size={20} />, path: '/admin/security' },

@@ -1,13 +1,63 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowDownLeft, ArrowUpRight, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, ChevronLeft, ChevronRight, Search, BookOpen, Target, Layers } from 'lucide-react';
 
 const PAGE_SIZE = 20;
 
+function getTxMeta(tx: TransactionRow) {
+    switch (tx.type) {
+        case 'payout':
+            return {
+                Icon: ArrowDownLeft,
+                iconBg: 'bg-emerald-50',
+                iconColor: 'text-emerald-600',
+                label: tx.groups?.name ? `Payout — ${tx.groups.name}` : 'Group Payout',
+                sign: '+',
+                amountColor: 'text-emerald-600',
+            };
+        case 'passbook_activation':
+            return {
+                Icon: BookOpen,
+                iconBg: 'bg-amber-50',
+                iconColor: 'text-amber-600',
+                label: 'Passbook Activation Fee',
+                sign: '-',
+                amountColor: 'text-brand-navy',
+            };
+        case 'individual_savings':
+            return {
+                Icon: Target,
+                iconBg: 'bg-purple-50',
+                iconColor: 'text-purple-600',
+                label: 'Individual Savings',
+                sign: '-',
+                amountColor: 'text-brand-navy',
+            };
+        case 'bulk_contribution':
+            return {
+                Icon: Layers,
+                iconBg: 'bg-indigo-50',
+                iconColor: 'text-indigo-600',
+                label: 'Bulk Payment',
+                sign: '-',
+                amountColor: 'text-brand-navy',
+            };
+        default: // contribution
+            return {
+                Icon: ArrowUpRight,
+                iconBg: 'bg-blue-50',
+                iconColor: 'text-blue-600',
+                label: tx.groups?.name ? `${tx.groups.name}` : 'Group Contribution',
+                sign: '-',
+                amountColor: 'text-brand-navy',
+            };
+    }
+}
+
 type TransactionRow = {
     id: string;
-    type: 'contribution' | 'payout';
+    type: 'contribution' | 'payout' | 'passbook_activation' | 'individual_savings' | 'bulk_contribution';
     amount: number;
     status: 'pending' | 'success' | 'failed' | 'abandoned';
     reference: string;
@@ -116,21 +166,21 @@ export default function ActivityPage() {
                 ) : (
                     <div className="divide-y divide-slate-100">
                         {filtered.map((tx) => {
-                            const isContribution = tx.type === 'contribution';
+                            const meta = getTxMeta(tx);
                             return (
                                 <div key={tx.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-                                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${isContribution ? 'bg-blue-50' : 'bg-emerald-50'}`}>
-                                        {isContribution ? <ArrowUpRight size={16} className="text-blue-600" /> : <ArrowDownLeft size={16} className="text-emerald-600" />}
+                                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${meta.iconBg}`}>
+                                        <meta.Icon size={16} className={meta.iconColor} />
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-sm font-semibold text-brand-navy truncate">{tx.groups?.name ?? 'Group'}</p>
+                                        <p className="text-sm font-semibold text-brand-navy truncate">{meta.label}</p>
                                         <p className="text-[10px] text-brand-gray">
                                             {new Date(tx.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })} · Ref: {tx.reference.slice(-8)}
                                         </p>
                                     </div>
                                     <div className="text-right shrink-0">
-                                        <p className={`text-sm font-bold ${isContribution ? 'text-brand-navy' : 'text-emerald-600'}`}>
-                                            {isContribution ? '-' : '+'}NGN {Number(tx.amount).toLocaleString('en-NG')}
+                                        <p className={`text-sm font-bold ${meta.amountColor}`}>
+                                            {meta.sign}NGN {Number(tx.amount).toLocaleString('en-NG')}
                                         </p>
                                         <p className={`text-[10px] font-medium ${tx.status === 'success' ? 'text-emerald-600' : tx.status === 'pending' ? 'text-amber-600' : tx.status === 'abandoned' ? 'text-orange-600' : 'text-rose-600'}`}>
                                             {tx.status === 'success' ? 'Successful' : tx.status === 'pending' ? 'Confirming' : tx.status === 'abandoned' ? 'Expired' : 'Failed'}
