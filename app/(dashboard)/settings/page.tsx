@@ -137,7 +137,7 @@ export default function SettingsPage() {
 
                 if (!user) {
                     notifyWarning(showToast, 'Your session has expired. Please log in again.');
-                    router.push('/login');
+                    window.location.href = '/login';
                     return;
                 }
 
@@ -356,8 +356,7 @@ export default function SettingsPage() {
         const supabase = createSupabaseBrowserClient();
         await supabase.auth.signOut();
         notifySuccess(showToast, 'Signed out successfully.');
-        router.push('/login');
-        router.refresh();
+        window.location.href = '/login';
     };
 
     const copyToClipboard = async (value: string) => {

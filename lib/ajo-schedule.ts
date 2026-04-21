@@ -141,3 +141,77 @@ export function formatScheduleDate(dateValue: string | null | undefined, locale 
 export function getTodayDateInputValue(referenceDate = new Date()) {
   return toDateOnlyString(referenceDate);
 }
+
+// ── Passbook slot generation ──────────────────────────────────────────────────
+
+export type PassbookFrequency = 'daily' | 'weekly' | 'monthly';
+
+export type PassbookSlot = {
+  periodIndex: number;
+  periodLabel: string;
+  periodDate: string;
+};
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+const DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/**
+ * Generate every passbook slot between startDate (inclusive) and endDate (inclusive)
+ * for the given frequency. Used to render the full structured passbook table.
+ */
+export function generatePassbookSlots(
+  startDate: string,
+  endDate: string,
+  frequency: PassbookFrequency,
+): PassbookSlot[] {
+  const start = parseDateOnly(startDate);
+  const end = parseDateOnly(endDate);
+  const slots: PassbookSlot[] = [];
+  let index = 0;
+
+  if (frequency === 'daily') {
+    let cursor = new Date(start);
+    while (cursor <= end) {
+      const day = DAY_ABBR[cursor.getUTCDay()];
+      const d = cursor.getUTCDate();
+      const m = MONTH_NAMES[cursor.getUTCMonth()]?.slice(0, 3);
+      slots.push({
+        periodIndex: index++,
+        periodLabel: `${day} ${d} ${m}`,
+        periodDate: formatDateOnly(cursor),
+      });
+      cursor = addDays(cursor, 1);
+    }
+  } else if (frequency === 'weekly') {
+    let cursor = new Date(start);
+    let week = 1;
+    while (cursor <= end) {
+      slots.push({
+        periodIndex: index++,
+        periodLabel: `Week ${week}`,
+        periodDate: formatDateOnly(cursor),
+      });
+      cursor = addDays(cursor, 7);
+      week++;
+    }
+  } else {
+    // monthly — one slot per calendar month from start to end
+    let cursor = new Date(start);
+    while (cursor <= end) {
+      const monthName = MONTH_NAMES[cursor.getUTCMonth()];
+      const year = cursor.getUTCFullYear();
+      slots.push({
+        periodIndex: index++,
+        periodLabel: `${monthName} ${year}`,
+        periodDate: formatDateOnly(cursor),
+      });
+      cursor = addMonths(cursor, 1);
+    }
+  }
+
+  return slots;
+}

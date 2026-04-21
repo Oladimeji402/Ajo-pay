@@ -23,7 +23,7 @@ export default function AdminLoginPage() {
         const result = await adminLogin(email, password);
         if (result.ok) {
             notifySuccess(showToast, 'Admin login successful.');
-            router.push('/admin');
+            window.location.href = '/admin';
             return;
         }
 

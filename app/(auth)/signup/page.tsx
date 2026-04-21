@@ -111,7 +111,7 @@ export default function SignUpPage() {
 
         setIsVerified(true);
         notifySuccess(showToast, 'Email verified! Welcome — redirecting to your dashboard.');
-        router.push('/dashboard');
+        window.location.href = '/dashboard';
     };
 
     const handleResendOtp = async () => {

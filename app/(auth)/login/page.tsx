@@ -54,8 +54,7 @@ function LoginContent() {
 
         notifySuccess(showToast, rememberMe ? 'Signed in successfully. Redirecting...' : 'Signed in for this browser session only. Redirecting...');
         const redirect = getSafeRedirect(searchParams.get('next'));
-        router.push(redirect);
-        router.refresh();
+        window.location.href = redirect;
     };
 
     return (

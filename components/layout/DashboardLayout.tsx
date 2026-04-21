@@ -2,7 +2,7 @@
 
 import React, { ReactNode, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import {
     LayoutDashboard,
     Users,
@@ -12,6 +12,10 @@ import {
     LogOut,
     Plus,
     ArrowUpRight,
+    BookOpen,
+    X,
+    Target,
+    CreditCard,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -25,10 +29,11 @@ interface DashboardLayoutProps {
 
 export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     const pathname = usePathname();
-    const router = useRouter();
     const [userName, setUserName] = useState('Member');
     const [userEmail, setUserEmail] = useState('member@example.com');
     const [unreadNotifications, setUnreadNotifications] = useState(0);
+    const [passbookActivated, setPassbookActivated] = useState(true);
+    const [bannerDismissed, setBannerDismissed] = useState(false);
     const { showToast } = useToast();
 
     useEffect(() => {
@@ -43,7 +48,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
             const { data: profile } = await supabase
                 .from('profiles')
-                .select('name')
+                .select('name, passbook_activated')
                 .eq('id', user.id)
                 .maybeSingle();
 
@@ -52,6 +57,8 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             } else if (user.email) {
                 setUserName(user.email.split('@')[0]);
             }
+
+            setPassbookActivated(profile?.passbook_activated ?? false);
         };
 
         void loadUser();
@@ -80,16 +87,18 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     const navItems = [
         { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/dashboard' },
         { name: 'Groups', icon: <Users size={20} />, path: '/groups' },
+        { name: 'Savings', icon: <Target size={20} />, path: '/savings' },
+        { name: 'Pay', icon: <CreditCard size={20} />, path: '/pay' },
         { name: 'Activity', icon: <History size={20} />, path: '/activity' },
         { name: 'Notifications', icon: <Bell size={20} />, path: '/notifications' },
         { name: 'Settings', icon: <Settings size={20} />, path: '/settings' },
     ];
 
-    // Mobile order keeps Join (Groups) in the center slot for easier thumb reach.
+    // Mobile: Savings replaces Activity in the center (primary) slot.
     const mobileNavItems = [
         { name: 'Dashboard', mobileLabel: 'Home', icon: <LayoutDashboard size={18} />, path: '/dashboard' },
         { name: 'Activity', mobileLabel: 'Activity', icon: <History size={18} />, path: '/activity' },
-        { name: 'Groups', mobileLabel: 'Join', icon: <Users size={18} />, path: '/groups' },
+        { name: 'Savings', mobileLabel: 'Save', icon: <Target size={18} />, path: '/savings' },
         { name: 'Notifications', mobileLabel: 'Alerts', icon: <Bell size={18} />, path: '/notifications' },
         { name: 'Settings', mobileLabel: 'Settings', icon: <Settings size={18} />, path: '/settings' },
     ];
@@ -128,8 +137,8 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             return;
         }
         notifySuccess(showToast, 'Signed out successfully.');
-        router.push('/login');
-        router.refresh();
+        // Hard navigate — clears all client state and forces a fresh server session check.
+        window.location.href = '/login';
     };
 
     return (
@@ -252,6 +261,36 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     </div>
                 </header>
 
+                {/* Passbook activation banner */}
+                {!passbookActivated && !bannerDismissed && !pathname.startsWith('/onboarding') && (
+                    <div className="mx-4 mt-4 md:mx-8 md:mt-6 flex items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100">
+                                <BookOpen size={16} className="text-amber-700" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-sm font-bold text-amber-900">Activate your Passbook</p>
+                                <p className="text-[11px] text-amber-700">One-time NGN 500 fee to unlock festive savings &amp; your personal ledger.</p>
+                            </div>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                            <Link
+                                href="/onboarding/activate-passbook"
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-700 transition-colors"
+                            >
+                                Activate <ArrowUpRight size={12} />
+                            </Link>
+                            <button
+                                onClick={() => setBannerDismissed(true)}
+                                className="text-amber-500 hover:text-amber-700 transition-colors"
+                                aria-label="Dismiss"
+                            >
+                                <X size={14} />
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 <div className="p-4 md:p-8">
                     {children}
                 </div>
@@ -262,7 +301,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     <div className="grid grid-cols-5 items-end gap-1">
                         {mobileNavItems.map((item) => {
                             const isActive = isPathActive(item.path);
-                            const isPrimary = item.path === '/groups';
+                            const isPrimary = item.path === '/savings';
 
                             if (isPrimary) {
                                 return (
@@ -274,7 +313,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                                             : 'bg-linear-to-b from-[#0C1A4D] to-[#1D4ED8] text-white shadow-md shadow-blue-900/30'
                                             }`}
                                     >
-                                        <Plus size={16} />
+                                        <Target size={16} />
                                         <span className="uppercase tracking-[0.05em] leading-none whitespace-nowrap">{item.mobileLabel}</span>
                                     </Link>
                                 );

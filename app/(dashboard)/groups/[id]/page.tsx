@@ -3,7 +3,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Users, Wallet, Calendar, Loader2, ShieldCheck, ArrowUpRight, CheckCircle2, LogOut, TriangleAlert, Copy, Check } from 'lucide-react';
+import { ArrowLeft, Users, Wallet, Calendar, Loader2, ShieldCheck, ArrowUpRight, CheckCircle2, LogOut, TriangleAlert, Copy, Check, BookOpen } from 'lucide-react';
+import { GroupPassbookTable } from '@/components/passbook/PassbookTable';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { openPaystackInline } from '@/lib/paystack-inline';
 import { useToast } from '@/components/ui/Toast';
@@ -44,6 +45,7 @@ type ContributionRow = {
     status: 'pending' | 'success' | 'failed' | 'abandoned';
     cycle_number: number;
     created_at: string;
+    paid_at?: string | null;
 };
 
 type PaymentReceipt = {
@@ -429,6 +431,29 @@ export default function GroupDetailsPage() {
 
                 {error && <div className="rounded-xl border border-red-100 bg-red-50 text-red-600 text-xs font-semibold p-3">{error}</div>}
             </section>
+
+            {/* Passbook: structured round-by-round view */}
+            {group.total_cycles > 0 && (
+                <section className="bg-white border border-slate-200 rounded-3xl p-5 space-y-3">
+                    <h3 className="flex items-center gap-2 font-semibold text-brand-navy">
+                        <BookOpen size={16} className="text-brand-primary" />
+                        My Passbook — {group.name}
+                    </h3>
+                    <GroupPassbookTable
+                        totalCycles={group.total_cycles}
+                        contributions={contributions.map(c => ({
+                            id: c.id,
+                            cycle_number: c.cycle_number,
+                            amount: c.amount,
+                            status: c.status,
+                            paid_at: c.paid_at ?? null,
+                            paystack_reference: null,
+                        }))}
+                        contributionAmount={group.contribution_amount}
+                        groupName={group.name}
+                    />
+                </section>
+            )}
 
             <section className="bg-white border border-slate-200 rounded-3xl p-5">
                 <h3 className="font-semibold text-brand-navy mb-3">Group members</h3>
