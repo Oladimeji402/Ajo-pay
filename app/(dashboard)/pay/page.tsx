@@ -21,6 +21,7 @@ type GoalOption = {
     name: string;
     contribution_amount: number;
     frequency: string;
+    status: 'active' | 'paused' | 'completed' | 'cancelled';
     festive_periods?: { name: string; color: string } | null;
 };
 
