@@ -174,9 +174,10 @@ function ResetPasswordContent() {
         return (
             <section aria-labelledby="reset-success-title" className="space-y-6">
                 <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1D4ED8]">All done</p>
-                    <h2 id="reset-success-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>
-                        Password updated.
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-accent">All done</p>
+                    <h2 id="reset-success-title" className="mt-2 text-[1.85rem] leading-tight text-brand-navy">
+                        <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 400 }}>Password </span>
+                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}>updated.</span>
                     </h2>
                     <p className="mt-1 text-sm text-slate-500">
                         You can now sign in with your new password.
@@ -188,9 +189,9 @@ function ResetPasswordContent() {
                     transition={{ type: 'spring', stiffness: 260, damping: 22 }}
                     className="flex h-20 w-20 items-center justify-center rounded-2xl bg-slate-50"
                 >
-                    <CheckCircle2 size={32} className="text-[#1D4ED8]" />
+                    <CheckCircle2 size={32} className="text-brand-accent" />
                 </motion.div>
-                <Button onClick={() => router.push('/login')} className="w-full">
+                <Button onClick={() => router.push('/login')} className="w-full bg-brand-accent text-brand-navy hover:bg-[#FBBF24] focus-visible:ring-brand-accent shadow-[0_10px_24px_rgba(245,158,11,0.25)]">
                     Sign in
                 </Button>
             </section>
@@ -200,9 +201,19 @@ function ResetPasswordContent() {
     return (
         <section aria-labelledby="reset-title" className="space-y-6">
             <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1D4ED8]">Password reset</p>
-                <h2 id="reset-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>
-                    {isOtpVerified ? 'Set a new password.' : 'Verify your OTP.'}
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-accent">Password reset</p>
+                <h2 id="reset-title" className="mt-2 text-[1.85rem] leading-tight text-brand-navy">
+                    {isOtpVerified ? (
+                        <>
+                            <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 400 }}>Set a new </span>
+                            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}>password.</span>
+                        </>
+                    ) : (
+                        <>
+                            <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 400 }}>Verify your </span>
+                            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}>OTP.</span>
+                        </>
+                    )}
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
                     {isOtpVerified ? 'Choose a secure password for your account.' : 'Enter the OTP sent to your email to continue.'}
@@ -260,7 +271,7 @@ function ResetPasswordContent() {
                             required
                         />
 
-                        <Button type="submit" className="w-full" disabled={isVerifyingOtp}>
+                        <Button type="submit" className="w-full bg-brand-accent text-brand-navy hover:bg-[#FBBF24] focus-visible:ring-brand-accent shadow-[0_10px_24px_rgba(245,158,11,0.25)]" disabled={isVerifyingOtp}>
                             {isVerifyingOtp ? (
                                 <span className="flex items-center gap-2"><Loader2 size={16} className="animate-spin" />Verifying OTP...</span>
                             ) : 'Verify OTP'}
@@ -341,7 +352,7 @@ function ResetPasswordContent() {
                         </div>
 
                         <div className="pt-1">
-                            <Button type="submit" className="w-full" disabled={isLoading || !isOtpVerified || !passwordsMatch || strengthPercent < 75}>
+                            <Button type="submit" className="w-full bg-brand-accent text-brand-navy hover:bg-[#FBBF24] focus-visible:ring-brand-accent shadow-[0_10px_24px_rgba(245,158,11,0.25)]" disabled={isLoading || !isOtpVerified || !passwordsMatch || strengthPercent < 75}>
                                 {isLoading ? <span className="flex items-center gap-2"><Loader2 size={16} className="animate-spin" />Updating password...</span> : 'Reset password'}
                             </Button>
                         </div>
@@ -358,8 +369,8 @@ export default function ResetPasswordPage() {
             fallback={
                 <section aria-labelledby="reset-title" className="space-y-6">
                     <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1D4ED8]">Password reset</p>
-                        <h2 id="reset-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-accent">Password reset</p>
+                        <h2 id="reset-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-display)' }}>
                             Loading reset form...
                         </h2>
                     </div>

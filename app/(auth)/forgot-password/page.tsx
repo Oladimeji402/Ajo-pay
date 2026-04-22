@@ -56,9 +56,10 @@ export default function ForgotPasswordPage() {
         return (
             <section aria-labelledby="email-sent-title" className="space-y-6">
                 <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1D4ED8]">Email sent</p>
-                    <h2 id="email-sent-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>
-                        Check your inbox.
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-accent">Email sent</p>
+                    <h2 id="email-sent-title" className="mt-2 text-[1.85rem] leading-tight text-brand-navy">
+                        <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 400 }}>Check your </span>
+                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}>inbox.</span>
                     </h2>
                     <p className="mt-1 text-sm text-slate-500">
                         Instructions on the way to{' '}
@@ -77,7 +78,7 @@ export default function ForgotPasswordPage() {
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ delay: 0.3, type: 'spring', stiffness: 300 }}
-                        className="absolute -top-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-[#1D4ED8] shadow-md"
+                        className="absolute -top-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-brand-accent shadow-md"
                     >
                         <CheckCircle2 size={13} className="text-white" />
                     </motion.div>
@@ -96,7 +97,7 @@ export default function ForgotPasswordPage() {
                 <div className="space-y-3">
                     <button
                         onClick={() => router.push(`/reset-password?email=${encodeURIComponent(email.trim())}`)}
-                        className="inline-flex w-full items-center justify-center rounded-xl border border-[#1D4ED8]/20 bg-[#1D4ED8]/5 px-4 py-2.5 text-sm font-semibold text-[#1D4ED8] hover:bg-[#1D4ED8]/10 transition-colors"
+                        className="inline-flex w-full items-center justify-center rounded-xl border border-brand-accent/30 bg-brand-accent/10 px-4 py-2.5 text-sm font-semibold text-brand-accent hover:bg-brand-accent/15 transition-colors"
                     >
                         I have the OTP code
                     </button>
@@ -123,9 +124,10 @@ export default function ForgotPasswordPage() {
     return (
         <section aria-labelledby="forgot-title" className="space-y-6">
             <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1D4ED8]">Password recovery</p>
-                <h2 id="forgot-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>
-                    Forgot your password?
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-accent">Password recovery</p>
+                <h2 id="forgot-title" className="mt-2 text-[1.85rem] leading-tight text-brand-navy">
+                    <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 400 }}>Forgot your </span>
+                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}>password?</span>
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
                     Enter your email and we&apos;ll send a password reset OTP.
@@ -145,7 +147,7 @@ export default function ForgotPasswordPage() {
 
                 <Button
                     type="submit"
-                    className="w-full"
+                    className="w-full bg-brand-accent text-brand-navy hover:bg-[#FBBF24] focus-visible:ring-brand-accent shadow-[0_10px_24px_rgba(245,158,11,0.25)]"
                     disabled={isLoading}
                 >
                     {isLoading ? (
