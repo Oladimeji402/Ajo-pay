@@ -2,154 +2,138 @@
 
 import { Container } from '../ui/Container';
 import { motion } from 'motion/react';
-import { UserPlus, Search, CreditCard, Wallet, CheckCircle2 } from 'lucide-react';
+import { UserPlus, Search, CreditCard, Wallet } from 'lucide-react';
+
+const steps = [
+    {
+        number: '01',
+        title: 'Create your account',
+        description: 'Sign up in under 2 minutes. Quick KYC keeps your circle secure.',
+        icon: UserPlus,
+    },
+    {
+        number: '02',
+        title: 'Join or start a group',
+        description: 'Browse verified Ajo groups or invite your own trusted circle.',
+        icon: Search,
+    },
+    {
+        number: '03',
+        title: 'Automate contributions',
+        description: 'Link your bank account, set a schedule — we handle the rest.',
+        icon: CreditCard,
+    },
+    {
+        number: '04',
+        title: 'Receive your payout',
+        description: 'When it\'s your turn, the full pot lands in your bank. Instantly.',
+        icon: Wallet,
+    },
+];
 
 export const HowItWorks = () => {
-  const steps = [
-    {
-      number: '01',
-      title: 'Create Your Account',
-      description: 'Sign up in under 2 minutes with your phone number and email. Fast KYC verification secures your identity.',
-      icon: <UserPlus size={20} />,
-      gradient: 'from-brand-primary to-blue-500',
-      accentLight: 'bg-brand-primary/10',
-      accentText: 'text-brand-primary',
-      tag: 'Onboarding',
-    },
-    {
-      number: '02',
-      title: 'Join or Create a Group',
-      description: 'Browse verified Ajo groups or create your own and invite friends, family, or colleagues.',
-      icon: <Search size={20} />,
-      gradient: 'from-[#0C1A4D] to-[#1D4ED8]',
-      accentLight: 'bg-brand-primary/10',
-      accentText: 'text-brand-primary',
-      tag: 'Community',
-    },
-    {
-      number: '03',
-      title: 'Automate Contributions',
-      description: 'Link your bank account or card. Set a schedule and we handle automatic deductions — you never miss a turn.',
-      icon: <CreditCard size={20} />,
-      gradient: 'from-[#1D4ED8] to-[#60A5FA]',
-      accentLight: 'bg-brand-primary/10',
-      accentText: 'text-brand-primary',
-      tag: 'Automation',
-    },
-    {
-      number: '04',
-      title: 'Receive Your Payout',
-      description: 'When it\'s your rotation, receive the full pot instantly — direct to your bank account or wallet.',
-      icon: <Wallet size={20} />,
-      gradient: 'from-[#3B82F6] to-[#93C5FD]',
-      accentLight: 'bg-brand-primary/10',
-      accentText: 'text-brand-primary',
-      tag: 'Payout',
-    },
-  ];
+    return (
+        <section
+            id="how-it-works"
+            className="py-24 lg:py-32 relative overflow-hidden"
+            style={{ backgroundColor: '#FAFAF7' }}
+        >
+            {/* Faint amber glow — top center */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full bg-brand-accent/[0.04] blur-[80px] pointer-events-none" />
 
-  return (
-    <section id="how-it-works" className="py-24 lg:py-36 bg-white relative overflow-hidden">
-      {/* Subtle background accent */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-primary/[0.02] rounded-full blur-[120px] -mr-64 -mt-64 pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-brand-primary/[0.025] rounded-full blur-[100px] -ml-48 -mb-48 pointer-events-none" />
+            <Container className="relative z-10">
 
-      <Container className="relative z-10">
-        <div className="grid lg:grid-cols-[1fr_1.35fr] gap-16 lg:gap-24 items-start">
-
-          {/* ─── Left — Sticky title block ─── */}
-          <div className="lg:sticky lg:top-28">
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-            >
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-primary/[0.06] border border-brand-primary/10 mb-6">
-                <span className="w-1.5 h-1.5 bg-brand-primary rounded-full" />
-                <span className="text-[11px] font-bold text-brand-primary uppercase tracking-[0.1em]">How it Works</span>
-              </div>
-
-              <h2 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-extrabold text-brand-navy leading-[1.1] tracking-tight mb-5">
-                Start saving in{' '}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-primary to-brand-electric">
-                  4 simple steps
-                </span>
-              </h2>
-              <p className="text-brand-gray text-[15px] leading-relaxed mb-10 max-w-sm">
-                We&apos;ve digitised the traditional Ajo system — more secure, fully transparent, and always on time.
-              </p>
-
-              {/* Trust row */}
-              <div className="space-y-3">
-                {[
-                  'No hidden fees, ever',
-                  'Instant bank-to-bank transfers',
-                  'Fully automated — zero manual work',
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-2.5">
-                    <CheckCircle2 size={15} className="text-brand-primary flex-shrink-0" />
-                    <span className="text-[13.5px] text-brand-gray font-medium">{item}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Trust pills */}
-              <div className="flex items-center gap-3 mt-10">
-                <div className="px-4 py-2.5 bg-brand-primary/[0.06] rounded-xl border border-brand-primary/10">
-                  <p className="text-[13px] font-extrabold text-brand-navy">Free</p>
-                  <p className="text-[10px] text-brand-gray">No hidden fees</p>
-                </div>
-                <div className="px-4 py-2.5 bg-brand-primary/[0.06] rounded-xl border border-brand-primary/10">
-                  <p className="text-[13px] font-extrabold text-brand-navy">Secure</p>
-                  <p className="text-[10px] text-brand-gray">Verified payouts</p>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* ─── Right — Steps timeline ─── */}
-          <div className="relative">
-            {/* Connecting vertical line */}
-            <div className="absolute top-5 bottom-5 left-[23px] w-px bg-gradient-to-b from-brand-primary/30 via-brand-primary/15 to-transparent" />
-
-            <div className="space-y-4">
-              {steps.map((step, i) => (
+                {/* Section label */}
                 <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: 28 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true, margin: '-50px' }}
-                  transition={{ delay: i * 0.1, duration: 0.5 }}
-                  className="relative flex gap-5 group"
+                    initial={{ opacity: 0, y: 12 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className="mb-14 lg:mb-20"
                 >
-                  {/* Step circle */}
-                  <div className={`relative w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center bg-gradient-to-br ${step.gradient} shadow-lg z-10 group-hover:scale-110 transition-transform duration-300`}>
-                    <span className="text-white text-[11px] font-black tracking-wider">{step.number}</span>
-                  </div>
-
-                  {/* Card */}
-                  <div className="flex-1 bg-white border border-slate-100 rounded-2xl p-5 hover:shadow-xl hover:shadow-slate-900/[0.07] hover:-translate-y-0.5 transition-all duration-300">
-                    <div className="flex items-start gap-4">
-                      <div className={`w-10 h-10 rounded-xl ${step.accentLight} ${step.accentText} flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300`}>
-                        {step.icon}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <h4 className="font-bold text-brand-navy text-[15px]">{step.title}</h4>
-                          <span className={`hidden sm:inline-block text-[9px] font-bold px-2 py-0.5 rounded-full ${step.accentLight} ${step.accentText} uppercase tracking-wider`}>
-                            {step.tag}
-                          </span>
-                        </div>
-                        <p className="text-[13px] text-brand-gray leading-relaxed">{step.description}</p>
-                      </div>
-                    </div>
-                  </div>
+                    <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-brand-accent mb-4">
+                        How It Works
+                    </p>
+                    <h2
+                        className="text-brand-navy leading-[1.04] max-w-md"
+                        style={{ fontSize: 'clamp(2rem, 4vw, 2.8rem)' }}
+                    >
+                        <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 400 }}>Four steps </span>
+                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.03em' }}>to your first payout.</span>
+                    </h2>
                 </motion.div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </Container>
-    </section>
-  );
+
+                {/* Steps — horizontal on desktop, vertical on mobile */}
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-4 relative">
+
+                    {/* Connecting line — desktop only */}
+                    <div className="hidden lg:block absolute top-[28px] left-[calc(12.5%+8px)] right-[calc(12.5%+8px)] h-px bg-gradient-to-r from-transparent via-brand-accent/20 to-transparent pointer-events-none" />
+
+                    {steps.map((step, i) => {
+                        const Icon = step.icon;
+                        return (
+                            <motion.div
+                                key={i}
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true, margin: '-40px' }}
+                                transition={{ delay: i * 0.1, duration: 0.5 }}
+                                className="relative group"
+                            >
+                                {/* Step number — the dominant visual element */}
+                                <div className="relative flex items-center gap-4 mb-6">
+                                    <div
+                                        className="w-14 h-14 rounded-2xl flex items-center justify-center font-black text-[13px] tracking-widest flex-shrink-0 transition-all duration-300 group-hover:scale-105"
+                                        style={{
+                                            fontFamily: 'var(--font-display)',
+                                            backgroundColor: i === 0 ? '#F59E0B' : 'rgba(15,23,42,0.06)',
+                                            color: i === 0 ? '#0F172A' : 'rgba(15,23,42,0.35)',
+                                            border: i === 0 ? 'none' : '1px solid rgba(15,23,42,0.08)',
+                                        }}
+                                    >
+                                        {step.number}
+                                    </div>
+
+                                    {/* Icon */}
+                                    <div className="w-9 h-9 rounded-xl bg-brand-navy/[0.06] flex items-center justify-center text-brand-navy/40 group-hover:text-brand-navy/70 transition-colors">
+                                        <Icon size={17} />
+                                    </div>
+                                </div>
+
+                                <h3
+                                    className="font-bold text-brand-navy text-[16px] mb-2 leading-tight"
+                                    style={{ fontFamily: 'var(--font-display)' }}
+                                >
+                                    {step.title}
+                                </h3>
+                                <p className="text-brand-gray text-[13.5px] leading-relaxed">
+                                    {step.description}
+                                </p>
+                            </motion.div>
+                        );
+                    })}
+                </div>
+
+                {/* Bottom footnote */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.5 }}
+                    className="mt-14 pt-8 border-t border-brand-navy/[0.06] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                >
+                    <p className="text-[13px] text-brand-gray">
+                        No hidden fees. No manual tracking. No missed turns.
+                    </p>
+                    <a
+                        href="/signup"
+                        className="inline-flex items-center gap-1.5 text-[13px] font-bold text-brand-navy hover:text-brand-accent transition-colors"
+                    >
+                        Start your circle
+                        <span className="text-brand-accent">→</span>
+                    </a>
+                </motion.div>
+
+            </Container>
+        </section>
+    );
 };

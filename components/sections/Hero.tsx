@@ -3,368 +3,334 @@
 import { Container } from '../ui/Container';
 import { Button } from '../ui/Button';
 import { motion } from 'motion/react';
-import {
-    ArrowRight,
-    Users,
-    ShieldCheck,
-    TrendingUp,
-    Bell,
-    Eye,
-    ArrowUpRight,
-    ArrowDownLeft,
-    LayoutGrid,
-    ChevronRight,
-} from 'lucide-react';
+import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 
-// ─── Phone Mockup ────────────────────────────────────────────────────────────
-const PhoneMockup = () => (
-    <div className="relative w-full flex justify-center items-center select-none">
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-64 h-72 rounded-full bg-brand-primary/15 blur-[80px]" />
-        </div>
+// ─── Ajo Rotation Circle ──────────────────────────────────────────────────────
+// Replaces the generic phone mockup with a visual that actually explains
+// what Ajo is — a rotating savings circle where each member gets their turn.
+const AjoCircle = () => {
+    const SIZE = 340;
+    const CX = SIZE / 2;
+    const CY = SIZE / 2;
+    const R = 118;
+    const NODE_R = 26;
 
-        <motion.div
-            animate={{ y: [0, -12, 0] }}
-            transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-            className="relative z-10 w-[220px] rounded-[2.5rem] bg-[#0F172A] overflow-hidden"
-            style={{
-                border: '6px solid #1e2d4a',
-                boxShadow: '0 25px 60px rgba(27,47,107,0.35), 0 8px 24px rgba(0,0,0,0.25)',
-            }}
-        >
-            {/* Dynamic Island */}
-            <div className="flex justify-center pt-2 pb-0.5">
-                <div className="w-16 h-4 rounded-full bg-black flex items-center justify-center gap-1">
-                    <div className="w-1 h-1 rounded-full bg-[#1a1a1a]" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#111]" />
-                </div>
+    const members = [
+        { initials: 'OJ', month: 'Jan', status: 'paid' as const },
+        { initials: 'CE', month: 'Feb', status: 'paid' as const },
+        { initials: 'IK', month: 'Mar', status: 'current' as const },
+        { initials: 'AU', month: 'Apr', status: 'upcoming' as const },
+        { initials: 'BT', month: 'May', status: 'upcoming' as const },
+        { initials: 'ED', month: 'Jun', status: 'upcoming' as const },
+    ];
+
+    const positions = members.map((_, i) => ({
+        x: CX + R * Math.cos(-Math.PI / 2 + (2 * Math.PI * i) / members.length),
+        y: CY + R * Math.sin(-Math.PI / 2 + (2 * Math.PI * i) / members.length),
+    }));
+
+    return (
+        <div className="relative select-none" style={{ width: SIZE, height: SIZE }}>
+            {/* SVG: ring + connector lines */}
+            <svg
+                width={SIZE}
+                height={SIZE}
+                viewBox={`0 0 ${SIZE} ${SIZE}`}
+                className="absolute inset-0"
+            >
+                {/* Outer ambient glow ring */}
+                <circle cx={CX} cy={CY} r={R + 30} fill="none"
+                    stroke="rgba(245,158,11,0.06)" strokeWidth="40" />
+
+                {/* Main orbit ring */}
+                <circle cx={CX} cy={CY} r={R} fill="none"
+                    stroke="rgba(255,255,255,0.07)" strokeWidth="1" strokeDasharray="4 6" />
+
+                {/* Paid arc (Jan → current Mar) — spans 2 of 6 segments = 120° */}
+                <circle cx={CX} cy={CY} r={R} fill="none"
+                    stroke="rgba(37,99,235,0.35)" strokeWidth="2.5"
+                    strokeDasharray={`${(2 / 6) * 2 * Math.PI * R} ${2 * Math.PI * R}`}
+                    strokeLinecap="round"
+                    transform={`rotate(-90 ${CX} ${CY})`}
+                />
+
+                {/* Connector lines center → each node */}
+                {positions.map((pos, i) => (
+                    <line
+                        key={i}
+                        x1={CX} y1={CY}
+                        x2={pos.x} y2={pos.y}
+                        stroke={members[i].status === 'current'
+                            ? 'rgba(245,158,11,0.20)'
+                            : members[i].status === 'paid'
+                                ? 'rgba(37,99,235,0.15)'
+                                : 'rgba(255,255,255,0.04)'}
+                        strokeWidth="1"
+                    />
+                ))}
+            </svg>
+
+            {/* Center — pot amount */}
+            <div
+                className="absolute flex flex-col items-center justify-center rounded-full bg-white/[0.05] border border-white/[0.08] backdrop-blur-sm"
+                style={{
+                    width: 80, height: 80,
+                    left: CX - 40, top: CY - 40,
+                }}
+            >
+                <span className="text-white font-black text-[13px] tracking-tight leading-none">₦600K</span>
+                <span className="text-white/35 text-[8px] mt-0.5 uppercase tracking-widest">Group Pot</span>
             </div>
 
-            <div className="bg-[#F8FAFC] flex flex-col rounded-b-[2rem] overflow-hidden">
-                {/* Status Bar */}
-                <div className="flex items-center justify-between px-3 py-1">
-                    <span className="text-[8px] font-bold text-[#0F172A]">9:41</span>
-                    <div className="flex items-center gap-1">
-                        <div className="flex gap-[2px] items-end h-2">
-                            {[3, 5, 7, 8].map((h, i) => (
-                                <div key={i} className="w-[2px] rounded-sm bg-[#0F172A]" style={{ height: `${h}px` }} />
-                            ))}
-                        </div>
-                        <div className="flex items-center ml-0.5">
-                            <div className="w-4 h-2 rounded-sm border border-[#0F172A] flex items-center p-[1px]">
-                                <div className="w-3/4 h-full bg-[#3B82F6] rounded-sm" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            {/* Member nodes */}
+            {members.map((member, i) => {
+                const pos = positions[i];
+                const isPaid = member.status === 'paid';
+                const isCurrent = member.status === 'current';
 
-                {/* App Header */}
-                <div className="flex items-center justify-between px-3 py-1.5">
-                    <div className="flex items-center gap-1.5">
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#60A5FA] to-[#1D4ED8] flex items-center justify-center text-[8px] font-bold text-white">
-                            F
-                        </div>
-                        <div>
-                            <p className="text-[7px] text-[#64748b] leading-none">Welcome back,</p>
-                            <p className="text-[9px] font-bold text-[#0F172A] leading-tight">Franklyn</p>
-                        </div>
-                    </div>
-                    <div className="w-5 h-5 bg-white rounded-full shadow-sm border border-[#E2E8F0] flex items-center justify-center relative">
-                        <Bell size={9} className="text-[#0F172A]" />
-                        <span className="absolute top-0 right-0 w-1 h-1 bg-red-500 rounded-full border border-white" />
-                    </div>
-                </div>
+                return (
+                    <div
+                        key={i}
+                        className="absolute flex flex-col items-center"
+                        style={{
+                            left: pos.x - NODE_R,
+                            top: pos.y - NODE_R,
+                            width: NODE_R * 2,
+                        }}
+                    >
+                        {/* Pulsing ring for current */}
+                        {isCurrent && (
+                            <div
+                                className="absolute rounded-full border border-brand-accent/40 animate-ping"
+                                style={{
+                                    width: NODE_R * 2 + 16,
+                                    height: NODE_R * 2 + 16,
+                                    top: -8, left: -8,
+                                }}
+                            />
+                        )}
 
-                {/* Balance Card */}
-                <div className="mx-3 mb-1.5 rounded-xl bg-gradient-to-br from-[#1B2F6B] to-[#0F172A] p-2.5 text-white relative overflow-hidden">
-                    <div className="absolute -top-4 -right-4 w-12 h-12 bg-white/10 rounded-full blur-xl" />
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-1 mb-0.5">
-                            <span className="text-[7px] opacity-80 font-medium">Total Balance</span>
-                            <Eye size={7} className="opacity-60" />
+                        {/* Node circle */}
+                        <div
+                            className="rounded-full flex items-center justify-center text-[10px] font-black relative z-10"
+                            style={{
+                                width: NODE_R * 2,
+                                height: NODE_R * 2,
+                                backgroundColor: isCurrent
+                                    ? '#F59E0B'
+                                    : isPaid
+                                        ? 'rgba(37,99,235,0.25)'
+                                        : 'rgba(255,255,255,0.06)',
+                                border: `1.5px solid ${isCurrent
+                                    ? '#F59E0B'
+                                    : isPaid
+                                        ? 'rgba(37,99,235,0.5)'
+                                        : 'rgba(255,255,255,0.10)'}`,
+                                color: isCurrent ? '#0F172A' : isPaid ? '#93C5FD' : 'rgba(255,255,255,0.35)',
+                            }}
+                        >
+                            {isPaid ? <CheckCircle2 size={13} /> : member.initials}
                         </div>
-                        <p className="text-[15px] font-bold tracking-tight mb-1.5">₦1,250,000</p>
-                        <div className="flex items-center gap-1 bg-white/10 rounded-md px-1.5 py-0.5 w-fit">
-                            <TrendingUp size={7} className="text-[#60A5FA]" />
-                            <span className="text-[7px] font-bold text-[#60A5FA]">+12.4% this month</span>
-                        </div>
-                    </div>
-                </div>
 
-                {/* Quick Actions */}
-                <div className="mx-3 mb-1.5 grid grid-cols-3 gap-1.5">
-                    {[
-                        { icon: <Users size={10} />, label: 'Groups', bg: 'bg-[#E8EEF8]', color: 'text-[#1B2F6B]' },
-                        { icon: <ArrowUpRight size={10} />, label: 'Send', bg: 'bg-[#EFF6FF]', color: 'text-[#1D4ED8]' },
-                        { icon: <LayoutGrid size={10} />, label: 'More', bg: 'bg-[#EFF6FF]', color: 'text-[#1D4ED8]' },
-                    ].map((a, i) => (
-                        <div key={i} className={`${a.bg} rounded-lg py-2 flex flex-col items-center gap-0.5`}>
-                            <div className={`${a.color}`}>{a.icon}</div>
-                            <span className="text-[7px] font-bold text-[#0F172A]">{a.label}</span>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Transaction List */}
-                <div className="mx-3 bg-white rounded-lg p-2 shadow-sm border border-[#E2E8F0]">
-                    <div className="flex items-center justify-between mb-1">
-                        <p className="text-[8px] font-bold text-[#0F172A]">Recent Activity</p>
-                        <span className="text-[7px] font-bold text-[#1D4ED8] flex items-center gap-0.5">
-                            See All <ChevronRight size={7} />
+                        {/* Month label below node */}
+                        <span
+                            className="text-[8px] mt-1 font-semibold tracking-wide"
+                            style={{
+                                color: isCurrent
+                                    ? '#F59E0B'
+                                    : isPaid
+                                        ? 'rgba(147,197,253,0.7)'
+                                        : 'rgba(255,255,255,0.20)',
+                            }}
+                        >
+                            {member.month}
                         </span>
                     </div>
-                    {[
-                        { label: 'Lagos Techies Ajo', sub: 'Oct 12', amount: '−₦50,000', credit: false },
-                        { label: 'Family Savings', sub: 'Sep 28', amount: '+₦450,000', credit: true },
-                    ].map((tx, i) => (
-                        <div key={i} className="flex items-center justify-between py-1 border-b border-[#F1F5F9] last:border-0">
-                            <div className="flex items-center gap-1.5">
-                                <div className={`w-4 h-4 rounded-full flex items-center justify-center ${tx.credit ? 'bg-[#1D4ED8]/10' : 'bg-[#1B2F6B]/10'}`}>
-                                    {tx.credit ? <ArrowDownLeft size={8} className="text-[#1D4ED8]" /> : <ArrowUpRight size={8} className="text-[#1B2F6B]" />}
-                                </div>
-                                <div>
-                                    <p className="text-[7px] font-bold text-[#0F172A] leading-none">{tx.label}</p>
-                                    <p className="text-[6px] text-[#94a3b8]">{tx.sub}</p>
-                                </div>
-                            </div>
-                            <p className={`text-[7px] font-bold ${tx.credit ? 'text-[#1D4ED8]' : 'text-[#0F172A]'}`}>{tx.amount}</p>
-                        </div>
-                    ))}
-                </div>
+                );
+            })}
 
-                {/* Bottom Nav */}
-                <div className="mx-3 mt-1.5 mb-1.5 flex items-center justify-around py-1.5">
-                    {[
-                        { icon: <LayoutGrid size={9} />, label: 'Home', active: true },
-                        { icon: <Users size={9} />, label: 'Groups', active: false },
-                        { icon: <TrendingUp size={9} />, label: 'Activity', active: false },
-                        { icon: <ShieldCheck size={9} />, label: 'Settings', active: false },
-                    ].map((item) => (
-                        <div key={item.label} className="flex flex-col items-center gap-0.5">
-                            <div className={`w-5 h-5 rounded-md flex items-center justify-center ${item.active ? 'bg-brand-primary/10 text-brand-primary' : 'text-[#94a3b8]'}`}>
-                                {item.icon}
-                            </div>
-                            <span className={`text-[5px] font-bold ${item.active ? 'text-brand-primary' : 'text-[#94a3b8]'}`}>{item.label}</span>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        </motion.div>
-    </div>
-);
+            {/* "Your turn" tooltip on current node */}
+            <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.2, duration: 0.5 }}
+                className="absolute bg-brand-accent text-[#0F172A] text-[9px] font-black px-2 py-1 rounded-full whitespace-nowrap shadow-lg shadow-brand-accent/30"
+                style={{
+                    left: positions[2].x + NODE_R + 6,
+                    top: positions[2].y - 12,
+                }}
+            >
+                ← Payout this month
+            </motion.div>
+        </div>
+    );
+};
 
-// ─── Hero Section ────────────────────────────────────────────────────────────
+// ─── Hero ──────────────────────────────────────────────────────────────────────
 export const Hero = () => {
     return (
-        <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-[#030d1f]">
+        <section className="relative min-h-screen flex flex-col justify-center overflow-hidden bg-[#060F20]">
 
-            {/* ─── Background orbs + grid ─── */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                <div className="absolute -top-[20%] -right-[8%] w-[60%] h-[70%] rounded-full bg-brand-primary/[0.10] blur-[130px]" />
-                <div className="absolute -bottom-[25%] -left-[8%] w-[55%] h-[65%] rounded-full bg-brand-primary/[0.12] blur-[130px]" />
-                <div
-                    className="absolute inset-0"
-                    style={{
-                        backgroundImage: 'radial-gradient(rgba(255,255,255,0.07) 0.5px, transparent 0.5px)',
-                        backgroundSize: '28px 28px',
-                    }}
-                />
-            </div>
+            {/* Subtle dot grid */}
+            <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                    backgroundImage: 'radial-gradient(rgba(255,255,255,0.04) 0.5px, transparent 0.5px)',
+                    backgroundSize: '30px 30px',
+                }}
+            />
 
-            <Container className="relative z-10 w-full pt-20 pb-28 lg:pt-24 lg:pb-36">
-                <div className="grid lg:grid-cols-2 gap-14 lg:gap-20 items-center">
+            {/* Ambient glow — anchored to hero visual area */}
+            <div className="absolute top-1/2 right-[10%] -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-brand-accent/[0.04] blur-[120px] pointer-events-none" />
+            <div className="absolute top-1/2 right-[10%] -translate-y-1/2 w-[300px] h-[300px] rounded-full bg-brand-primary/[0.07] blur-[80px] pointer-events-none" />
 
-                    {/* ─── LEFT — Copy ─── */}
+            <Container className="relative z-10 w-full pt-20 pb-24 lg:pt-28 lg:pb-32">
+                <div className="grid lg:grid-cols-[1fr_auto] gap-12 lg:gap-20 items-center">
+
+                    {/* ─── LEFT — Typographic lead ─── */}
                     <motion.div
-                        initial={{ opacity: 0, y: 36 }}
+                        initial={{ opacity: 0, y: 28 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.7, ease: [0.21, 0.45, 0.27, 0.9] }}
+                        transition={{ duration: 0.6, ease: [0.21, 0.45, 0.27, 0.9] }}
+                        className="max-w-[600px]"
                     >
-                        {/* Live badge */}
+                        {/* Eyebrow */}
                         <motion.div
-                            initial={{ opacity: 0, x: -16 }}
+                            initial={{ opacity: 0, x: -12 }}
                             animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.15 }}
-                            className="inline-flex items-center gap-2.5 px-3.5 py-2 rounded-full bg-brand-primary/[0.15] border border-brand-primary/[0.25] mb-8"
+                            transition={{ delay: 0.08 }}
+                            className="flex items-center gap-2.5 mb-7"
                         >
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-electric opacity-75" />
-                                <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-electric" />
+                            <span className="relative flex h-1.5 w-1.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-accent opacity-75" />
+                                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brand-accent" />
                             </span>
-                            <span className="text-[12.5px] font-semibold text-brand-electric">
-                                Now live for Nigerian savers
+                            <span className="text-[11px] font-bold tracking-[0.18em] uppercase text-white/40">
+                                Rotating savings · Verified groups
                             </span>
                         </motion.div>
 
-                        {/* Headline */}
+                        {/* Headline — tradition (serif italic) meets technology (sans bold) */}
                         <motion.h1
-                            initial={{ opacity: 0, y: 24 }}
+                            initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.2, duration: 0.65 }}
-                            className="text-[2.75rem] sm:text-[3.2rem] lg:text-[3.75rem] xl:text-[4.2rem] font-extrabold leading-[1.06] tracking-[-0.028em] mb-6"
+                            transition={{ delay: 0.14, duration: 0.55 }}
+                            className="leading-[0.92] mb-7"
+                            style={{ fontSize: 'clamp(3.8rem, 8vw, 6.5rem)' }}
                         >
-                            <span className="text-white">Save Together</span>
-                            <span className="text-white/20">.</span>
-                            <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#60A5FA] to-[#93C5FD]">
-                                Grow Together
+                            {/* "Ajo," — italic serif: represents the ancient tradition */}
+                            <span
+                                style={{
+                                    fontFamily: 'var(--font-serif)',
+                                    fontStyle: 'italic',
+                                    fontWeight: 400,
+                                    color: '#F59E0B',
+                                    letterSpacing: '-0.02em',
+                                    display: 'block',
+                                }}
+                            >
+                                Ajo,
                             </span>
-                            <span className="text-white/20">.</span>
+                            {/* "automated." — bold geometric sans: represents the technology */}
+                            <span
+                                style={{
+                                    fontFamily: 'var(--font-display)',
+                                    fontWeight: 800,
+                                    color: '#FFFFFF',
+                                    letterSpacing: '-0.04em',
+                                    display: 'block',
+                                }}
+                            >
+                                automated.
+                            </span>
                         </motion.h1>
 
-                        {/* Subtitle */}
+                        {/* Supporting line */}
                         <motion.p
-                            initial={{ opacity: 0, y: 18 }}
+                            initial={{ opacity: 0, y: 14 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.28 }}
-                            className="text-slate-400 text-[16px] sm:text-[17px] leading-[1.75] mb-10 max-w-[500px]"
+                            transition={{ delay: 0.22 }}
+                            className="text-white/50 text-[16px] sm:text-[17px] leading-[1.65] mb-10 max-w-[440px]"
                         >
-                            The modern platform for Nigeria&apos;s trusted{' '}
-                            <span className="text-white font-medium">Ajo savings tradition</span>.
-                            Automate contributions, track every naira, and receive payouts reliably — all from your phone.
+                            Contribute on schedule, track every naira, receive your payout on time —
+                            {' '}<span className="text-white/80">no spreadsheets, no chasing.</span>
                         </motion.p>
 
                         {/* CTAs */}
                         <motion.div
-                            initial={{ opacity: 0, y: 16 }}
+                            initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.35 }}
+                            transition={{ delay: 0.3 }}
                             className="flex flex-col sm:flex-row gap-3 mb-12"
                         >
                             <Link href="/signup" className="w-full sm:w-auto">
-                                <Button
-                                    size="lg"
-                                    className="w-full sm:w-auto text-[15px] rounded-2xl bg-brand-primary hover:bg-brand-primary-hover shadow-xl shadow-brand-primary/30 border-0 group justify-center"
+                                <button
+                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 text-[15px] font-bold px-8 py-4 rounded-2xl group transition-all"
+                                    style={{
+                                        backgroundColor: '#F59E0B',
+                                        color: '#0F172A',
+                                        boxShadow: '0 12px 32px rgba(245,158,11,0.25)',
+                                    }}
+                                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#FBBF24')}
+                                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#F59E0B')}
                                 >
-                                    Start Saving — It&apos;s Free
-                                    <ArrowRight size={16} className="ml-2 group-hover:translate-x-0.5 transition-transform" />
-                                </Button>
+                                    Join a Group — Free
+                                    <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+                                </button>
                             </Link>
                             <a href="#how-it-works" className="w-full sm:w-auto">
-                                <button className="w-full inline-flex items-center justify-center text-[15px] font-semibold px-8 py-4 rounded-2xl text-white/80 hover:text-white bg-white/[0.06] hover:bg-white/[0.10] border border-white/[0.10] transition-all">
-                                    See How It Works
+                                <button className="w-full inline-flex items-center justify-center text-[15px] font-semibold px-8 py-4 rounded-2xl text-white/60 hover:text-white border border-white/[0.08] hover:border-white/[0.16] bg-transparent transition-all">
+                                    How It Works
                                 </button>
                             </a>
                         </motion.div>
 
-                        {/* Social proof */}
+                        {/* Stats strip — real proof */}
                         <motion.div
-                            initial={{ opacity: 0, y: 12 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.43 }}
-                            className="flex items-center gap-4"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.42 }}
+                            className="flex flex-wrap items-center gap-6 sm:gap-8"
                         >
-                            <div className="flex -space-x-2.5">
-                                {[
-                                    { initials: 'OJ', color: '#0C1A4D' },
-                                    { initials: 'CE', color: '#1D4ED8' },
-                                    { initials: 'IK', color: '#2563EB' },
-                                    { initials: 'AU', color: '#3B82F6' },
-                                    { initials: 'BT', color: '#60A5FA' },
-                                ].map((u, i) => (
-                                    <div
-                                        key={i}
-                                        className="w-8 h-8 rounded-full border-2 border-[#030d1f] flex items-center justify-center text-[9px] font-black text-white"
-                                        style={{ backgroundColor: u.color }}
-                                    >
-                                        {u.initials}
-                                    </div>
-                                ))}
-                            </div>
-                            <div>
-                                <p className="text-[12px] text-white/80 font-medium">Join the AjoPay community</p>
-                                <p className="text-[11px] text-slate-500 mt-0.5">Your savings circle, digitised</p>
-                            </div>
+                            {[
+                                { value: '₦0', label: 'Missed payouts' },
+                                { value: '100%', label: 'Verified groups' },
+                                { value: 'Live', label: 'Real-time tracking' },
+                            ].map((stat, i) => (
+                                <div key={i} className={`${i > 0 ? 'pl-6 sm:pl-8 border-l border-white/[0.08]' : ''}`}>
+                                    <p className="text-white font-black text-[1.2rem] leading-none tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>
+                                        {stat.value}
+                                    </p>
+                                    <p className="text-white/35 text-[11px] mt-1 font-medium">{stat.label}</p>
+                                </div>
+                            ))}
                         </motion.div>
                     </motion.div>
 
-                    {/* ─── RIGHT — Phone + Floating Cards ─── */}
+                    {/* ─── RIGHT — Ajo rotation circle ─── */}
                     <motion.div
-                        initial={{ opacity: 0, y: 36 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.7, delay: 0.22 }}
-                        className="relative flex justify-center items-center min-h-[540px] lg:min-h-[600px]"
+                        initial={{ opacity: 0, scale: 0.92 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.7, delay: 0.25, ease: [0.21, 0.45, 0.27, 0.9] }}
+                        className="hidden lg:flex flex-col items-center gap-4"
                     >
-                        {/* Glow behind phone */}
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <div className="w-80 h-80 rounded-full bg-brand-primary/[0.20] blur-[90px]" />
-                            <div className="absolute w-56 h-56 rounded-full bg-brand-primary/[0.18] blur-[80px]" />
+                        {/* Label above */}
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.03]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-brand-accent animate-pulse" />
+                            <span className="text-[11px] text-white/40 font-semibold tracking-wide">Active rotation · Lagos Techies</span>
                         </div>
 
-                        {/* Floating card — Payout received */}
-                        <motion.div
-                            initial={{ opacity: 0, x: -28, y: 10 }}
-                            animate={{ opacity: 1, x: 0, y: 0 }}
-                            transition={{ delay: 0.9, duration: 0.55 }}
-                            style={{ animation: 'float-y 5s ease-in-out infinite' }}
-                            className="absolute top-[6%] -left-2 lg:-left-10 z-20 bg-white rounded-2xl p-3.5 shadow-2xl shadow-black/50 w-52"
-                        >
-                            <div className="flex items-center gap-2.5 mb-2">
-                                <div className="w-9 h-9 bg-brand-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                                    <TrendingUp size={16} className="text-brand-primary" />
-                                </div>
-                                <div>
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Payout Received</p>
-                                    <p className="text-[15px] font-extrabold text-slate-900 leading-tight">+₦450,000</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                                <div className="w-1.5 h-1.5 rounded-full bg-brand-primary animate-pulse flex-shrink-0" />
-                                <p className="text-[10px] text-slate-400">Family Savings · Just now</p>
-                            </div>
-                        </motion.div>
+                        <AjoCircle />
 
-                        {/* Floating card — Group progress */}
-                        <motion.div
-                            initial={{ opacity: 0, x: 28, y: 10 }}
-                            animate={{ opacity: 1, x: 0, y: 0 }}
-                            transition={{ delay: 1.1, duration: 0.55 }}
-                            style={{ animation: 'float-y 6s ease-in-out infinite 1.5s' }}
-                            className="absolute bottom-[16%] -right-2 lg:-right-8 z-20 bg-white rounded-2xl p-3.5 shadow-2xl shadow-black/50 w-[200px]"
-                        >
-                            <div className="flex items-center gap-2.5 mb-2.5">
-                                <div className="w-9 h-9 bg-brand-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                                    <Users size={16} className="text-brand-primary" />
-                                </div>
-                                <div>
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Lagos Techies</p>
-                                    <p className="text-[12px] font-extrabold text-slate-900 leading-tight">8 / 10 paid ✓</p>
-                                </div>
-                            </div>
-                            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: '80%' }}
-                                    transition={{ delay: 1.6, duration: 1, ease: 'easeOut' }}
-                                    className="h-full bg-gradient-to-r from-brand-primary to-[#60A5FA] rounded-full"
-                                />
-                            </div>
-                        </motion.div>
-
-                        {/* Floating chip — Security */}
-                        <motion.div
-                            initial={{ opacity: 0, x: -22 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 1.3, duration: 0.5 }}
-                            className="absolute top-[50%] -left-2 lg:-left-10 z-20 bg-white rounded-2xl p-2.5 shadow-xl shadow-black/30 flex items-center gap-2 border border-slate-100"
-                        >
-                            <div className="w-7 h-7 bg-brand-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <ShieldCheck size={13} className="text-brand-primary" />
-                            </div>
-                            <div>
-                                <p className="text-[11px] font-bold text-slate-900 leading-tight">Bank-Grade Security</p>
-                                <p className="text-[9px] text-slate-400">256-bit SSL · Always on</p>
-                            </div>
-                        </motion.div>
-
-                        <PhoneMockup />
+                        {/* Label below */}
+                        <p className="text-[11px] text-white/25 font-medium tracking-wide">
+                            6 members · ₦100,000 / month
+                        </p>
                     </motion.div>
 
                 </div>
             </Container>
-
-
 
         </section>
     );

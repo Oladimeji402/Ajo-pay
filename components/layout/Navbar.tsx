@@ -21,7 +21,6 @@ export const Navbar = () => {
     const navLinks = [
         { name: 'How it Works', href: '#how-it-works' },
         { name: 'Features', href: '#features' },
-        { name: 'Security', href: '#security' },
         { name: 'Testimonials', href: '#testimonials' },
     ];
 
@@ -64,10 +63,19 @@ export const Navbar = () => {
                         </span>
                     </Link>
                     <Link href="/signup" className="hidden md:block">
-                        <Button size="sm" className="rounded-full px-5 shadow-lg shadow-brand-primary/20 hover:shadow-brand-primary/30 transition-shadow">
+                        <button
+                            className="inline-flex items-center gap-1.5 text-[13px] font-bold px-5 py-2.5 rounded-full transition-all"
+                            style={{
+                                backgroundColor: '#F59E0B',
+                                color: '#0F172A',
+                                boxShadow: '0 4px 16px rgba(245,158,11,0.25)',
+                            }}
+                            onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#FBBF24')}
+                            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#F59E0B')}
+                        >
                             Get Started
-                            <ArrowRight size={14} className="ml-1.5" />
-                        </Button>
+                            <ArrowRight size={13} />
+                        </button>
                     </Link>
 
                     <button

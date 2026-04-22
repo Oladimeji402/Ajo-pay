@@ -336,7 +336,7 @@ export default function SignUpPage() {
                         </div>
                     </label>
                     <span className="text-sm text-slate-600 leading-relaxed">
-                        I agree to Subtech Ajo Solution&apos;s{' '}
+                        I agree to AjoPay&apos;s{' '}
                         <Link href="/terms" className="font-semibold text-brand-navy underline decoration-dotted underline-offset-4 hover:text-brand-primary transition-colors">Terms of Service</Link>
                         {' '}and{' '}
                         <Link href="/privacy" className="font-semibold text-brand-navy underline decoration-dotted underline-offset-4 hover:text-brand-primary transition-colors">Privacy Policy</Link>

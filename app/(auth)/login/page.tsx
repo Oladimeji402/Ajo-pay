@@ -145,10 +145,10 @@ function LoginContent() {
 
             <div className="border-t border-slate-100 pt-5">
                 <p className="text-center text-sm text-slate-500">
-                    New to Subtech Ajo Solution?{' '}
+                    New to AjoPay?{' '}
                     <Link
                         href="/signup"
-                        className="font-semibold text-brand-navy hover:text-[#1D4ED8] transition-colors"
+                        className="font-semibold text-brand-navy hover:text-brand-primary transition-colors"
                     >
                         Create an account
                     </Link>
