@@ -2,28 +2,15 @@
 
 import { ReactNode } from 'react';
 import { motion } from 'motion/react';
-import { Public_Sans, Space_Grotesk } from 'next/font/google';
 import { BrandLogo } from '../ui/BrandLogo';
 
 interface AuthLayoutProps {
     children: ReactNode;
 }
 
-const headingFont = Space_Grotesk({
-    subsets: ['latin'],
-    variable: '--font-auth-heading',
-    weight: ['500', '600', '700'],
-});
-
-const bodyFont = Public_Sans({
-    subsets: ['latin'],
-    variable: '--font-auth-body',
-    weight: ['400', '500', '600', '700'],
-});
-
 export const AuthLayout = ({ children }: AuthLayoutProps) => {
     return (
-        <div className={`${headingFont.variable} ${bodyFont.variable} min-h-screen bg-[#F0F4F8]`} style={{ fontFamily: 'var(--font-auth-body)' }}>
+        <div className="min-h-screen bg-brand-warm" style={{ fontFamily: 'var(--font-sans)' }}>
             <a href="#auth-main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-white focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-brand-navy">
                 Skip to authentication form
             </a>
@@ -31,10 +18,9 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
             <div className="flex min-h-screen">
                 {/* Left brand panel */}
                 <aside className="relative hidden w-[42%] min-w-95 overflow-hidden lg:flex lg:flex-col" aria-hidden="true">
-                    {/* Deep navy base */}
-                    <div className="absolute inset-0 bg-[#0B1F3A]" />
-                    {/* Subtle warm accent — bottom right only */}
-                    <div className="absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-[#C5843A]/20 blur-3xl" />
+                    <div className="absolute inset-0 bg-[#060F20]" />
+                    <div className="absolute -top-28 -left-20 h-80 w-80 rounded-full bg-brand-primary/15 blur-3xl" />
+                    <div className="absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-brand-accent/20 blur-3xl" />
                     {/* Faint circle motif — abstract ajo ring */}
                     <svg className="absolute inset-0 h-full w-full opacity-[0.07]" viewBox="0 0 480 640" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <circle cx="240" cy="320" r="210" stroke="white" strokeWidth="1.5" />
@@ -65,11 +51,13 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
                             transition={{ delay: 0.15, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                             className="mt-auto"
                         >
-                            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#60A5FA]/80">
+                            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-brand-accent/80">
                                 Ajo · Digitised
                             </p>
-                            <h1 className="mt-4 text-[2.5rem] font-semibold leading-[1.08] tracking-[-0.02em] text-white" style={{ fontFamily: 'var(--font-auth-heading)' }}>
-                                Your circle<br />saves together.
+                            <h1 className="mt-4 leading-[1.02] tracking-tight text-white" style={{ fontSize: 'clamp(2.2rem,3.2vw,3rem)' }}>
+                                <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 400 }}>Your circle</span>
+                                <br />
+                                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.03em' }}>saves together.</span>
                             </h1>
                             <p className="mt-4 max-w-[280px] leading-relaxed text-white/50" style={{ fontSize: '14px' }}>
                                 Nigeria&apos;s trusted Ajo tradition — now digital, verified, and always on time.
@@ -91,7 +79,7 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
                                         { value: 'Live', label: 'Real-time tracking' },
                                     ].map((stat) => (
                                         <div key={stat.label}>
-                                            <p className="text-xl font-semibold text-white" style={{ fontFamily: 'var(--font-auth-heading)' }}>{stat.value}</p>
+                                            <p className="text-xl font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>{stat.value}</p>
                                             <p className="mt-0.5 text-xs text-white/35">{stat.label}</p>
                                         </div>
                                     ))}
@@ -102,7 +90,7 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
                 </aside>
 
                 {/* Right form panel */}
-                <main id="auth-main" className="flex flex-1 flex-col bg-[#F0F4F8]">
+                <main id="auth-main" className="flex flex-1 flex-col bg-brand-warm">
                     <div className="mx-auto flex w-full max-w-130 flex-1 flex-col justify-center px-5 py-10 sm:px-8">
                         {/* Mobile logo */}
                         <div className="mb-8 flex items-center justify-between lg:hidden">
@@ -114,13 +102,13 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
                             initial={{ opacity: 0, y: 16 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                            className="rounded-2xl border border-slate-200/70 bg-white p-7 shadow-[0_2px_24px_rgba(15,23,42,0.07)] sm:p-8"
+                            className="rounded-2xl border border-brand-border bg-white p-7 shadow-[0_1px_2px_rgba(15,23,42,0.05),0_10px_30px_rgba(15,23,42,0.07)] sm:p-8"
                         >
                             {children}
                         </motion.div>
 
                         <p className="mt-6 text-center text-[11px] text-slate-400">
-                            &copy; 2026 Subtech Ajo Solution &middot; All rights reserved
+                            &copy; 2026 AjoPay &middot; All rights reserved
                         </p>
                     </div>
                 </main>

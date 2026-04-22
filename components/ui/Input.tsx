@@ -32,7 +32,7 @@ export const Input = ({ label, error, className = '', type = 'text', ...props }:
                     type={inputType}
                     aria-invalid={error ? 'true' : 'false'}
                     aria-describedby={error ? errorId : props['aria-describedby']}
-                    className={`block w-full px-4 py-3 rounded-lg border border-brand-border text-brand-navy placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all duration-200 ${error ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500' : ''
+                    className={`block w-full px-4 py-3 rounded-lg border border-brand-border bg-white text-brand-navy placeholder-slate-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] focus:outline-none focus:ring-2 focus:ring-brand-accent/20 focus:border-brand-accent transition-all duration-200 ${error ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500' : ''
                         } ${isPassword ? 'pr-12' : ''} ${className}`}
                     {...props}
                 />

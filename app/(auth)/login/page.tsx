@@ -61,9 +61,10 @@ function LoginContent() {
         <section aria-labelledby="login-title" className="space-y-6">
 
             <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1D4ED8]">Sign in</p>
-                <h2 id="login-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>
-                    Welcome back.
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-accent">Sign in</p>
+                <h2 id="login-title" className="mt-2 text-[1.85rem] leading-tight text-brand-navy">
+                    <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 400 }}>Welcome </span>
+                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}>back.</span>
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
                     Enter your details to continue.
@@ -118,7 +119,7 @@ function LoginContent() {
                             onChange={(e) => setRememberMe(e.target.checked)}
                             className="sr-only peer"
                         />
-                        <div className="h-4 w-4 shrink-0 rounded border-2 border-slate-300 peer-checked:border-brand-emerald peer-checked:bg-brand-emerald transition-all flex items-center justify-center">
+                        <div className="h-4 w-4 shrink-0 rounded border-2 border-slate-300 peer-checked:border-brand-accent peer-checked:bg-brand-accent transition-all flex items-center justify-center">
                             {rememberMe && (
                                 <svg width="8" height="8" viewBox="0 0 10 10" fill="none">
                                     <path d="M1.5 5L4 7.5L8.5 2.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -131,7 +132,7 @@ function LoginContent() {
 
                 <Button
                     type="submit"
-                    className="w-full"
+                    className="w-full bg-brand-accent text-brand-navy hover:bg-[#FBBF24] focus-visible:ring-brand-accent shadow-[0_10px_24px_rgba(245,158,11,0.25)]"
                     disabled={isLoading}
                 >
                     {isLoading ? (
@@ -162,7 +163,7 @@ export default function LoginPage() {
         <Suspense fallback={
             <section aria-labelledby="login-title" className="space-y-6">
                 <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1D4ED8]">Sign in</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-accent">Sign in</p>
                     <h2 id="login-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy">
                         Welcome back.
                     </h2>

@@ -155,8 +155,11 @@ export default function SignUpPage() {
         return (
             <section aria-labelledby="verify-title" className="space-y-6">
                 <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1D4ED8]">One more step</p>
-                    <h2 id="verify-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>Check your inbox.</h2>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-accent">One more step</p>
+                    <h2 id="verify-title" className="mt-2 text-[1.85rem] leading-tight text-brand-navy">
+                        <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 400 }}>Check your </span>
+                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}>inbox.</span>
+                    </h2>
                     <p className="mt-1 text-sm text-slate-500">
                         We sent a 6-digit code to{' '}
                         <span className="font-semibold text-brand-navy">{pendingEmail}</span>.
@@ -219,7 +222,7 @@ export default function SignUpPage() {
                                 setError('');
                                 setNotice('');
                             }}
-                            className="font-semibold text-brand-navy hover:text-[#1D4ED8] transition-colors"
+                            className="font-semibold text-brand-navy hover:text-brand-accent transition-colors"
                         >
                             Go back and edit
                         </button>
@@ -232,8 +235,11 @@ export default function SignUpPage() {
     return (
         <section aria-labelledby="signup-title" className="space-y-5">
             <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1D4ED8]">Sign up</p>
-                <h2 id="signup-title" className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-brand-navy" style={{ fontFamily: 'var(--font-auth-heading)' }}>Create your account.</h2>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-accent">Sign up</p>
+                <h2 id="signup-title" className="mt-2 text-[1.85rem] leading-tight text-brand-navy">
+                    <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 400 }}>Create your </span>
+                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}>account.</span>
+                </h2>
                 <p className="mt-1 text-sm text-slate-500">Start saving with your community in minutes.</p>
             </div>
 
@@ -327,7 +333,7 @@ export default function SignUpPage() {
                             className="sr-only peer"
                             required
                         />
-                        <div className="h-5 w-5 rounded border-2 border-slate-300 peer-checked:border-brand-emerald peer-checked:bg-brand-emerald transition-all flex items-center justify-center shrink-0">
+                        <div className="h-5 w-5 rounded border-2 border-slate-300 peer-checked:border-brand-accent peer-checked:bg-brand-accent transition-all flex items-center justify-center shrink-0">
                             {agreedToTerms && (
                                 <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
                                     <path d="M2 6L5 9L10 3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -345,7 +351,7 @@ export default function SignUpPage() {
 
                 <Button
                     type="submit"
-                    className="w-full"
+                    className="w-full bg-brand-accent text-brand-navy hover:bg-[#FBBF24] focus-visible:ring-brand-accent shadow-[0_10px_24px_rgba(245,158,11,0.25)]"
                     disabled={isLoading || !agreedToTerms}
                 >
                     {isLoading ? (
@@ -363,7 +369,7 @@ export default function SignUpPage() {
                     Already have an account?{' '}
                     <Link
                         href="/login"
-                        className="font-semibold text-brand-navy hover:text-[#1D4ED8] transition-colors"
+                        className="font-semibold text-brand-navy hover:text-brand-accent transition-colors"
                     >
                         Sign in
                     </Link>
