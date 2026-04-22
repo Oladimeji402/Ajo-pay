@@ -104,7 +104,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
             {/* Logo */}
             <div className="p-6 border-b border-white/5">
                 <div className="flex items-center gap-3">
-                    <BrandLogo href="/admin" size="sm" showWordmark={false} />
+                    <BrandLogo href="/admin" size="sm" />
                     <div>
                         <span className="text-xl font-bold text-white tracking-tight block">Subtech Ajo Solution</span>
                         <div className="flex items-center gap-1.5">
