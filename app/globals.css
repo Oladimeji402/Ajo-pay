@@ -1,23 +1,27 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Syne", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
 
-  --color-brand-primary: #1D4ED8;
-  --color-brand-primary-hover: #1A43C2;
-  --color-brand-navy: #0C1A4D;
+  --color-brand-primary: #2563EB;
+  --color-brand-primary-hover: #1D4ED8;
+  --color-brand-navy: #0F172A;
+  --color-brand-accent: #F59E0B;
+  --color-brand-accent-dark: #B45309;
+  --color-brand-warm: #FAFAF7;
   --color-brand-emerald: #0F766E;
   --color-brand-emerald-hover: #0C5E57;
   --color-brand-azure: #3B82F6;
   --color-brand-electric: #60A5FA;
-  --color-brand-soft-blue: #DBEAFE;
-  --color-brand-gray: #64748b;
-  --color-brand-light: #EFF6FF;
-  --color-brand-border: #BFDBFE;
+  --color-brand-soft-blue: #EFF6FF;
+  --color-brand-gray: #64748B;
+  --color-brand-light: #F8FAFF;
+  --color-brand-border: #E2E8F0;
   --color-brand-disabled: #CBD5E1;
-  --color-brand-footer-text: #CBD5E1;
+  --color-brand-footer-text: #94A3B8;
 }
 
 @layer base {

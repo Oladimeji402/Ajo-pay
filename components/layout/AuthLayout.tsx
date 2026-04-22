@@ -65,34 +65,34 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
                             transition={{ delay: 0.15, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                             className="mt-auto"
                         >
-                            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#60A5FA]">
-                                Ajo — the way it should be
+                            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#60A5FA]/80">
+                                Ajo · Digitised
                             </p>
-                            <h1 className="mt-4 text-[2.6rem] font-semibold leading-[1.08] tracking-[-0.02em] text-white" style={{ fontFamily: 'var(--font-auth-heading)' }}>
+                            <h1 className="mt-4 text-[2.5rem] font-semibold leading-[1.08] tracking-[-0.02em] text-white" style={{ fontFamily: 'var(--font-auth-heading)' }}>
                                 Your circle<br />saves together.
                             </h1>
-                            <p className="mt-4 max-w-70 leading-relaxed text-white/55" style={{ fontSize: '15px' }}>
-                                The traditional Ajo savings system — now digital, verified, and always on time.
+                            <p className="mt-4 max-w-[280px] leading-relaxed text-white/50" style={{ fontSize: '14px' }}>
+                                Nigeria&apos;s trusted Ajo tradition — now digital, verified, and always on time.
                             </p>
                         </motion.div>
 
-                        {/* Social proof strip */}
+                        {/* Stats strip */}
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             transition={{ delay: 0.5, duration: 0.6 }}
-                            className="mt-auto pt-12"
+                            className="mt-auto pt-10"
                         >
                             <div className="border-t border-white/10 pt-6">
                                 <div className="grid grid-cols-3 gap-4">
                                     {[
                                         { value: '₦0', label: 'Missed payouts' },
-                                        { value: '100%', label: 'Verified accounts' },
+                                        { value: '100%', label: 'Verified groups' },
                                         { value: 'Live', label: 'Real-time tracking' },
                                     ].map((stat) => (
                                         <div key={stat.label}>
                                             <p className="text-xl font-semibold text-white" style={{ fontFamily: 'var(--font-auth-heading)' }}>{stat.value}</p>
-                                            <p className="mt-0.5 text-xs text-white/40">{stat.label}</p>
+                                            <p className="mt-0.5 text-xs text-white/35">{stat.label}</p>
                                         </div>
                                     ))}
                                 </div>
