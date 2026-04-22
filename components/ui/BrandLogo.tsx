@@ -6,39 +6,62 @@ type BrandLogoSize = 'sm' | 'md' | 'lg';
 interface BrandLogoProps {
     href?: string;
     size?: BrandLogoSize;
+    /** true = light background (navbar scrolled, mobile menu, auth light panel) */
     dark?: boolean;
-    showWordmark?: boolean;
     className?: string;
 }
 
+// Full logo is 280×60 — preserve that ratio across sizes
 const sizeMap = {
-    sm: { mark: 28, text: 'text-base' },
-    md: { mark: 36, text: 'text-xl' },
-    lg: { mark: 40, text: 'text-2xl' },
+    sm: { w: 154, h: 33 },
+    md: { w: 187, h: 40 },
+    lg: { w: 224, h: 48 },
 } as const;
 
 export const BrandLogo = ({
     href = '/',
     size = 'md',
     dark = false,
-    showWordmark = true,
     className = '',
 }: BrandLogoProps) => {
-    const styles = sizeMap[size];
-    const textColor = dark ? 'text-brand-navy' : 'text-white';
+    const { w, h } = sizeMap[size];
 
     return (
-        <Link href={href} className={`inline-flex items-center gap-2.5 ${className}`}>
-            <Image
-                src="/subtech-ajo-solution-mark.svg"
-                alt="Subtech Ajo Solution logo"
-                width={styles.mark}
-                height={styles.mark}
-                priority
-            />
-            {showWordmark ? (
-                <span className={`${styles.text} ${textColor} font-bold tracking-tight`}>Subtech Ajo Solution</span>
-            ) : null}
+        <Link href={href} className={`inline-flex items-center shrink-0 ${className}`}>
+            {dark ? (
+                // Light background — clip to just the circular icon mark (first h×h pixels)
+                // then add the brand name in dark text alongside
+                <div className="flex items-center gap-2.5">
+                    <div
+                        style={{ width: h, height: h, overflow: 'hidden', flexShrink: 0 }}
+                    >
+                        <Image
+                            src="/subtech-ajo-logo.svg"
+                            alt="Subtech Ajo Solution mark"
+                            width={w}
+                            height={h}
+                            priority
+                            style={{ maxWidth: 'none', display: 'block' }}
+                        />
+                    </div>
+                    <span
+                        className="font-bold text-brand-navy leading-none tracking-tight"
+                        style={{ fontSize: Math.round(h * 0.38) }}
+                    >
+                        Subtech Ajo Solution
+                    </span>
+                </div>
+            ) : (
+                // Dark background — full SVG lockup (icon + wordmark)
+                <Image
+                    src="/subtech-ajo-logo.svg"
+                    alt="Subtech Ajo Solution"
+                    width={w}
+                    height={h}
+                    priority
+                    style={{ display: 'block' }}
+                />
+            )}
         </Link>
     );
 };
