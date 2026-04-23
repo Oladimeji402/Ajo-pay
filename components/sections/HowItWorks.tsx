@@ -8,13 +8,13 @@ const steps = [
     {
         number: '01',
         title: 'Create your account',
-        description: 'Sign up in under 2 minutes. Quick KYC keeps your circle secure.',
+        description: 'Sign up in under 2 minutes. Quick KYC keeps your account secure.',
         icon: UserPlus,
     },
     {
         number: '02',
-        title: 'Join or start a group',
-        description: 'Browse verified Ajo groups or invite your own trusted circle.',
+        title: 'Create your savings plan',
+        description: 'Create target plans or general plans across daily, weekly, or monthly frequency.',
         icon: Search,
     },
     {
@@ -25,8 +25,8 @@ const steps = [
     },
     {
         number: '04',
-        title: 'Receive your payout',
-        description: 'When it\'s your turn, the full pot lands in your bank. Instantly.',
+        title: 'Track and withdraw on schedule',
+        description: 'Monitor contributions in passbook and process payouts with clear bank account records.',
         icon: Wallet,
     },
 ];
@@ -58,7 +58,7 @@ export const HowItWorks = () => {
                         style={{ fontSize: 'clamp(2rem, 4vw, 2.8rem)' }}
                     >
                         <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 400 }}>Four steps </span>
-                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.03em' }}>to your first payout.</span>
+                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.03em' }}>to your first savings win.</span>
                     </h2>
                 </motion.div>
 
@@ -122,13 +122,13 @@ export const HowItWorks = () => {
                     className="mt-14 pt-8 border-t border-brand-navy/[0.06] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
                 >
                     <p className="text-[13px] text-brand-gray">
-                        No hidden fees. No manual tracking. No missed turns.
+                        No hidden fees. No manual tracking. Clear savings history.
                     </p>
                     <a
                         href="/signup"
                         className="inline-flex items-center gap-1.5 text-[13px] font-bold text-brand-navy hover:text-brand-accent transition-colors"
                     >
-                        Start your circle
+                        Start saving
                         <span className="text-brand-accent">→</span>
                     </a>
                 </motion.div>

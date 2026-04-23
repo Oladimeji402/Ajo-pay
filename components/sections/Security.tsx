@@ -42,7 +42,7 @@ export const Security = () => {
                 { title: 'Bank-Level Security', desc: 'Your funds are held with licensed financial institutions to the highest safety standards.', icon: <ShieldCheck size={18} /> },
                 { title: '256-bit Encryption', desc: 'All data transmitted is encrypted using the highest industry standards.', icon: <Lock size={18} /> },
                 { title: 'AI Fraud Protection', desc: 'Advanced systems monitor every transaction for suspicious activity in real-time.', icon: <Eye size={18} /> },
-                { title: 'Verified Groups', desc: 'Every Ajo group undergoes rigorous verification before going live.', icon: <CheckCircle2 size={18} /> },
+                { title: 'Verified Accounts', desc: 'User and payout account details are verified to reduce payout risk.', icon: <CheckCircle2 size={18} /> },
               ].map((item, i) => (
                 <motion.div
                   key={i}

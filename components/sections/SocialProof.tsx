@@ -8,7 +8,7 @@ const testimonials = [
   {
     name: 'Olawale J.',
     role: 'Software Engineer, Lagos',
-    content: 'Automated contributions mean I never forget my turn. The transparency is unmatched.',
+    content: 'Automated contributions mean I never miss my plan. The transparency is unmatched.',
     rating: 5,
     color: '#1E3A6E',
     initials: 'OJ',
@@ -24,7 +24,7 @@ const testimonials = [
   {
     name: 'Ibrahim K.',
     role: 'Civil Servant, Kano',
-    content: 'Joined a group of fellow professionals. We\'ve been saving consistently for over a year.',
+    content: 'I run multiple target plans and a general plan. I\'ve been saving consistently for over a year.',
     rating: 5,
     color: '#3B82F6',
     initials: 'IK',
@@ -32,7 +32,7 @@ const testimonials = [
   {
     name: 'Amara O.',
     role: 'Teacher, Port Harcourt',
-    content: 'My group has completed three full cycles without a single issue.',
+    content: 'My savings plans have stayed consistent for months without a single issue.',
     rating: 5,
     color: '#60A5FA',
     initials: 'AO',
@@ -40,7 +40,7 @@ const testimonials = [
   {
     name: 'Bola T.',
     role: 'Nurse, Ibadan',
-    content: 'Got my ₦500,000 rotation within minutes of the schedule. I trust AjoPay completely.',
+    content: 'Got my ₦500,000 payout within minutes of schedule. I trust AjoPay completely.',
     rating: 5,
     color: '#1E3A6E',
     initials: 'BT',

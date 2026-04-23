@@ -1,13 +1,19 @@
-<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="favGrad" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+    <linearGradient id="subtechAjoSolutionMarkGradient" x1="20" y1="20" x2="108" y2="108" gradientUnits="userSpaceOnUse">
       <stop stop-color="#1B2F6B"/>
       <stop offset="1" stop-color="#0F766E"/>
     </linearGradient>
   </defs>
-  <rect x="4" y="4" width="56" height="56" rx="14" fill="url(#favGrad)"/>
-  <circle cx="32" cy="32" r="14" stroke="white" stroke-opacity="0.4" stroke-width="1.4"/>
-  <circle cx="32" cy="32" r="10" stroke="white" stroke-opacity="0.52" stroke-width="1.4"/>
-  <path d="M32 18L44.12 25V39L32 46L19.88 39V25L32 18Z" stroke="white" stroke-opacity="0.58" stroke-width="1.3"/>
-  <path d="M32 24L38.93 28V36L32 40L25.07 36V28L32 24Z" fill="white"/>
+  <rect x="8" y="8" width="112" height="112" rx="28" fill="url(#subtechAjoSolutionMarkGradient)"/>
+  <circle cx="64" cy="64" r="30" stroke="white" stroke-opacity="0.35" stroke-width="2"/>
+  <circle cx="64" cy="64" r="21" stroke="white" stroke-opacity="0.5" stroke-width="2"/>
+  <circle cx="64" cy="34" r="4" fill="white"/>
+  <circle cx="89.98" cy="49" r="3.5" fill="white"/>
+  <circle cx="89.98" cy="79" r="3.5" fill="white"/>
+  <circle cx="64" cy="94" r="4" fill="white"/>
+  <circle cx="38.02" cy="79" r="3.5" fill="white"/>
+  <circle cx="38.02" cy="49" r="3.5" fill="white"/>
+  <path d="M64 34L89.98 49L89.98 79L64 94L38.02 79L38.02 49L64 34Z" stroke="white" stroke-opacity="0.55" stroke-width="1.8"/>
+  <path d="M64 48L76.12 54.99V69.01L64 76L51.88 69.01V54.99L64 48Z" fill="white" fill-opacity="0.9"/>
 </svg>
