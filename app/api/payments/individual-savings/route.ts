@@ -6,6 +6,8 @@ import type { PassbookFrequency } from "@/lib/ajo-schedule";
 
 const bodySchema = z.object({
   goalId: z.string().uuid("goalId must be a UUID"),
+  // Optional custom amount for target savings payment.
+  amount: z.number().int().positive().optional(),
   // Optional: caller can specify which slot to pay.
   // If omitted we auto-select the next unpaid slot.
   periodIndex: z.number().int().min(0).optional(),
@@ -40,12 +42,12 @@ export async function POST(request: Request) {
       return badRequestResponse(parsed.error.issues[0]?.message ?? "Validation failed.");
     }
 
-    const { goalId, periodIndex: requestedPeriodIndex } = parsed.data;
+    const { goalId, amount: requestedAmount, periodIndex: requestedPeriodIndex } = parsed.data;
 
     // Load the goal.
     const { data: goal, error: goalError } = await auth.supabase
       .from("individual_savings_goals")
-      .select("id, name, savings_start_date, target_date, frequency, contribution_amount, status, user_id")
+      .select("id, name, savings_start_date, target_date, frequency, contribution_amount, minimum_amount, status, user_id")
       .eq("id", goalId)
       .eq("user_id", auth.user.id)
       .maybeSingle();
@@ -100,7 +102,11 @@ export async function POST(request: Request) {
 
     // Wallet mode: debit from wallet and post as an immediate successful payment.
     const reference = generateReference();
-    const amount = Number(goal.contribution_amount);
+    const minAmount = Math.max(500, Number(goal.minimum_amount ?? 0));
+    const amount = Number(requestedAmount ?? goal.contribution_amount);
+    if (!Number.isFinite(amount) || amount < minAmount) {
+      return badRequestResponse(`Minimum amount for this target is NGN ${minAmount.toLocaleString("en-NG")}.`);
+    }
     const nowIso = new Date().toISOString();
 
     const { data: debited } = await auth.supabase.rpc("debit_wallet_balance", {
