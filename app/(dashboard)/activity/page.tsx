@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { useData } from '@/lib/hooks/useData';
 import { ArrowDownLeft, ArrowUpRight, ChevronLeft, ChevronRight, Search, BookOpen, Target, Layers } from 'lucide-react';
 
 const PAGE_SIZE = 20;
@@ -43,6 +44,15 @@ function getTxMeta(tx: TransactionRow) {
                 sign: '-',
                 amountColor: 'text-brand-navy',
             };
+        case 'wallet_funding':
+            return {
+                Icon: ArrowDownLeft,
+                iconBg: 'bg-emerald-50',
+                iconColor: 'text-emerald-600',
+                label: 'Wallet Funding',
+                sign: '+',
+                amountColor: 'text-emerald-600',
+            };
         default: // contribution
             return {
                 Icon: ArrowUpRight,
@@ -57,7 +67,7 @@ function getTxMeta(tx: TransactionRow) {
 
 type TransactionRow = {
     id: string;
-    type: 'contribution' | 'payout' | 'passbook_activation' | 'individual_savings' | 'bulk_contribution';
+    type: 'contribution' | 'payout' | 'passbook_activation' | 'individual_savings' | 'bulk_contribution' | 'wallet_funding';
     amount: number;
     status: 'pending' | 'success' | 'failed' | 'abandoned';
     reference: string;
@@ -68,45 +78,29 @@ type TransactionRow = {
     } | null;
 };
 
+type ActivityData = { transactions: TransactionRow[]; total: number };
+
 export default function ActivityPage() {
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-    const [search, setSearch] = useState('');
-    const [filter, setFilter] = useState<'all' | 'contribution' | 'payout'>('all');
-    const [transactions, setTransactions] = useState<TransactionRow[]>([]);
-    const [page, setPage] = useState(1);
-    const [total, setTotal] = useState(0);
+    const [search, setSearch]   = useState('');
+    const [filter, setFilter]   = useState<'all' | 'contribution' | 'payout'>('all');
+    const [page, setPage]       = useState(1);
 
-    // Reset to page 1 when filter or search changes
-    useEffect(() => {
-        setPage(1);
-    }, [filter, search]);
+    // Reset to page 1 when filter changes
+    useEffect(() => { setPage(1); }, [filter]);
 
-    useEffect(() => {
-        const run = async () => {
-            setLoading(true);
-            setError('');
-
-            try {
-                const typeParam = filter !== 'all' ? `&type=${filter}` : '';
-                const res = await fetch(`/api/transactions?page=${page}&pageSize=${PAGE_SIZE}${typeParam}`, { cache: 'no-store' });
-                const json = await res.json();
-
-                if (!res.ok) {
-                    throw new Error(json.error || 'Failed to load activity.');
-                }
-
-                setTransactions(Array.isArray(json.data) ? json.data : []);
-                setTotal(json.pagination?.total ?? 0);
-            } catch (err) {
-                setError(err instanceof Error ? err.message : 'Unable to load activity.');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        void run();
+    const cacheKey = `activity:${page}:${filter}`;
+    const fetcher  = useCallback(async (): Promise<ActivityData> => {
+        const typeParam = filter !== 'all' ? `&type=${filter}` : '';
+        const res  = await fetch(`/api/transactions?page=${page}&pageSize=${PAGE_SIZE}${typeParam}`);
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Failed to load activity.');
+        return { transactions: Array.isArray(json.data) ? json.data : [], total: json.pagination?.total ?? 0 };
     }, [page, filter]);
+
+    const { data, loading, error } = useData<ActivityData>(cacheKey, fetcher, { ttl: 30_000 });
+
+    const transactions = data?.transactions ?? [];
+    const total        = data?.total        ?? 0;
 
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 

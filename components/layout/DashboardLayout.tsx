@@ -5,12 +5,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
     LayoutDashboard,
-    Users,
     History,
     Settings,
-    Bell,
     LogOut,
-    Plus,
     ArrowUpRight,
     BookOpen,
     X,
@@ -31,7 +28,6 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     const pathname = usePathname();
     const [userName, setUserName] = useState('Member');
     const [userEmail, setUserEmail] = useState('member@example.com');
-    const [unreadNotifications, setUnreadNotifications] = useState(0);
     const [passbookActivated, setPassbookActivated] = useState(true);
     const [bannerDismissed, setBannerDismissed] = useState(false);
     const { showToast } = useToast();
@@ -64,42 +60,23 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         void loadUser();
     }, []);
 
-    useEffect(() => {
-        const loadNotifications = async () => {
-            try {
-                const response = await fetch('/api/notifications?limit=10', { cache: 'no-store' });
-                const payload = await response.json();
-                if (!response.ok) {
-                    return;
-                }
-
-                setUnreadNotifications(Number(payload.unreadCount ?? 0));
-            } catch {
-                // Keep layout resilient if notifications fail to load.
-            }
-        };
-
-        void loadNotifications();
-    }, [pathname]);
-
     const userInitial = useMemo(() => userName.trim().charAt(0).toUpperCase() || 'M', [userName]);
 
     const navItems = [
         { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/dashboard' },
-        { name: 'Groups', icon: <Users size={20} />, path: '/groups' },
         { name: 'Savings', icon: <Target size={20} />, path: '/savings' },
         { name: 'Pay', icon: <CreditCard size={20} />, path: '/pay' },
         { name: 'Activity', icon: <History size={20} />, path: '/activity' },
-        { name: 'Notifications', icon: <Bell size={20} />, path: '/notifications' },
+        { name: 'Passbook', icon: <BookOpen size={20} />, path: '/passbook' },
         { name: 'Settings', icon: <Settings size={20} />, path: '/settings' },
     ];
 
     // Mobile: Savings replaces Activity in the center (primary) slot.
     const mobileNavItems = [
         { name: 'Dashboard', mobileLabel: 'Home', icon: <LayoutDashboard size={18} />, path: '/dashboard' },
-        { name: 'Activity', mobileLabel: 'Activity', icon: <History size={18} />, path: '/activity' },
+        { name: 'Passbook', mobileLabel: 'Passbook', icon: <BookOpen size={18} />, path: '/passbook' },
         { name: 'Savings', mobileLabel: 'Save', icon: <Target size={18} />, path: '/savings' },
-        { name: 'Notifications', mobileLabel: 'Alerts', icon: <Bell size={18} />, path: '/notifications' },
+        { name: 'Activity', mobileLabel: 'Activity', icon: <History size={18} />, path: '/activity' },
         { name: 'Settings', mobileLabel: 'Settings', icon: <Settings size={18} />, path: '/settings' },
     ];
 
@@ -121,9 +98,8 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             return `${timeGreeting}, ${firstName}`;
         }
         const labels: Record<string, string> = {
-            Groups: 'My Groups',
             Activity: 'Payments',
-            Notifications: 'Notifications',
+            Passbook: 'Passbook',
             Settings: 'Settings',
         };
         return labels[currentSection] ?? currentSection;
@@ -184,9 +160,9 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                         <div className="pt-6">
                             <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] mb-2">Quick actions</p>
                             <div className="space-y-2">
-                                <Link href="/groups" className="w-full inline-flex items-center justify-between rounded-xl bg-white/95 px-3 py-2.5 text-sm font-semibold text-[#1D4ED8] shadow-lg shadow-black/20 hover:bg-white transition-all hover:shadow-black/30">
-                                    Find a Group
-                                    <Plus size={16} />
+                                <Link href="/savings" className="w-full inline-flex items-center justify-between rounded-xl bg-white/95 px-3 py-2.5 text-sm font-semibold text-[#1D4ED8] shadow-lg shadow-black/20 hover:bg-white transition-all hover:shadow-black/30">
+                                    Manage Savings
+                                    <ArrowUpRight size={16} />
                                 </Link>
                                 <Link href="/activity" className="w-full inline-flex items-center justify-between rounded-xl border border-white/20 bg-white/10 px-3 py-2.5 text-sm font-semibold text-slate-200 hover:text-white hover:bg-white/15 transition-colors">
                                     View Payments
@@ -224,17 +200,12 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <Link href="/notifications" className="relative inline-flex items-center justify-center h-10 w-10 rounded-xl border border-slate-200 bg-white text-brand-gray hover:text-brand-navy hover:bg-slate-50 transition-colors">
-                            <Bell size={18} />
-                            {unreadNotifications > 0 && (
-                                <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-brand-emerald px-1.5 py-0.5 text-center text-[10px] font-bold text-white">
-                                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                                </span>
-                            )}
+                        <Link href="/passbook" className="relative inline-flex items-center justify-center h-10 w-10 rounded-xl border border-slate-200 bg-white text-brand-gray hover:text-brand-navy hover:bg-slate-50 transition-colors">
+                            <BookOpen size={18} />
                         </Link>
-                        <Link href="/groups" className="inline-flex items-center gap-2 rounded-xl bg-[#1D4ED8] px-3.5 py-2.5 text-sm font-semibold text-white hover:bg-[#1A43C2] transition-colors">
-                            <Plus size={15} />
-                            Find a Group
+                        <Link href="/savings" className="inline-flex items-center gap-2 rounded-xl bg-[#1D4ED8] px-3.5 py-2.5 text-sm font-semibold text-white hover:bg-[#1A43C2] transition-colors">
+                            <ArrowUpRight size={15} />
+                            Savings
                         </Link>
                     </div>
                 </header>
@@ -246,9 +217,8 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                             <p className="text-sm font-semibold text-brand-navy truncate">{sectionHeading}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Link href="/notifications" className="relative inline-flex items-center justify-center h-9 w-9 rounded-lg border border-slate-200 bg-white text-brand-gray">
-                                <Bell size={16} />
-                                {unreadNotifications > 0 && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-brand-emerald" />}
+                            <Link href="/passbook" className="relative inline-flex items-center justify-center h-9 w-9 rounded-lg border border-slate-200 bg-white text-brand-gray">
+                                <BookOpen size={16} />
                             </Link>
                             <button
                                 onClick={handleSignOut}
@@ -326,9 +296,6 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                                     className={`relative flex flex-col items-center gap-0.5 rounded-lg px-1 py-1.5 text-[9px] font-semibold transition-colors ${isActive ? 'text-brand-navy' : 'text-slate-400'}`}
                                 >
                                     {item.icon}
-                                    {item.path === '/notifications' && unreadNotifications > 0 && (
-                                        <span className="absolute right-1 top-0 h-1.5 w-1.5 rounded-full bg-brand-emerald" />
-                                    )}
                                     <span className="uppercase tracking-[0.04em] leading-none whitespace-nowrap">{item.mobileLabel}</span>
                                     {isActive && <span className="h-1 w-1 rounded-full bg-brand-primary" />}
                                 </Link>

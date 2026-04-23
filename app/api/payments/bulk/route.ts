@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { badRequestResponse, requireUser, serverErrorResponse } from "@/lib/api/auth";
-import { getPendingPaymentExpiryDate } from "@/lib/payments";
-import { initializePaystackTransaction } from "@/lib/paystack";
+import { generatePassbookSlots } from "@/lib/ajo-schedule";
 
 const allocationSchema = z.object({
-  targetType: z.enum(["group", "individual_goal"]),
+  targetType: z.enum(["individual_goal"]),
   targetId: z.string().uuid(),
   amount: z.number().int().positive(),
 });
@@ -16,7 +15,7 @@ const bulkPaySchema = z.object({
 
 function generateReference() {
   const randomPart = Math.random().toString(36).slice(2, 10).toUpperCase();
-  return `AJO-BULK-${Date.now()}-${randomPart}`;
+  return `AJO-WALLET-BULK-${Date.now()}-${randomPart}`;
 }
 
 export async function POST(request: Request) {
@@ -45,96 +44,121 @@ export async function POST(request: Request) {
 
     const { allocations } = parsed.data;
 
-    for (const a of allocations) {
-      if (a.targetType === "group") {
-        const { data: member } = await auth.supabase
-          .from("group_members")
-          .select("id")
-          .eq("group_id", a.targetId)
-          .eq("user_id", auth.user.id)
-          .maybeSingle();
-        if (!member) {
-          return NextResponse.json({ error: "You are not a member of one of the selected groups." }, { status: 403 });
-        }
-      } else {
-        const { data: goal } = await auth.supabase
-          .from("individual_savings_goals")
-          .select("id")
-          .eq("id", a.targetId)
-          .eq("user_id", auth.user.id)
-          .eq("status", "active")
-          .maybeSingle();
-        if (!goal) {
-          return NextResponse.json({ error: "One or more savings goals are invalid, inactive, or not yours." }, { status: 403 });
-        }
+    const goalIds = [...new Set(allocations.map((a) => a.targetId))];
+    const { data: goals, error: goalsError } = await auth.supabase
+      .from("individual_savings_goals")
+      .select("id, savings_start_date, target_date, frequency")
+      .in("id", goalIds)
+      .eq("user_id", auth.user.id)
+      .eq("status", "active");
+
+    if (goalsError) return badRequestResponse(goalsError.message);
+    const goalById = new Map((goals ?? []).map((g) => [g.id, g]));
+    if (goalById.size !== goalIds.length) {
+      return NextResponse.json({ error: "One or more savings goals are invalid, inactive, or not yours." }, { status: 403 });
+    }
+
+    const targetSlotByGoal = new Map<string, { periodIndex: number; periodLabel: string; periodDate: string }>();
+    for (const goalId of goalIds) {
+      const goal = goalById.get(goalId)!;
+      const slots = generatePassbookSlots(goal.savings_start_date, goal.target_date, goal.frequency as "daily" | "weekly" | "monthly");
+      const { data: existing } = await auth.supabase
+        .from("individual_savings_contributions")
+        .select("period_index, status")
+        .eq("goal_id", goalId);
+
+      const paid = new Set((existing ?? []).filter((r) => r.status === "success").map((r) => r.period_index));
+      const nextSlot = slots.find((s) => !paid.has(s.periodIndex));
+      if (!nextSlot) {
+        return NextResponse.json({ error: "One of the selected goals has no unpaid period left." }, { status: 409 });
       }
+      targetSlotByGoal.set(goalId, nextSlot);
     }
 
     const totalAmount = allocations.reduce((sum, a) => sum + a.amount, 0);
-
-    const userEmail = auth.user.email;
-    if (!userEmail) return badRequestResponse("Account email is missing.");
-
     const reference = generateReference();
-    const expiresAtIso = getPendingPaymentExpiryDate().toISOString();
+    const nowIso = new Date().toISOString();
 
-    const appUrl = process.env.APP_URL;
-    const callbackUrl = `${appUrl ?? "http://localhost:3000"}/pay?ref=${reference}`;
-
-    const paystackData = await initializePaystackTransaction({
-      email: userEmail,
-      amountKobo: totalAmount * 100,
-      reference,
-      callbackUrl,
-      metadata: {
-        userId: auth.user.id,
-        type: "bulk_contribution",
-        allocationCount: allocations.length,
-      },
+    const { data: debited } = await auth.supabase.rpc("debit_wallet_balance", {
+      p_user_id: auth.user.id,
+      p_amount: totalAmount,
     });
+    if (!debited) {
+      return NextResponse.json({ error: "Insufficient wallet balance. Fund your wallet to continue." }, { status: 400 });
+    }
 
-    // Write the parent payment record.
-    const { error: paymentRecordError } = await auth.supabase
+    const { data: parentPayment, error: paymentRecordError } = await auth.supabase
       .from("payment_records")
       .insert({
         user_id: auth.user.id,
         group_id: null,
         contribution_id: null,
-        provider: "paystack",
-        type: "bulk_contribution",
+        provider: "wallet",
+        type: "individual_savings",
         amount: totalAmount,
         currency: "NGN",
-        status: "pending",
+        status: "success",
         reference,
-        expires_at: expiresAtIso,
-        metadata: { type: "bulk_contribution", allocations },
-      });
+        paid_at: nowIso,
+        metadata: { type: "wallet_split", allocations },
+      })
+      .select("id")
+      .single();
 
     if (paymentRecordError) return badRequestResponse(paymentRecordError.message);
 
-    // Write one allocation row per target.
-    const allocationRows = allocations.map(a => ({
-      parent_reference: reference,
-      user_id: auth.user.id,
-      target_type: a.targetType,
-      target_id: a.targetId,
-      allocated_amount: a.amount,
-      status: "pending",
-    }));
+    for (let i = 0; i < allocations.length; i += 1) {
+      const alloc = allocations[i]!;
+      const slot = targetSlotByGoal.get(alloc.targetId)!;
+      const allocRef = `${reference}-A${i + 1}`;
 
-    const { error: allocError } = await auth.supabase
-      .from("payment_allocations")
-      .insert(allocationRows);
+      const { error: contribError } = await auth.supabase
+        .from("individual_savings_contributions")
+        .upsert(
+          {
+            goal_id: alloc.targetId,
+            user_id: auth.user.id,
+            amount: alloc.amount,
+            period_label: slot.periodLabel,
+            period_index: slot.periodIndex,
+            period_date: slot.periodDate,
+            status: "success",
+            paystack_reference: allocRef,
+            payment_record_id: parentPayment?.id ?? null,
+            paid_at: nowIso,
+          },
+          { onConflict: "goal_id,period_index" },
+        );
+      if (contribError) return badRequestResponse(contribError.message);
 
-    if (allocError) return badRequestResponse(allocError.message);
+      const { error: passbookError } = await auth.supabase
+        .from("passbook_entries")
+        .upsert(
+          {
+            user_id: auth.user.id,
+            entry_type: "individual_savings",
+            source_id: null,
+            source_table: "individual_savings_contributions",
+            goal_id: alloc.targetId,
+            amount: alloc.amount,
+            direction: "debit",
+            status: "success",
+            reference: allocRef,
+            period_label: slot.periodLabel,
+            description: "Wallet split payment to savings goal",
+            happened_at: nowIso,
+          },
+          { onConflict: "reference", ignoreDuplicates: true },
+        );
+      if (passbookError) return badRequestResponse(passbookError.message);
+    }
 
     return NextResponse.json({
       data: {
         totalAmount,
         reference,
         allocationCount: allocations.length,
-        authorizationUrl: paystackData.authorization_url,
-        accessCode: paystackData.access_code,
+        status: "success",
       },
     });
   } catch (error) {

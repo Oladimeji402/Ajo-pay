@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, useRef, useState, Suspense } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useParams, useSearchParams, useRouter } from 'next/navigation';
-import { ArrowLeft, BookOpen, CheckCircle2, Loader2, XCircle } from 'lucide-react';
+import { useParams } from 'next/navigation';
+import { ArrowLeft, BookOpen, CheckCircle2, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError } from '@/lib/toast';
 import { PassbookTable } from '@/components/passbook/PassbookTable';
@@ -25,15 +25,11 @@ type SavingsGoal = {
 
 function SavingsGoalDetail() {
     const { id } = useParams<{ id: string }>();
-    const searchParams = useSearchParams();
-    const router = useRouter();
     const { showToast } = useToast();
 
     const [goal, setGoal] = useState<SavingsGoal | null>(null);
     const [loading, setLoading] = useState(true);
-    const [paymentStatus, setPaymentStatus] = useState<'verifying' | 'success' | 'failed' | null>(null);
-    const [verifyMessage, setVerifyMessage] = useState<string | null>(null);
-    const verifiedRef = useRef(false);
+    const [paymentStatus, setPaymentStatus] = useState<'success' | 'failed' | null>(null);
 
     const loadGoal = async () => {
         setLoading(true);
@@ -48,34 +44,6 @@ function SavingsGoalDetail() {
             setLoading(false);
         }
     };
-
-    // Auto-verify if Paystack redirected back with a reference
-    useEffect(() => {
-        const reference = searchParams.get('reference') ?? searchParams.get('trxref');
-        if (!reference || verifiedRef.current) return;
-        verifiedRef.current = true;
-
-        const verify = async () => {
-            setPaymentStatus('verifying');
-            try {
-                const res = await fetch(`/api/payments/verify?reference=${encodeURIComponent(reference)}`);
-                const json = await res.json();
-                if (res.ok && json.data?.status === 'success') {
-                    setPaymentStatus('success');
-                    setVerifyMessage(null);
-                    router.replace(`/savings/${id}`);
-                    await loadGoal();
-                } else {
-                    setPaymentStatus('failed');
-                    setVerifyMessage(typeof json.error === 'string' ? json.error : null);
-                }
-            } catch {
-                setPaymentStatus('failed');
-            }
-        };
-
-        void verify();
-    }, []);
 
     useEffect(() => { void loadGoal(); }, [id]);
 
@@ -106,22 +74,15 @@ function SavingsGoalDetail() {
             </Link>
 
             {/* Payment result banner */}
-            {paymentStatus === 'verifying' && (
-                <div className="flex items-center gap-2.5 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-                    <Loader2 size={15} className="animate-spin shrink-0" />
-                    Verifying your payment...
-                </div>
-            )}
             {paymentStatus === 'success' && (
                 <div className="flex items-center gap-2.5 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
                     <CheckCircle2 size={15} className="shrink-0" />
-                    Payment successful — your passbook has been updated.
+                    Wallet payment successful — your passbook has been updated.
                 </div>
             )}
             {paymentStatus === 'failed' && (
                 <div className="flex items-center gap-2.5 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                    <XCircle size={15} className="shrink-0" />
-                    {verifyMessage ?? 'Payment could not be verified. If you were charged, it will reflect shortly.'}
+                    Could not complete wallet payment.
                 </div>
             )}
 
@@ -171,8 +132,10 @@ function SavingsGoalDetail() {
                             });
                             const json = await res.json();
                             if (!res.ok) throw new Error(json.error);
-                            window.location.href = json.data.authorizationUrl;
+                            setPaymentStatus('success');
+                            await loadGoal();
                         } catch (err) {
+                            setPaymentStatus('failed');
                             notifyError(showToast, err, 'Could not start payment.');
                         }
                     }}
