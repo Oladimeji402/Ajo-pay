@@ -69,12 +69,12 @@ function AdminPayoutsSkeleton() {
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
         {Array.from({ length: 3 }, (_, idx) => (
-          <div key={idx} className="rounded-2xl border border-slate-100 bg-white p-4 h-20" />
+          <div key={idx} className="rounded-xl border border-slate-100 bg-white p-4 h-20" />
         ))}
       </div>
-      <div className="rounded-2xl border border-slate-100 bg-white p-4 h-56" />
-      <div className="rounded-2xl border border-slate-100 bg-white p-3 h-16" />
-      <div className="rounded-2xl border border-slate-100 bg-white p-3 h-80" />
+      <div className="rounded-xl border border-slate-100 bg-white p-4 h-56" />
+      <div className="rounded-xl border border-slate-100 bg-white p-3 h-16" />
+      <div className="rounded-xl border border-slate-100 bg-white p-3 h-80" />
     </div>
   );
 }
@@ -107,6 +107,7 @@ function SavingsScheduleTab() {
   const [rows, setRows] = useState<ScheduleRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [freqFilter, setFreqFilter] = useState('all');
+  const [showDueOnly, setShowDueOnly] = useState(true);
   const [selected, setSelected] = useState<ScheduleRow | null>(null);
   const [recording, setRecording] = useState(false);
   const [payoutForm, setPayoutForm] = useState({ amount: '', periodLabel: '', notes: '' });
@@ -123,9 +124,12 @@ function SavingsScheduleTab() {
   }, []);
 
   const filtered = useMemo(() => {
-    if (freqFilter === 'all') return rows;
-    return rows.filter(r => r.frequency === freqFilter);
-  }, [rows, freqFilter]);
+    return rows.filter((r) => {
+      if (freqFilter !== 'all' && r.frequency !== freqFilter) return false;
+      if (showDueOnly && r.amount_owed <= 0) return false;
+      return true;
+    });
+  }, [rows, freqFilter, showDueOnly]);
 
   const handleRecord = async () => {
     if (!selected) return;
@@ -167,30 +171,40 @@ function SavingsScheduleTab() {
   return (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-slate-100 bg-white p-4">
+        <div className="rounded-xl border border-slate-100 bg-white p-4">
           <p className="text-xs text-brand-gray">Total Owed (filtered)</p>
           <p className="text-xl font-bold text-rose-700">{toCurrency(totalOwed)}</p>
         </div>
-        <div className="rounded-2xl border border-slate-100 bg-white p-4">
+        <div className="rounded-xl border border-slate-100 bg-white p-4">
           <p className="text-xs text-brand-gray">Active Schemes</p>
           <p className="text-xl font-bold text-brand-navy">{filtered.filter(r => r.status === 'active').length}</p>
         </div>
-        <div className="rounded-2xl border border-slate-100 bg-white p-4">
+        <div className="rounded-xl border border-slate-100 bg-white p-4">
           <p className="text-xs text-brand-gray">Total Saved (filtered)</p>
           <p className="text-xl font-bold text-emerald-700">{toCurrency(filtered.reduce((s, r) => s + r.total_saved, 0))}</p>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-100 bg-white p-3">
-        <select value={freqFilter} onChange={e => setFreqFilter(e.target.value)} className="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-          <option value="all">All Frequencies</option>
-          <option value="daily">Daily</option>
-          <option value="weekly">Weekly</option>
-          <option value="monthly">Monthly</option>
-        </select>
+      <div className="rounded-xl border border-slate-100 bg-white p-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <select value={freqFilter} onChange={e => setFreqFilter(e.target.value)} className="rounded-xl border border-slate-200 px-3 py-2 text-sm">
+            <option value="all">All Frequencies</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+          <label className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600">
+            <input
+              type="checkbox"
+              checked={showDueOnly}
+              onChange={(e) => setShowDueOnly(e.target.checked)}
+            />
+            Show only users with amount owed
+          </label>
+        </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-100 bg-white overflow-hidden">
+      <div className="rounded-xl border border-slate-100 bg-white overflow-hidden">
         <div className="hidden sm:grid sm:grid-cols-[1fr_auto_auto_auto_auto] items-center gap-4 border-b border-slate-100 bg-slate-50/80 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
           <span>User / Scheme</span>
           <span>Frequency</span>
@@ -307,7 +321,7 @@ function SavingsScheduleTab() {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function AdminPayoutsPage() {
-  const [activeTab, setActiveTab] = useState<'payouts' | 'schedule'>('payouts');
+  const [activeTab, setActiveTab] = useState<'payouts' | 'schedule'>('schedule');
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState('');
   const [error, setError] = useState('');
@@ -561,36 +575,15 @@ export default function AdminPayoutsPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-brand-navy">Payouts</h1>
-          <LastSynced timestamp={lastSyncedAt} loading={loading || savingId !== ''} />
-        </div>
-        {activeTab === 'payouts' && (
-          <button
-            disabled={savingId === 'batch' || selectedIds.length === 0}
-            onClick={runBatchMarkDone}
-            className="inline-flex items-center gap-2 rounded-xl bg-brand-navy px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-          >
-            <CheckCircle2 size={14} />
-            {selectedIds.length > 0 ? `Mark ${selectedIds.length} Done` : 'Mark Selected Done'}
-          </button>
-        )}
-      </div>
+      <LastSynced timestamp={lastSyncedAt} loading={loading || savingId !== ''} />
 
       {/* Tab switcher */}
-      <div className="flex gap-1 rounded-2xl border border-slate-200 bg-slate-50 p-1 max-w-xs">
-        <button
-          onClick={() => setActiveTab('payouts')}
-          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors ${activeTab === 'payouts' ? 'bg-white shadow-sm text-brand-navy' : 'text-brand-gray hover:text-brand-navy'}`}
-        >
-          Payouts
-        </button>
+      <div className="flex gap-0.5 rounded-lg border border-slate-200 bg-slate-50 p-0.5 max-w-xs">
         <button
           onClick={() => setActiveTab('schedule')}
-          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 ${activeTab === 'schedule' ? 'bg-white shadow-sm text-brand-navy' : 'text-brand-gray hover:text-brand-navy'}`}
+          className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 ${activeTab === 'schedule' ? 'bg-white text-brand-navy' : 'text-slate-400 hover:text-brand-navy'}`}
         >
-          <Calendar size={11} /> Savings Schedule
+          <Calendar size={11} /> Savings Withdrawals
         </button>
       </div>
 
@@ -598,15 +591,15 @@ export default function AdminPayoutsPage() {
       {activeTab === 'payouts' && (<>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-slate-100 bg-white p-4">
+        <div className="rounded-xl border border-slate-100 bg-white p-4">
           <p className="text-xs text-brand-gray">Total Paid Out</p>
           <p className="text-xl font-bold text-brand-navy">{toCurrency(totalPaidOut)}</p>
         </div>
-        <div className="rounded-2xl border border-slate-100 bg-white p-4">
+        <div className="rounded-xl border border-slate-100 bg-white p-4">
           <p className="text-xs text-brand-gray">Pending Amount</p>
           <p className="text-xl font-bold text-amber-700">{toCurrency(pendingAmount)}</p>
         </div>
-        <div className="rounded-2xl border border-slate-100 bg-white p-4">
+        <div className="rounded-xl border border-slate-100 bg-white p-4">
           <p className="text-xs text-brand-gray">Processing</p>
           <p className="text-xl font-bold text-blue-700">{processingCount}</p>
         </div>
@@ -616,7 +609,7 @@ export default function AdminPayoutsPage() {
         <AdminBarChart data={timelineData} xKey="label" barKey="value" color="#0F766E" valueFormatter={toCurrency} />
       </ChartCard>
 
-      <div className="rounded-2xl border border-slate-100 bg-white p-3">
+      <div className="rounded-xl border border-slate-100 bg-white p-3">
         <div className="grid gap-3 md:grid-cols-2">
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-xl border border-slate-200 px-3 py-2 text-sm">
             <option value="all">All Status</option>
@@ -636,7 +629,7 @@ export default function AdminPayoutsPage() {
         Select all approved payouts with proof
       </label>
 
-      <div className="rounded-2xl border border-slate-100 bg-white overflow-hidden">
+      <div className="rounded-xl border border-slate-100 bg-white overflow-hidden">
         <div className="hidden sm:grid sm:grid-cols-[1.5rem_1fr_auto_auto_1.5rem] items-center gap-4 border-b border-slate-100 bg-slate-50/80 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
           <span />
           <span>Recipient</span>

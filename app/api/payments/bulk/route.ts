@@ -13,6 +13,14 @@ const bulkPaySchema = z.object({
   allocations: z.array(allocationSchema).min(1, "At least one allocation required").max(10),
 });
 
+type GoalRecord = {
+  id: string;
+  savings_start_date: string | null;
+  target_date: string | null;
+  frequency: string | null;
+  minimum_amount?: number | null;
+};
+
 function generateReference() {
   const randomPart = Math.random().toString(36).slice(2, 10).toUpperCase();
   return `AJO-WALLET-BULK-${Date.now()}-${randomPart}`;
@@ -46,23 +54,27 @@ export async function POST(request: Request) {
 
     const goalIds = [...new Set(allocations.map((a) => a.targetId))];
     // Try reading minimum_amount if present; fallback for older DBs.
-    let goalsQuery = await auth.supabase
+    const goalsWithMinQuery = await auth.supabase
       .from("individual_savings_goals")
       .select("id, savings_start_date, target_date, frequency, minimum_amount")
       .in("id", goalIds)
       .eq("user_id", auth.user.id)
       .eq("status", "active");
 
-    if (goalsQuery.error?.message?.includes("minimum_amount")) {
-      goalsQuery = await auth.supabase
+    let goals: GoalRecord[] | null = goalsWithMinQuery.data as GoalRecord[] | null;
+    let goalsError = goalsWithMinQuery.error;
+
+    if (goalsWithMinQuery.error?.message?.includes("minimum_amount")) {
+      const goalsFallbackQuery = await auth.supabase
         .from("individual_savings_goals")
         .select("id, savings_start_date, target_date, frequency")
         .in("id", goalIds)
         .eq("user_id", auth.user.id)
         .eq("status", "active");
-    }
 
-    const { data: goals, error: goalsError } = goalsQuery;
+      goals = goalsFallbackQuery.data as GoalRecord[] | null;
+      goalsError = goalsFallbackQuery.error;
+    }
 
     if (goalsError) return badRequestResponse(goalsError.message);
     const goalById = new Map((goals ?? []).map((g) => [g.id, g]));
@@ -82,6 +94,9 @@ export async function POST(request: Request) {
     const targetSlotByGoal = new Map<string, { periodIndex: number; periodLabel: string; periodDate: string }>();
     for (const goalId of goalIds) {
       const goal = goalById.get(goalId)!;
+      if (!goal.savings_start_date || !goal.target_date || !goal.frequency) {
+        return badRequestResponse("One or more selected targets are missing schedule setup.");
+      }
       const slots = generatePassbookSlots(goal.savings_start_date, goal.target_date, goal.frequency as "daily" | "weekly" | "monthly");
       const { data: existing } = await auth.supabase
         .from("individual_savings_contributions")

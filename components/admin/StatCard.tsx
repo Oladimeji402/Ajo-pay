@@ -7,12 +7,11 @@ import { LucideIcon, TrendingUp, TrendingDown } from 'lucide-react';
 interface StatCardProps {
     label: string;
     value: string | number;
-    icon: LucideIcon;
+    icon?: LucideIcon;
     trend?: {
         value: string;
         isUp: boolean;
     };
-    color?: string;
     delay?: number;
     pulseOnChange?: boolean;
 }
@@ -22,45 +21,45 @@ export const StatCard = ({
     value,
     icon: Icon,
     trend,
-    color = 'brand-navy',
     delay = 0,
     pulseOnChange = false,
 }: StatCardProps) => {
     return (
         <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={pulseOnChange ? {
-                opacity: 1,
-                y: 0,
-                scale: [1, 1.01, 1],
-                boxShadow: [
-                    '0 1px 2px rgba(15, 23, 42, 0.06)',
-                    '0 0 0 6px rgba(16, 185, 129, 0.12)',
-                    '0 1px 2px rgba(15, 23, 42, 0.06)',
-                ],
-            } : {
-                opacity: 1,
-                y: 0,
-            }}
-            transition={pulseOnChange ? { delay, duration: 1.1, ease: 'easeOut' } : { delay }}
-            className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm hover:shadow-md transition-all group"
+            initial={{ opacity: 0, y: 8 }}
+            animate={
+                pulseOnChange
+                    ? { opacity: 1, y: 0, scale: [1, 1.008, 1] }
+                    : { opacity: 1, y: 0 }
+            }
+            transition={pulseOnChange ? { delay, duration: 0.9 } : { delay }}
+            className="bg-white rounded-xl border border-slate-100 p-4 hover:border-slate-200 transition-colors"
         >
-            <div className="flex justify-between items-start mb-4">
-                <div className={`w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-${color} group-hover:scale-110 transition-transform duration-300`}>
-                    <Icon size={24} />
+            <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-1.5">
+                    {Icon && <Icon size={13} className="text-slate-400" strokeWidth={2} />}
+                    <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wide">
+                        {label}
+                    </span>
                 </div>
                 {trend && (
-                    <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold ${trend.isUp ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'
-                        }`}>
-                        {trend.isUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                    <span
+                        className={`flex items-center gap-0.5 text-[11px] font-semibold ${
+                            trend.isUp ? 'text-emerald-600' : 'text-red-500'
+                        }`}
+                    >
+                        {trend.isUp ? (
+                            <TrendingUp size={11} strokeWidth={2.5} />
+                        ) : (
+                            <TrendingDown size={11} strokeWidth={2.5} />
+                        )}
                         {trend.value}
-                    </div>
+                    </span>
                 )}
             </div>
-            <div>
-                <p className="text-[13px] font-bold text-slate-400 uppercase tracking-wider mb-1">{label}</p>
-                <h3 className="text-2xl font-black text-brand-navy tracking-tight">{value}</h3>
-            </div>
+            <p className="text-[22px] font-bold text-brand-navy tabular-nums leading-none">
+                {value}
+            </p>
         </motion.div>
     );
 };

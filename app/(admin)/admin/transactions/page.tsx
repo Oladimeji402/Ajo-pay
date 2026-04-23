@@ -45,12 +45,12 @@ function AdminTransactionsSkeleton() {
       </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }, (_, idx) => (
-          <div key={idx} className="rounded-2xl border border-slate-100 bg-white p-4 h-20" />
+          <div key={idx} className="rounded-xl border border-slate-100 bg-white p-4 h-20" />
         ))}
       </div>
-      <div className="rounded-2xl border border-slate-100 bg-white p-4 h-56" />
-      <div className="rounded-2xl border border-slate-100 bg-white p-3 h-16" />
-      <div className="rounded-2xl border border-slate-100 bg-white p-3 h-72" />
+      <div className="rounded-xl border border-slate-100 bg-white p-4 h-56" />
+      <div className="rounded-xl border border-slate-100 bg-white p-3 h-16" />
+      <div className="rounded-xl border border-slate-100 bg-white p-3 h-72" />
     </div>
   );
 }
@@ -270,21 +270,18 @@ export default function AdminTransactionsPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-brand-navy">Admin Transactions</h1>
-          <LastSynced timestamp={lastSyncedAt} loading={loading} />
-        </div>
-        <button onClick={exportCsv} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-brand-navy hover:bg-slate-50">
-          <Download size={14} /> Export CSV
+      <div className="flex items-center justify-between gap-3">
+        <LastSynced timestamp={lastSyncedAt} loading={loading} />
+        <button onClick={exportCsv} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-brand-navy hover:bg-slate-50 transition-colors">
+          <Download size={12} /> Export CSV
         </button>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-2xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Successful Volume</p><p className="text-xl font-bold text-emerald-700">{toCurrency(successfulVolume)}</p></div>
-        <div className="rounded-2xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Pending Volume</p><p className="text-xl font-bold text-amber-700">{toCurrency(pendingVolume)}</p></div>
-        <div className="rounded-2xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Transaction Count</p><p className="text-xl font-bold text-brand-navy">{filtered.length.toLocaleString()}</p></div>
-        <div className="rounded-2xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Success Rate</p><p className="text-xl font-bold text-brand-navy">{successRate.toFixed(1)}%</p></div>
+        <div className="rounded-xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Successful Volume</p><p className="text-xl font-bold text-emerald-700">{toCurrency(successfulVolume)}</p></div>
+        <div className="rounded-xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Pending Volume</p><p className="text-xl font-bold text-amber-700">{toCurrency(pendingVolume)}</p></div>
+        <div className="rounded-xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Transaction Count</p><p className="text-xl font-bold text-brand-navy">{filtered.length.toLocaleString()}</p></div>
+        <div className="rounded-xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Success Rate</p><p className="text-xl font-bold text-brand-navy">{successRate.toFixed(1)}%</p></div>
       </div>
 
       <ChartCard title="Transaction Volume Trend" subtitle="Volume for selected filters">
@@ -296,7 +293,7 @@ export default function AdminTransactionsPage() {
         />
       </ChartCard>
 
-      <div className="rounded-2xl border border-slate-100 bg-white p-3">
+      <div className="rounded-xl border border-slate-100 bg-white p-3">
         <div className="grid gap-3 md:grid-cols-5">
           <div className="relative md:col-span-2">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />

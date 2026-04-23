@@ -21,72 +21,76 @@ type ActivityFeedProps = {
 function formatRelativeTime(timestamp: string) {
     const value = new Date(timestamp).getTime();
     if (!Number.isFinite(value)) return 'just now';
-
     const diffSeconds = Math.max(0, Math.floor((Date.now() - value) / 1000));
-
-    if (diffSeconds < 60) return `${diffSeconds}s ago`;
-
+    if (diffSeconds < 60) return `${diffSeconds}s`;
     const minutes = Math.floor(diffSeconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-
+    if (minutes < 60) return `${minutes}m`;
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-
+    if (hours < 24) return `${hours}h`;
     const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d ago`;
-
+    if (days < 7) return `${days}d`;
     return new Date(timestamp).toLocaleDateString();
 }
 
-function ActivityIcon({ type }: { type: ActivityType }) {
-    if (type === 'contribution') {
-        return <Banknote size={16} className="text-emerald-600" />;
-    }
-
-    if (type === 'payout') {
-        return <HandCoins size={16} className="text-amber-600" />;
-    }
-
-    if (type === 'signup') {
-        return <UserPlus size={16} className="text-sky-600" />;
-    }
-
-    return <Users size={16} className="text-indigo-600" />;
-}
+const activityConfig: Record<ActivityType, { icon: typeof Banknote; color: string; dot: string }> = {
+    contribution: { icon: Banknote, color: 'text-emerald-600', dot: 'bg-emerald-500' },
+    payout: { icon: HandCoins, color: 'text-amber-600', dot: 'bg-amber-400' },
+    signup: { icon: UserPlus, color: 'text-blue-600', dot: 'bg-blue-500' },
+    group: { icon: Users, color: 'text-violet-600', dot: 'bg-violet-500' },
+};
 
 export function ActivityFeed({ activities, loading = false }: ActivityFeedProps) {
     return (
-        <section className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
+        <section className="rounded-xl border border-slate-100 bg-white p-5">
             <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-base font-bold text-brand-navy">Live Activity</h3>
-                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">Realtime</span>
+                <h3 className="text-sm font-semibold text-brand-navy">Activity</h3>
+                <span className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-600">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Live
+                </span>
             </div>
 
-            <div className="max-h-105 space-y-2 overflow-y-auto pr-1">
-                {loading ? (
-                    <p className="rounded-xl bg-slate-50 p-3 text-sm text-slate-500">Loading activity...</p>
-                ) : null}
-
-                {!loading && activities.length === 0 ? (
-                    <p className="rounded-xl bg-slate-50 p-3 text-sm text-slate-500">No activity yet.</p>
-                ) : null}
-
-                {!loading
-                    ? activities.slice(0, 15).map((item) => (
-                        <article key={item.id} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                            <div className="flex items-start gap-3">
-                                <span className="mt-0.5 rounded-lg bg-white p-2" aria-hidden="true">
-                                    <ActivityIcon type={item.type} />
-                                </span>
-                                <div className="min-w-0 flex-1">
-                                    <p className="truncate text-sm font-semibold text-brand-navy">{item.title}</p>
-                                    <p className="mt-0.5 text-sm text-slate-600">{item.description}</p>
-                                    <p className="mt-1 text-xs font-medium text-slate-500">{formatRelativeTime(item.timestamp)}</p>
+            <div className="max-h-96 overflow-y-auto pr-1 space-y-0">
+                {loading && (
+                    <p className="text-xs text-slate-400 py-2">Loading...</p>
+                )}
+                {!loading && activities.length === 0 && (
+                    <p className="text-xs text-slate-400 py-2">No activity yet.</p>
+                )}
+                {!loading &&
+                    activities.slice(0, 15).map((item, idx) => {
+                        const cfg = activityConfig[item.type] ?? activityConfig.group;
+                        const Icon = cfg.icon;
+                        const isLast = idx === Math.min(activities.length, 15) - 1;
+                        return (
+                            <div key={item.id} className="flex gap-3">
+                                {/* Timeline */}
+                                <div className="flex flex-col items-center">
+                                    <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${cfg.dot}`} />
+                                    {!isLast && (
+                                        <div className="w-px flex-1 bg-slate-100 my-1" />
+                                    )}
+                                </div>
+                                {/* Content */}
+                                <div className={`pb-3 min-w-0 flex-1 ${isLast ? '' : ''}`}>
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                            <Icon size={12} className={cfg.color} strokeWidth={2} />
+                                            <p className="text-[12px] font-semibold text-brand-navy truncate">
+                                                {item.title}
+                                            </p>
+                                        </div>
+                                        <span className="text-[10px] text-slate-400 shrink-0 mt-px">
+                                            {formatRelativeTime(item.timestamp)}
+                                        </span>
+                                    </div>
+                                    <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                                        {item.description}
+                                    </p>
                                 </div>
                             </div>
-                        </article>
-                    ))
-                    : null}
+                        );
+                    })}
             </div>
         </section>
     );

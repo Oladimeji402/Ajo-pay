@@ -46,12 +46,12 @@ function AdminUsersSkeleton() {
       </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }, (_, idx) => (
-          <div key={idx} className="rounded-2xl border border-slate-100 bg-white p-4 h-20" />
+          <div key={idx} className="rounded-xl border border-slate-100 bg-white p-4 h-20" />
         ))}
       </div>
-      <div className="rounded-2xl border border-slate-100 bg-white p-4 h-48" />
-      <div className="rounded-2xl border border-slate-100 bg-white p-3 h-16" />
-      <div className="rounded-2xl border border-slate-100 bg-white p-3 h-72" />
+      <div className="rounded-xl border border-slate-100 bg-white p-4 h-48" />
+      <div className="rounded-xl border border-slate-100 bg-white p-3 h-16" />
+      <div className="rounded-xl border border-slate-100 bg-white p-3 h-72" />
     </div>
   );
 }
@@ -275,18 +275,13 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-brand-navy">Admin Users</h1>
-          <LastSynced timestamp={lastSyncedAt} loading={loading || bulkLoading} />
-        </div>
-      </div>
+      <LastSynced timestamp={lastSyncedAt} loading={loading || bulkLoading} />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-2xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Total Users</p><p className="mt-1 text-xl font-bold text-brand-navy">{totalUsers}</p></div>
-        <div className="rounded-2xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Active Users</p><p className="mt-1 text-xl font-bold text-emerald-700">{activeUsers}</p></div>
-        <div className="rounded-2xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Suspended Users</p><p className="mt-1 text-xl font-bold text-red-600">{suspendedUsers}</p></div>
-        <div className="rounded-2xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">New This Month</p><p className="mt-1 text-xl font-bold text-brand-navy">{newUsersThisMonth}</p></div>
+        <div className="rounded-xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Total Users</p><p className="mt-1 text-xl font-bold text-brand-navy">{totalUsers}</p></div>
+        <div className="rounded-xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Active Users</p><p className="mt-1 text-xl font-bold text-emerald-700">{activeUsers}</p></div>
+        <div className="rounded-xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Suspended Users</p><p className="mt-1 text-xl font-bold text-red-600">{suspendedUsers}</p></div>
+        <div className="rounded-xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">New This Month</p><p className="mt-1 text-xl font-bold text-brand-navy">{newUsersThisMonth}</p></div>
       </div>
 
       <ChartCard title="User Growth" subtitle="Signups across the last 90 days">
@@ -298,7 +293,7 @@ export default function AdminUsersPage() {
         />
       </ChartCard>
 
-      <div className="rounded-2xl border border-slate-100 bg-white p-3">
+      <div className="rounded-xl border border-slate-100 bg-white p-3">
         <div className="grid gap-3 md:grid-cols-4">
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search users" className="rounded-xl border border-slate-200 px-3 py-2 text-sm md:col-span-2" />
           <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="rounded-xl border border-slate-200 px-3 py-2 text-sm">
@@ -317,7 +312,7 @@ export default function AdminUsersPage() {
       {error && <div className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-600">{error}</div>}
 
       <div className="space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-white p-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-white p-3">
           <label className="inline-flex items-center gap-2 px-1 text-xs font-semibold text-slate-600">
             <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} /> Select all filtered users
           </label>

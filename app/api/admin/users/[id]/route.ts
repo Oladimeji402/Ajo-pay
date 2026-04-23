@@ -29,69 +29,148 @@ export async function GET(_request: Request, context: Context) {
     if (profileError) return badRequestResponse(profileError.message);
     if (!profile) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-    const [membershipsResult, contributionsResult, payoutsResult] = await Promise.all([
+    const [
+      targetGoalsResult,
+      targetContributionsResult,
+      generalSchemesResult,
+      generalDepositsResult,
+      passbookPayoutsResult,
+    ] = await Promise.all([
       auth.supabase
-        .from("group_members")
-        .select("id, joined_at, position, contribution_status, payout_status, groups:group_id(id, name, status, frequency, contribution_amount, current_cycle, total_cycles, start_date)")
+        .from("individual_savings_goals")
+        .select("id, name, frequency, status, target_amount, total_saved, target_date, savings_start_date, created_at")
         .eq("user_id", id)
-        .order("joined_at", { ascending: false }),
+        .order("created_at", { ascending: false }),
       auth.supabase
-        .from("contributions")
-        .select("id, status, amount, cycle_number, paid_at, created_at, groups:group_id(id, name)")
+        .from("individual_savings_contributions")
+        .select("id, goal_id, status, amount, paid_at, created_at, period_index")
         .eq("user_id", id)
         .order("created_at", { ascending: false })
-        .limit(8),
+        .limit(500),
       auth.supabase
-        .from("payouts")
-        .select("id, status, amount, cycle_number, created_at, marked_done_at, groups:group_id(id, name)")
+        .from("savings_schemes")
+        .select("id, name, frequency, status, minimum_amount, created_at")
+        .eq("user_id", id)
+        .order("created_at", { ascending: false }),
+      auth.supabase
+        .from("savings_deposits")
+        .select("id, scheme_id, status, amount, paid_at, created_at")
         .eq("user_id", id)
         .order("created_at", { ascending: false })
-        .limit(8),
+        .limit(500),
+      auth.supabase
+        .from("passbook_payouts")
+        .select("id, scheme_id, amount, period_label, paid_at, created_at")
+        .eq("user_id", id)
+        .order("created_at", { ascending: false })
+        .limit(100),
     ]);
 
-    if (membershipsResult.error) return badRequestResponse(membershipsResult.error.message);
-    if (contributionsResult.error) return badRequestResponse(contributionsResult.error.message);
-    if (payoutsResult.error) return badRequestResponse(payoutsResult.error.message);
+    if (targetGoalsResult.error) return badRequestResponse(targetGoalsResult.error.message);
+    if (targetContributionsResult.error) return badRequestResponse(targetContributionsResult.error.message);
+    if (generalSchemesResult.error) return badRequestResponse(generalSchemesResult.error.message);
+    if (generalDepositsResult.error) return badRequestResponse(generalDepositsResult.error.message);
+    if (passbookPayoutsResult.error) return badRequestResponse(passbookPayoutsResult.error.message);
 
-    const memberships = membershipsResult.data ?? [];
-    const contributions = contributionsResult.data ?? [];
-    const payouts = payoutsResult.data ?? [];
+    const targetGoals = targetGoalsResult.data ?? [];
+    const targetContributions = targetContributionsResult.data ?? [];
+    const generalSchemes = generalSchemesResult.data ?? [];
+    const generalDeposits = generalDepositsResult.data ?? [];
+    const passbookPayouts = passbookPayoutsResult.data ?? [];
+
+    const targetGoalById = new Map(targetGoals.map((goal) => [goal.id, goal]));
+    const generalSchemeById = new Map(generalSchemes.map((scheme) => [scheme.id, scheme]));
+
+    const savingsPlans = [
+      ...targetGoals.map((goal) => {
+        const entries = targetContributions.filter((row) => row.goal_id === goal.id);
+        const successfulCount = entries.filter((row) => row.status === "success").length;
+        const missedCount = entries.filter((row) => row.status === "failed").length;
+        const skippedCount = entries.filter((row) => row.status === "abandoned").length;
+        const pendingCount = entries.filter((row) => row.status === "pending").length;
+        const lastPaidAt = entries.find((row) => row.status === "success")?.paid_at ?? null;
+
+        return {
+          id: goal.id,
+          planType: "target",
+          name: goal.name,
+          frequency: goal.frequency,
+          status: goal.status,
+          targetAmount: Number(goal.target_amount ?? 0),
+          totalSaved: Number(goal.total_saved ?? 0),
+          successfulCount,
+          missedCount,
+          skippedCount,
+          pendingCount,
+          startDate: goal.savings_start_date,
+          targetDate: goal.target_date,
+          createdAt: goal.created_at,
+          lastPaidAt,
+        };
+      }),
+      ...generalSchemes.map((scheme) => {
+        const entries = generalDeposits.filter((row) => row.scheme_id === scheme.id);
+        const successfulEntries = entries.filter((row) => row.status === "success");
+        const totalSaved = successfulEntries.reduce((sum, row) => sum + Number(row.amount ?? 0), 0);
+        const successfulCount = successfulEntries.length;
+        const missedCount = entries.filter((row) => row.status === "failed").length;
+        const skippedCount = 0;
+        const pendingCount = 0;
+        const lastPaidAt = successfulEntries[0]?.paid_at ?? null;
+
+        return {
+          id: scheme.id,
+          planType: "general",
+          name: scheme.name,
+          frequency: scheme.frequency,
+          status: scheme.status,
+          minimumAmount: Number(scheme.minimum_amount ?? 0),
+          totalSaved,
+          successfulCount,
+          missedCount,
+          skippedCount,
+          pendingCount,
+          startDate: null,
+          targetDate: null,
+          createdAt: scheme.created_at,
+          lastPaidAt,
+        };
+      }),
+    ];
 
     const recentActivity = [
-      ...memberships.map((membership) => ({
-        id: `group_join:${membership.id}`,
-        type: "group_join",
-        status: membership.contribution_status,
-        title: `Joined group ${(membership.groups as { name?: string } | null)?.name ?? "Unknown group"}`,
-        description: `Position #${membership.position} in rotation`,
-        amount: null,
-        occurredAt: membership.joined_at,
-      })),
-      ...contributions.map((contribution) => ({
-        id: `contribution:${contribution.id}`,
-        type: "contribution",
+      ...targetContributions.map((contribution) => ({
+        id: `target_contribution:${contribution.id}`,
+        type: "target_contribution",
         status: contribution.status,
-        title: `Contribution for ${(contribution.groups as { name?: string } | null)?.name ?? "Unknown group"}`,
-        description: `Cycle ${contribution.cycle_number}`,
+        title: `Target savings payment for ${targetGoalById.get(contribution.goal_id)?.name ?? "Unnamed target"}`,
+        description: `Period #${Number(contribution.period_index ?? 0) + 1}`,
         amount: contribution.amount,
         occurredAt: contribution.paid_at ?? contribution.created_at,
       })),
-      ...payouts.map((payout) => ({
-        id: `payout:${payout.id}`,
-        type: "payout",
-        status: payout.status,
-        title: `Payout from ${(payout.groups as { name?: string } | null)?.name ?? "Unknown group"}`,
-        description: `Cycle ${payout.cycle_number}`,
-        amount: payout.amount,
-        occurredAt: payout.marked_done_at ?? payout.created_at,
+      ...generalDeposits.map((deposit) => ({
+        id: `general_deposit:${deposit.id}`,
+        type: "general_deposit",
+        status: deposit.status,
+        title: `General savings payment for ${generalSchemeById.get(deposit.scheme_id)?.name ?? "Unnamed scheme"}`,
+        description: `${generalSchemeById.get(deposit.scheme_id)?.frequency ?? "general"} plan`,
+        amount: deposit.amount,
+        occurredAt: deposit.paid_at ?? deposit.created_at,
       })),
-    ]
-      .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime())
-      .slice(0, 12);
+      ...passbookPayouts.map((payout) => ({
+        id: `general_payout:${payout.id}`,
+        type: "general_payout",
+        status: "done",
+        title: `Savings payout for ${generalSchemeById.get(payout.scheme_id)?.name ?? "Unnamed scheme"}`,
+        description: payout.period_label || "Recorded payout",
+        amount: payout.amount,
+        occurredAt: payout.paid_at ?? payout.created_at,
+      })),
+    ].sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime()).slice(0, 20);
 
     return NextResponse.json({
       data: profile,
-      groups: memberships,
+      savingsPlans,
       recentActivity,
     });
   } catch {

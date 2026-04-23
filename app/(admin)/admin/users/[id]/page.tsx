@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Activity, ArrowLeft, Banknote, Briefcase, Shield, TriangleAlert, UserCog, X } from 'lucide-react';
+import { Activity, ArrowLeft, Banknote, Landmark, Shield, TriangleAlert, UserCog, X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
 
@@ -12,6 +12,9 @@ type UserDetail = {
     name: string;
     email: string;
     phone?: string | null;
+    bank_name?: string | null;
+    bank_account?: string | null;
+    bank_account_name?: string | null;
     role: string;
     status: string;
     kyc_level: number;
@@ -22,32 +25,33 @@ type UserDetail = {
     updated_at?: string;
 };
 
-type UserGroupMembership = {
-    id: string;
-    joined_at: string;
-    position: number;
-    contribution_status: string;
-    payout_status: string;
-    groups?: {
-        id: string;
-        name: string;
-        status: string;
-        frequency: string;
-        contribution_amount: number;
-        current_cycle: number;
-        total_cycles: number;
-        start_date?: string | null;
-    } | null;
-};
-
 type UserActivity = {
     id: string;
-    type: 'group_join' | 'contribution' | 'payout';
+    type: 'target_contribution' | 'general_deposit' | 'general_payout' | string;
     status: string;
     title: string;
     description: string;
     amount: number | null;
     occurredAt: string;
+};
+
+type SavingsPlan = {
+    id: string;
+    planType: 'target' | 'general';
+    name: string;
+    frequency: string;
+    status: string;
+    targetAmount?: number;
+    minimumAmount?: number;
+    totalSaved: number;
+    successfulCount: number;
+    missedCount: number;
+    skippedCount: number;
+    pendingCount: number;
+    startDate?: string | null;
+    targetDate?: string | null;
+    createdAt?: string;
+    lastPaidAt?: string | null;
 };
 
 const actionButtonClassName = 'inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow active:translate-y-0 disabled:opacity-60';
@@ -56,7 +60,7 @@ function UserDetailSkeleton() {
     return (
         <div className="space-y-4 animate-pulse">
             <div className="h-4 w-28 rounded bg-slate-200" />
-            <div className="rounded-2xl border border-slate-100 bg-white p-4 space-y-4">
+            <div className="rounded-xl border border-slate-100 bg-white p-4 space-y-4">
                 <div className="h-7 w-60 rounded bg-slate-200" />
                 <div className="h-4 w-80 rounded bg-slate-200" />
                 <div className="grid sm:grid-cols-2 gap-3">
@@ -72,7 +76,7 @@ function UserDetailSkeleton() {
                     <div className="h-9 w-24 rounded-lg bg-slate-200" />
                 </div>
             </div>
-            <div className="rounded-2xl border border-slate-100 bg-white p-4 space-y-3">
+            <div className="rounded-xl border border-slate-100 bg-white p-4 space-y-3">
                 <div className="h-5 w-32 rounded bg-slate-200" />
                 <div className="grid gap-2">
                     {Array.from({ length: 3 }, (_, idx) => (
@@ -92,7 +96,7 @@ export default function AdminUserDetailPage() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [user, setUser] = useState<UserDetail | null>(null);
-    const [groups, setGroups] = useState<UserGroupMembership[]>([]);
+    const [savingsPlans, setSavingsPlans] = useState<SavingsPlan[]>([]);
     const [recentActivity, setRecentActivity] = useState<UserActivity[]>([]);
     const [confirmAction, setConfirmAction] = useState<{ type: 'role' | 'status'; nextValue: string } | null>(null);
     const { showToast } = useToast();
@@ -102,7 +106,7 @@ export default function AdminUserDetailPage() {
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || 'Failed to load user.');
         setUser(json.data as UserDetail);
-        setGroups(Array.isArray(json.groups) ? (json.groups as UserGroupMembership[]) : []);
+        setSavingsPlans(Array.isArray(json.savingsPlans) ? (json.savingsPlans as SavingsPlan[]) : []);
         setRecentActivity(Array.isArray(json.recentActivity) ? (json.recentActivity as UserActivity[]) : []);
     }, [id]);
 
@@ -169,12 +173,10 @@ export default function AdminUserDetailPage() {
     if (loading) return <UserDetailSkeleton />;
     if (!user) return <div className="text-sm text-red-600">User not found.</div>;
 
-    const activeGroups = groups.filter((membership) => membership.groups?.status === 'active').length;
-
     return (
         <div className="space-y-4">
             <Link href="/admin/users" className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-gray transition-colors hover:text-brand-navy"><ArrowLeft size={14} /> Back to users</Link>
-            <div className="rounded-2xl border border-slate-100 bg-white p-5 space-y-4">
+            <div className="rounded-xl border border-slate-100 bg-white p-5 space-y-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                         <h1 className="text-xl font-bold text-brand-navy">{user.name || user.email}</h1>
@@ -192,8 +194,8 @@ export default function AdminUserDetailPage() {
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-xs text-brand-gray">Status</p><p className="font-bold text-brand-navy capitalize">{user.status}</p></div>
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-xs text-brand-gray">Wallet Balance</p><p className="font-bold text-brand-navy">NGN {Number(user.wallet_balance).toLocaleString('en-NG')}</p></div>
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-xs text-brand-gray">KYC Level</p><p className="font-bold text-brand-navy">Level {user.kyc_level}</p></div>
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-xs text-brand-gray">Groups Joined</p><p className="font-bold text-brand-navy">{groups.length}</p></div>
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-xs text-brand-gray">Active Groups</p><p className="font-bold text-brand-navy">{activeGroups}</p></div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-xs text-brand-gray">Profile Created</p><p className="font-bold text-brand-navy">{user.created_at ? new Date(user.created_at).toLocaleDateString('en-NG') : 'N/A'}</p></div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-xs text-brand-gray">Last Updated</p><p className="font-bold text-brand-navy">{user.updated_at ? new Date(user.updated_at).toLocaleDateString('en-NG') : 'N/A'}</p></div>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -216,29 +218,71 @@ export default function AdminUserDetailPage() {
                 {error && <p className="text-xs text-red-600">{error}</p>}
             </div>
 
-            <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm space-y-3">
+            <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm space-y-3">
+                <h2 className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-navy"><Landmark size={14} className="text-indigo-600" /> Account details</h2>
+                <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <p className="text-xs text-brand-gray">Bank</p>
+                        <p className="font-bold text-brand-navy">{user.bank_name || 'Not set'}</p>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <p className="text-xs text-brand-gray">Account Number</p>
+                        <p className="font-bold text-brand-navy">{user.bank_account || 'Not set'}</p>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <p className="text-xs text-brand-gray">Account Name</p>
+                        <p className="font-bold text-brand-navy">{user.bank_account_name || 'Not set'}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm space-y-3">
                 <div className="flex items-center justify-between gap-2">
-                    <h2 className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-navy"><Briefcase size={14} className="text-indigo-600" /> Joined groups</h2>
-                    <span className="text-xs text-brand-gray">{groups.length} total</span>
+                    <h2 className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-navy">Savings plans</h2>
+                    <span className="text-xs text-brand-gray">{savingsPlans.length} total</span>
                 </div>
 
-                {groups.length === 0 ? (
-                    <p className="text-sm text-brand-gray">This user has not joined any groups yet.</p>
+                {savingsPlans.length === 0 ? (
+                    <p className="text-sm text-brand-gray">No target or general savings plans found for this user.</p>
                 ) : (
                     <div className="space-y-2">
-                        {groups.map((membership) => (
-                            <div key={membership.id} className="rounded-xl border border-slate-200/70 bg-gradient-to-r from-white to-slate-50 p-3 shadow-sm transition hover:border-slate-300 hover:shadow">
+                        {savingsPlans.map((plan) => (
+                            <div key={plan.id} className="rounded-xl border border-slate-200/70 bg-gradient-to-r from-white to-slate-50 p-3 shadow-sm">
                                 <div className="flex flex-wrap items-start justify-between gap-2">
                                     <div>
-                                        <p className="text-sm font-semibold text-brand-navy">{membership.groups?.name || 'Group'}</p>
-                                        <p className="mt-1 text-xs text-brand-gray">
-                                            Position #{membership.position} · Joined {new Date(membership.joined_at).toLocaleString('en-NG')}
+                                        <p className="text-sm font-semibold text-brand-navy">{plan.name}</p>
+                                        <p className="mt-1 text-xs text-brand-gray capitalize">
+                                            {plan.planType} · {plan.frequency} · {plan.status}
                                         </p>
                                     </div>
-                                    <div className="flex flex-wrap gap-1 text-[11px]">
-                                        <span className="rounded-lg bg-slate-200 px-2 py-1 font-semibold text-slate-700">{membership.groups?.status || 'unknown'}</span>
-                                        <span className="rounded-lg bg-blue-100 px-2 py-1 font-semibold text-blue-700">Contribution: {membership.contribution_status}</span>
-                                        <span className="rounded-lg bg-emerald-100 px-2 py-1 font-semibold text-emerald-700">Payout: {membership.payout_status}</span>
+                                    <div className="text-right">
+                                        <p className="text-xs text-brand-gray">Saved</p>
+                                        <p className="text-sm font-bold text-brand-navy">NGN {Number(plan.totalSaved).toLocaleString('en-NG')}</p>
+                                    </div>
+                                </div>
+
+                                <div className="mt-2 grid gap-2 sm:grid-cols-5 text-xs">
+                                    <div className="rounded-lg bg-slate-100 px-2 py-1.5">
+                                        <p className="text-brand-gray">Paid</p>
+                                        <p className="font-semibold text-brand-navy">{plan.successfulCount}</p>
+                                    </div>
+                                    <div className="rounded-lg bg-amber-50 px-2 py-1.5">
+                                        <p className="text-brand-gray">Missed</p>
+                                        <p className="font-semibold text-amber-700">{plan.missedCount}</p>
+                                    </div>
+                                    <div className="rounded-lg bg-rose-50 px-2 py-1.5">
+                                        <p className="text-brand-gray">Skipped</p>
+                                        <p className="font-semibold text-rose-700">{plan.skippedCount}</p>
+                                    </div>
+                                    <div className="rounded-lg bg-blue-50 px-2 py-1.5">
+                                        <p className="text-brand-gray">Pending</p>
+                                        <p className="font-semibold text-blue-700">{plan.pendingCount}</p>
+                                    </div>
+                                    <div className="rounded-lg bg-emerald-50 px-2 py-1.5">
+                                        <p className="text-brand-gray">{plan.planType === 'target' ? 'Target' : 'Minimum'}</p>
+                                        <p className="font-semibold text-emerald-700">
+                                            NGN {Number(plan.planType === 'target' ? plan.targetAmount ?? 0 : plan.minimumAmount ?? 0).toLocaleString('en-NG')}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -247,7 +291,7 @@ export default function AdminUserDetailPage() {
                 )}
             </div>
 
-            <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm space-y-3">
+            <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm space-y-3">
                 <h2 className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-navy"><Activity size={14} className="text-emerald-600" /> Recent activity</h2>
 
                 {recentActivity.length === 0 ? (

@@ -19,7 +19,7 @@ import { AdminPieChart } from '@/components/admin/charts/PieChart';
 import { AdminBarChart } from '@/components/admin/charts/BarChart';
 import { useRealtimeSubscription } from '@/lib/hooks/useRealtimeSubscription';
 
-const OVERVIEW_REALTIME_TABLES = ['contributions', 'payment_records', 'payouts', 'profiles', 'groups'];
+const OVERVIEW_REALTIME_TABLES = ['contributions', 'payment_records', 'payouts', 'profiles', 'savings_schemes', 'passbook_payouts'];
 
 type AdminStats = {
   totalUsers: number;
@@ -122,27 +122,21 @@ function sumPreviousMonth(rows: TrendPoint[]) {
 
 function AdminOverviewSkeleton() {
   return (
-    <div className="space-y-6 animate-pulse">
-      <div className="flex items-center justify-between gap-3">
-        <div className="space-y-2">
-          <div className="h-7 w-48 rounded bg-slate-200" />
-          <div className="h-3 w-32 rounded bg-slate-200" />
-        </div>
-        <div className="h-9 w-40 rounded-xl bg-slate-200" />
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+    <div className="space-y-5 animate-pulse">
+      <div className="h-4 w-36 rounded bg-slate-200" />
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         {Array.from({ length: 6 }, (_, idx) => (
-          <div key={idx} className="rounded-2xl border border-slate-100 bg-white p-4 h-24" />
+          <div key={idx} className="rounded-xl border border-slate-100 bg-white p-4 h-20" />
         ))}
       </div>
-      <div className="grid gap-4 xl:grid-cols-2">
-        <div className="rounded-2xl border border-slate-100 bg-white p-4 h-64" />
-        <div className="rounded-2xl border border-slate-100 bg-white p-4 h-64" />
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="rounded-xl border border-slate-100 bg-white p-5 h-60" />
+        <div className="rounded-xl border border-slate-100 bg-white p-5 h-60" />
       </div>
-      <div className="grid gap-4 xl:grid-cols-3">
-        <div className="rounded-2xl border border-slate-100 bg-white p-4 h-56" />
-        <div className="rounded-2xl border border-slate-100 bg-white p-4 h-56" />
-        <div className="rounded-2xl border border-slate-100 bg-white p-4 h-56" />
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="rounded-xl border border-slate-100 bg-white p-5 h-52" />
+        <div className="rounded-xl border border-slate-100 bg-white p-5 h-52" />
+        <div className="rounded-xl border border-slate-100 bg-white p-5 h-52" />
       </div>
     </div>
   );
@@ -271,35 +265,18 @@ export default function AdminOverviewPage() {
   const successRate = totalContributions > 0 ? (successContributions / totalContributions) * 100 : 0;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-brand-navy">Admin Overview</h1>
-          <LastSynced timestamp={lastSyncedAt} loading={refreshing || loading} />
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href="/admin/groups"
-            className="rounded-xl bg-brand-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
-          >
-            Create Group
-          </Link>
-          <Link
-            href="/admin/payouts"
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-brand-navy transition hover:bg-slate-50"
-          >
-            Process Payouts
-          </Link>
-          <Link
-            href="/admin/transactions"
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-brand-navy transition hover:bg-slate-50"
-          >
-            Export Data
-          </Link>
-        </div>
+    <div className="space-y-5">
+      <div className="flex items-center justify-between gap-3">
+        <LastSynced timestamp={lastSyncedAt} loading={refreshing || loading} />
+        <Link
+          href="/admin/payouts"
+          className="rounded-lg bg-brand-navy px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-navy/90"
+        >
+          Process Payouts
+        </Link>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         <StatCard
           label="Total Users"
           value={dashboard.stats.totalUsers}
@@ -308,7 +285,7 @@ export default function AdminOverviewPage() {
           pulseOnChange={refreshing}
         />
         <StatCard
-          label="Active Groups"
+          label="Active Savings Plans"
           value={dashboard.stats.activeGroups}
           icon={Layers3}
           trend={trendBadge(
@@ -352,7 +329,7 @@ export default function AdminOverviewPage() {
         />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
         <ChartCard
           title="Contribution Trends"
           subtitle="Track contribution volume over time"
@@ -364,24 +341,22 @@ export default function AdminOverviewPage() {
           ]}
           onRangeChange={setTrendRange}
         >
-          <div className="mb-3 flex items-center justify-between">
-            <div className="inline-flex rounded-lg bg-slate-100 p-1 text-xs font-semibold">
-              <button
-                type="button"
-                className={`rounded-md px-3 py-1 ${metric === 'amount' ? 'bg-white text-brand-navy shadow-sm' : 'text-slate-500'}`}
-                onClick={() => setMetric('amount')}
-              >
-                Amount
-              </button>
-              <button
-                type="button"
-                className={`rounded-md px-3 py-1 ${metric === 'count' ? 'bg-white text-brand-navy shadow-sm' : 'text-slate-500'}`}
-                onClick={() => setMetric('count')}
-              >
-                Count
-              </button>
-            </div>
-            {refreshing ? <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" /> : null}
+          <div className="mb-3 flex items-center gap-1">
+            <button
+              type="button"
+              className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all ${metric === 'amount' ? 'bg-slate-100 text-brand-navy' : 'text-slate-400 hover:text-slate-600'}`}
+              onClick={() => setMetric('amount')}
+            >
+              Amount
+            </button>
+            <button
+              type="button"
+              className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all ${metric === 'count' ? 'bg-slate-100 text-brand-navy' : 'text-slate-400 hover:text-slate-600'}`}
+              onClick={() => setMetric('count')}
+            >
+              Count
+            </button>
+            {refreshing ? <span className="ml-auto h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> : null}
           </div>
 
           <AdminAreaChart
@@ -402,7 +377,7 @@ export default function AdminOverviewPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <ChartCard title="Groups by Category" subtitle="Ajo, school, mosque, church">
+        <ChartCard title="Savings Mix" subtitle="Distribution for active savings-related records">
           <AdminPieChart data={dashboard.groupsByCategory} />
         </ChartCard>
 
@@ -413,7 +388,7 @@ export default function AdminOverviewPage() {
           />
         </ChartCard>
 
-        <ChartCard title="Top Groups" subtitle="Highest contribution totals">
+        <ChartCard title="Top Contribution Sources" subtitle="Highest contribution totals">
           <AdminBarChart
             data={dashboard.topGroupsByContributions}
             xKey="name"

@@ -48,10 +48,10 @@ function AdminSettingsSkeleton() {
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }, (_, idx) => (
-          <div key={idx} className="rounded-2xl border border-slate-100 bg-white p-4 h-24" />
+          <div key={idx} className="rounded-xl border border-slate-100 bg-white p-4 h-24" />
         ))}
       </div>
-      <div className="rounded-2xl border border-slate-100 bg-white p-5 h-72" />
+      <div className="rounded-xl border border-slate-100 bg-white p-5 h-72" />
     </div>
   );
 }
@@ -193,25 +193,22 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold text-brand-navy">Admin Settings</h1>
-        <LastSynced timestamp={lastSyncedAt} loading={loading || saving} />
-      </div>
+      <LastSynced timestamp={lastSyncedAt} loading={loading || saving} />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-2xl border border-slate-100 bg-white p-4">
+        <div className="rounded-xl border border-slate-100 bg-white p-4">
           <p className="text-xs text-brand-gray">Last Webhook Activity</p>
           <p className="mt-1 text-sm font-semibold text-brand-navy">{lastWebhookReceivedAt ? new Date(lastWebhookReceivedAt).toLocaleString() : 'No payment activity yet'}</p>
         </div>
-        <div className="rounded-2xl border border-red-100 bg-red-50/40 p-4 shadow-sm">
+        <div className="rounded-xl border border-red-100 bg-red-50/40 p-4 shadow-sm">
           <p className="text-xs text-brand-gray">Recent Failed Transactions</p>
           <p className="mt-1 text-xl font-bold text-red-600">{failedTxCount}</p>
         </div>
-        <div className="rounded-2xl border border-slate-100 bg-white p-4">
+        <div className="rounded-xl border border-slate-100 bg-white p-4">
           <p className="text-xs text-brand-gray">Pending Payout Queue</p>
           <p className="mt-1 text-xl font-bold text-brand-navy">{pendingPayoutCount}</p>
         </div>
-        <div className={`rounded-2xl border p-4 shadow-sm ${connectionTone(connectionStatus)}`}>
+        <div className={`rounded-xl border p-4 shadow-sm ${connectionTone(connectionStatus)}`}>
           <p className="text-xs">Realtime Connection</p>
           <p className="mt-1 inline-flex items-center gap-2 text-sm font-semibold capitalize">
             {connectionStatus === 'subscribed' ? <Wifi size={14} /> : <WifiOff size={14} />}
@@ -221,7 +218,7 @@ export default function AdminSettingsPage() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-100 bg-white p-5">
+      <div className="rounded-xl border border-slate-100 bg-white p-5">
         <h2 className="inline-flex items-center gap-1.5 text-base font-bold text-brand-navy"><Shield size={15} className="text-indigo-600" /> Admin Profile</h2>
         <p className="mt-1 text-xs text-slate-500">Update account details used in the admin workspace.</p>
 
