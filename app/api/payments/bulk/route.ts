@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     const goalIds = [...new Set(allocations.map((a) => a.targetId))];
     const { data: goals, error: goalsError } = await auth.supabase
       .from("individual_savings_goals")
-      .select("id, savings_start_date, target_date, frequency")
+      .select("id, savings_start_date, target_date, frequency, minimum_amount")
       .in("id", goalIds)
       .eq("user_id", auth.user.id)
       .eq("status", "active");
@@ -56,6 +56,15 @@ export async function POST(request: Request) {
     const goalById = new Map((goals ?? []).map((g) => [g.id, g]));
     if (goalById.size !== goalIds.length) {
       return NextResponse.json({ error: "One or more savings goals are invalid, inactive, or not yours." }, { status: 403 });
+    }
+
+    // Enforce target minimums for all allocations.
+    for (const alloc of allocations) {
+      const goal = goalById.get(alloc.targetId)!;
+      const minAmount = Math.max(500, Number(goal.minimum_amount ?? 0));
+      if (Number(alloc.amount) < minAmount) {
+        return badRequestResponse(`Minimum amount for one selected target is NGN ${minAmount.toLocaleString("en-NG")}.`);
+      }
     }
 
     const targetSlotByGoal = new Map<string, { periodIndex: number; periodLabel: string; periodDate: string }>();

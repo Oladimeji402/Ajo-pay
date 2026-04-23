@@ -180,7 +180,15 @@ function SearchableSelect({
 
 // ── Main page content ─────────────────────────────────────────────────────────
 
-type RawGoal   = { id: string; name: string; frequency: string; contribution_amount: number; status: string; festive_periods?: { color: string } | null };
+type RawGoal   = {
+    id: string;
+    name: string;
+    frequency: string;
+    contribution_amount: number;
+    minimum_amount?: number | null;
+    status: string;
+    festive_periods?: { color: string } | null;
+};
 type RawScheme = { id: string; name: string; frequency: string; minimum_amount: number; status: string };
 type SavingsRaw = { goals: RawGoal[]; schemes: RawScheme[]; gated: boolean };
 
@@ -214,9 +222,11 @@ function PayPageContent() {
         const goalOpts: SavingsOption[] = raw.goals
             .filter(g => g.status === 'active')
             .map(g => ({
+                // Target min is at least NGN 500, unless admin set higher.
+                // Keep prefill at contribution_amount, but enforce min at add/pay time.
                 id: g.id, key: `goal::${g.id}`, type: 'goal' as const,
                 name: g.name,
-                subtitle: `${g.frequency} · NGN ${Number(g.contribution_amount).toLocaleString('en-NG')}`,
+                subtitle: `${g.frequency} · min NGN ${Number(Math.max(500, Number(g.minimum_amount ?? 0))).toLocaleString('en-NG')}`,
                 defaultAmount: g.contribution_amount,
                 color: g.festive_periods?.color, frequency: g.frequency,
             }));
@@ -262,6 +272,14 @@ function PayPageContent() {
         if (!opt) { notifyWarning(showToast, 'Please select a savings target first.'); return; }
         const amount = Number(customAmount) || opt.defaultAmount;
         if (!amount) { notifyWarning(showToast, 'Please enter an amount.'); return; }
+        if (opt.type === 'goal') {
+            const rawGoal = raw?.goals.find(g => g.id === opt.id);
+            const minGoalAmount = Math.max(500, Number(rawGoal?.minimum_amount ?? 0));
+            if (amount < minGoalAmount) {
+                notifyWarning(showToast, `Minimum for this target is NGN ${minGoalAmount.toLocaleString('en-NG')}.`);
+                return;
+            }
+        }
 
         if (allocations.some(a => a.key === selectedKey)) {
             notifyWarning(showToast, 'Already added. Remove it first to change the amount.');
@@ -299,7 +317,7 @@ function PayPageContent() {
                 const res = await fetch('/api/payments/individual-savings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ goalId: goalItems[0]!.id }),
+                    body: JSON.stringify({ goalId: goalItems[0]!.id, amount: goalItems[0]!.amount }),
                 });
                 const json = await res.json();
                 if (!res.ok) errors.push(json.error ?? 'Goal payment failed.');
