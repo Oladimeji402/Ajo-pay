@@ -50,13 +50,13 @@ export const CTA = () => {
                             <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 400 }}>Ready</span>
                             <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.03em' }}> to start</span>
                             <br />
-                            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.03em' }}>your circle?</span>
+                            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.03em' }}>your plan?</span>
                         </h2>
                         <p
                             className="text-[15.5px] leading-relaxed mb-8 max-w-sm"
                             style={{ color: 'rgba(15,23,42,0.55)' }}
                         >
-                            Create your free account, join a verified Ajo group, and receive your first payout on schedule.
+                            Create your free account, set up target or general savings, and track payouts with full clarity.
                         </p>
 
                         {/* CTAs */}
@@ -103,7 +103,7 @@ export const CTA = () => {
                     <div className="flex flex-row lg:flex-col gap-6 lg:gap-8">
                         {[
                             { value: '₦0', label: 'Missed payouts, ever' },
-                            { value: '100%', label: 'Verified group members' },
+                            { value: '2 Types', label: 'Target and general savings' },
                             { value: 'Free', label: 'No hidden fees, ever' },
                         ].map((stat, i) => (
                             <div

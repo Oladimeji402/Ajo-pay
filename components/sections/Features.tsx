@@ -38,7 +38,7 @@ const ScheduleVisual = () => (
     </div>
 );
 
-// ─── Feature 2 visual: Group member ring ──────────────────────────────────────
+// ─── Feature 2 visual: Savings visibility panel ───────────────────────────────
 const GroupVisual = () => {
     const members = [
         { initials: 'OJ', color: '#1E3A6E', paid: true },
@@ -52,7 +52,7 @@ const GroupVisual = () => {
     return (
         <div className="w-full max-w-[280px] mx-auto">
             <div className="bg-white/[0.05] border border-white/[0.07] rounded-2xl p-5">
-                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/30 mb-4">Lagos Techies · Month 3</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/30 mb-4">Savings health · Month 3</p>
                 <div className="space-y-2.5">
                     {members.map((m, i) => (
                         <div key={i} className="flex items-center justify-between">
@@ -77,14 +77,14 @@ const GroupVisual = () => {
                                 m.current ? 'text-brand-accent' :
                                 m.paid ? 'text-brand-electric' : 'text-white/20'
                             }`}>
-                                {m.current ? 'Receiving ↓' : m.paid ? '✓ Paid' : 'Pending'}
+                                {m.current ? 'Due now' : m.paid ? '✓ Paid' : 'Pending'}
                             </span>
                         </div>
                     ))}
                 </div>
                 <div className="mt-4 pt-4 border-t border-white/[0.06] flex justify-between text-[10px]">
-                    <span className="text-white/30">5 / 6 contributed</span>
-                    <span className="text-brand-accent font-bold">₦500,000 collected</span>
+                    <span className="text-white/30">5 / 6 periods paid</span>
+                    <span className="text-brand-accent font-bold">₦500,000 saved</span>
                 </div>
             </div>
         </div>
@@ -105,8 +105,8 @@ const PayoutVisual = () => (
                 <TrendingUp size={18} className="text-brand-accent" />
             </div>
             <div>
-                <p className="text-[11px] font-bold text-white leading-tight">Payout Received</p>
-                <p className="text-[10px] text-white/40 mt-0.5">Family Savings · Just now</p>
+                <p className="text-[11px] font-bold text-white leading-tight">Withdrawal Recorded</p>
+                <p className="text-[10px] text-white/40 mt-0.5">General Savings · Just now</p>
             </div>
             <p className="text-[15px] font-black text-brand-accent ml-auto">+₦450K</p>
         </motion.div>
@@ -122,7 +122,7 @@ const PayoutVisual = () => (
                 <ArrowDownLeft size={14} className="text-brand-electric" />
             </div>
             <div className="flex-1">
-                <p className="text-[11px] font-bold text-white">Lagos Techies Ajo</p>
+                <p className="text-[11px] font-bold text-white">Target Savings Plan</p>
                 <p className="text-[10px] text-white/30">Bank transfer · 2 min ago</p>
             </div>
             <p className="text-[13px] font-bold text-brand-electric">+₦600,000</p>
@@ -243,9 +243,9 @@ export const Features = () => {
                 <FeatureRow
                     index={1}
                     number="02"
-                    tag="Community"
-                    title="Your circle, fully transparent."
-                    description="See exactly who has contributed, who's next in line, and how much the group has collected — in real time. No guesswork, no trust issues."
+                    tag="Visibility"
+                    title="Your savings, fully transparent."
+                    description="See plan status, paid periods, missed periods, and total saved in real time for both target and general plans."
                     visual={<GroupVisual />}
                     reverse
                 />
@@ -255,7 +255,7 @@ export const Features = () => {
                     number="03"
                     tag="Payouts"
                     title="Your money lands instantly."
-                    description="When it's your rotation, the full pot transfers directly to your bank account — no waiting, no chasing, no middleman delays."
+                    description="When payout is due, admins can process it with verified account details and clear payment records."
                     visual={<PayoutVisual />}
                 />
 

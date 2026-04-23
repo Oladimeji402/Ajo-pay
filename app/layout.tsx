@@ -7,12 +7,9 @@ export const metadata: Metadata = {
   description:
     "Save together, grow together. Subtech Ajo Solution brings the trusted Nigerian ajo savings tradition to the digital age.",
   icons: {
-    icon: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/subtech-ajo-solution-mark.svg", type: "image/svg+xml" },
-    ],
-    shortcut: "/favicon.svg",
-    apple: "/subtech-ajo-solution-mark.svg",
+    icon: [{ url: "/subtech-ajo-logo.svg", type: "image/svg+xml" }],
+    shortcut: "/subtech-ajo-logo.svg",
+    apple: "/subtech-ajo-logo.svg",
     other: [
       {
         rel: "mask-icon",

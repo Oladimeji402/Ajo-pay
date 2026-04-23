@@ -8,7 +8,7 @@ import Link from 'next/link';
 
 // ─── Ajo Rotation Circle ──────────────────────────────────────────────────────
 // Replaces the generic phone mockup with a visual that actually explains
-// what Ajo is — a rotating savings circle where each member gets their turn.
+// what Ajo is — structured savings with clear payout tracking.
 const AjoCircle = () => {
     const SIZE = 340;
     const CX = SIZE / 2;
@@ -80,7 +80,7 @@ const AjoCircle = () => {
                 }}
             >
                 <span className="text-white font-black text-[13px] tracking-tight leading-none">₦600K</span>
-                <span className="text-white/35 text-[8px] mt-0.5 uppercase tracking-widest">Group Pot</span>
+                <span className="text-white/35 text-[8px] mt-0.5 uppercase tracking-widest">Total Saved</span>
             </div>
 
             {/* Member nodes */}
@@ -161,7 +161,7 @@ const AjoCircle = () => {
                     top: positions[2].y - 12,
                 }}
             >
-                ← Payout this month
+                ← Due this cycle
             </motion.div>
         </div>
     );
@@ -207,7 +207,7 @@ export const Hero = () => {
                                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brand-accent" />
                             </span>
                             <span className="text-[11px] font-bold tracking-[0.18em] uppercase text-white/40">
-                                Rotating savings · Verified groups
+                                Target + General savings
                             </span>
                         </motion.div>
 
@@ -253,8 +253,8 @@ export const Hero = () => {
                             transition={{ delay: 0.22 }}
                             className="text-white/50 text-[16px] sm:text-[17px] leading-[1.65] mb-10 max-w-[440px]"
                         >
-                            Contribute on schedule, track every naira, receive your payout on time —
-                            {' '}<span className="text-white/80">no spreadsheets, no chasing.</span>
+                            Save toward targets or general plans, track every naira, and pay from wallet in seconds —
+                            {' '}<span className="text-white/80">clear records, no manual stress.</span>
                         </motion.p>
 
                         {/* CTAs */}
@@ -275,7 +275,7 @@ export const Hero = () => {
                                     onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#FBBF24')}
                                     onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#F59E0B')}
                                 >
-                                    Join a Group — Free
+                                    Start Saving — Free
                                     <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
                                 </button>
                             </Link>
@@ -295,7 +295,7 @@ export const Hero = () => {
                         >
                             {[
                                 { value: '₦0', label: 'Missed payouts' },
-                                { value: '100%', label: 'Verified groups' },
+                                { value: '2 Types', label: 'Target + general plans' },
                                 { value: 'Live', label: 'Real-time tracking' },
                             ].map((stat, i) => (
                                 <div key={i} className={`${i > 0 ? 'pl-6 sm:pl-8 border-l border-white/[0.08]' : ''}`}>
@@ -318,14 +318,14 @@ export const Hero = () => {
                         {/* Label above */}
                         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.03]">
                             <span className="w-1.5 h-1.5 rounded-full bg-brand-accent animate-pulse" />
-                            <span className="text-[11px] text-white/40 font-semibold tracking-wide">Active rotation · Lagos Techies</span>
+                            <span className="text-[11px] text-white/40 font-semibold tracking-wide">Active savings overview</span>
                         </div>
 
                         <AjoCircle />
 
                         {/* Label below */}
                         <p className="text-[11px] text-white/25 font-medium tracking-wide">
-                            6 members · ₦100,000 / month
+                            Daily, weekly, and monthly plans
                         </p>
                     </motion.div>
 
