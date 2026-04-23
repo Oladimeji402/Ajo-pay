@@ -94,7 +94,7 @@ export default function DashboardPage() {
         return transactions.filter((tx) => tx.type === activityFilter);
     }, [activityFilter, transactions]);
 
-    const formatCurrency = (value: number) => `NGN ${Number(value).toLocaleString('en-NG')}`;
+    const formatCurrency = (value: number) => Number(value).toLocaleString('en-NG');
 
     if (loading) {
         return (
@@ -173,8 +173,13 @@ export default function DashboardPage() {
                             {savedVisible ? <Eye size={13} /> : <EyeOff size={13} />}
                         </button>
                     </div>
-                    <p className="text-[22px] font-bold leading-tight tracking-tight">
-                        {savedVisible ? formatCurrency(profile?.wallet_balance ?? 0) : '••••••'}
+                    <p className="text-[18px] font-semibold leading-snug tracking-normal text-white/90">
+                        {savedVisible ? (
+                            <>
+                                <span className="font-normal">₦</span>
+                                {formatCurrency(profile?.wallet_balance ?? 0)}
+                            </>
+                        ) : '••••••'}
                     </p>
                 </div>
 
