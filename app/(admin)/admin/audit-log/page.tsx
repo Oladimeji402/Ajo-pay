@@ -34,7 +34,7 @@ const subtleButtonClassName = 'inline-flex items-center gap-2 rounded-xl border 
 function AuditLogSkeleton() {
     return (
         <div className="space-y-5 animate-pulse">
-            <section className="rounded-2xl border border-slate-100 bg-white p-4 md:p-5 space-y-3">
+            <section className="rounded-xl border border-slate-100 bg-white p-4 md:p-5 space-y-3">
                 <div className="h-3 w-20 rounded bg-slate-200" />
                 <div className="h-7 w-44 rounded bg-slate-200" />
                 <div className="h-4 w-80 rounded bg-slate-200" />
@@ -47,12 +47,12 @@ function AuditLogSkeleton() {
             </section>
             <section className="grid gap-3 sm:grid-cols-3">
                 {Array.from({ length: 3 }, (_, idx) => (
-                    <div key={idx} className="rounded-2xl border border-slate-100 bg-white p-4 h-20" />
+                    <div key={idx} className="rounded-xl border border-slate-100 bg-white p-4 h-20" />
                 ))}
             </section>
             <section className="space-y-2">
                 {Array.from({ length: 4 }, (_, idx) => (
-                    <div key={idx} className="rounded-2xl border border-slate-100 bg-white p-4 h-24" />
+                    <div key={idx} className="rounded-xl border border-slate-100 bg-white p-4 h-24" />
                 ))}
             </section>
         </div>
@@ -148,8 +148,7 @@ export default function AdminAuditLogPage() {
 
     return (
         <div className="space-y-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-                <h1 className="text-2xl font-bold text-brand-navy">Audit Log</h1>
+            <div className="flex flex-wrap items-center justify-end gap-2">
                 <div className="flex flex-wrap items-center gap-2">
                     <button
                         type="button"
@@ -170,7 +169,7 @@ export default function AdminAuditLogPage() {
                 </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-100 bg-white p-3">
+            <div className="rounded-xl border border-slate-100 bg-white p-3">
                 <div className="grid gap-2 md:grid-cols-3">
                     <select value={actionFilter} onChange={(e) => setActionFilter(e.target.value)} className={controlClassName}>
                         {ACTION_FILTERS.map((value) => (
@@ -219,15 +218,15 @@ export default function AdminAuditLogPage() {
             </div>
 
             <section className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl border border-slate-100 bg-white p-4">
+                <div className="rounded-xl border border-slate-100 bg-white p-4">
                     <p className="text-xs text-brand-gray">Events Loaded</p>
                     <p className="mt-1 text-xl font-bold text-brand-navy">{records.length}</p>
                 </div>
-                <div className="rounded-2xl border border-slate-100 bg-white p-4">
+                <div className="rounded-xl border border-slate-100 bg-white p-4">
                     <p className="text-xs text-brand-gray">Admins Involved</p>
                     <p className="mt-1 text-xl font-bold text-brand-navy">{uniqueAdmins}</p>
                 </div>
-                <div className="rounded-2xl border border-slate-100 bg-white p-4">
+                <div className="rounded-xl border border-slate-100 bg-white p-4">
                     <p className="text-xs text-brand-gray">Distinct Targets</p>
                     <p className="mt-1 text-xl font-bold text-brand-navy">{uniqueTargets}</p>
                 </div>
@@ -237,9 +236,9 @@ export default function AdminAuditLogPage() {
 
             <section className="space-y-3">
                 {records.length === 0 ? (
-                    <div className="rounded-2xl border border-slate-100 bg-white p-5 text-sm text-brand-gray">No audit entries found for the current filters.</div>
+                    <div className="rounded-xl border border-slate-100 bg-white p-5 text-sm text-brand-gray">No audit entries found for the current filters.</div>
                 ) : records.map((record) => (
-                    <article key={record.id} className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md">
+                    <article key={record.id} className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md">
                         <div className="flex flex-wrap items-start justify-between gap-3">
                             <div className="min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">

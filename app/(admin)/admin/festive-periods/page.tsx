@@ -156,15 +156,12 @@ export default function AdminFestivePeriodsPage() {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between flex-wrap gap-3">
-                <div>
-                    <h1 className="text-2xl font-bold text-brand-navy">Festive Periods</h1>
-                    <p className="text-xs text-brand-gray mt-0.5">{periods.length} total · {active} active</p>
-                </div>
+                <p className="text-xs text-slate-400">{periods.length} total · {active} active</p>
                 <button
                     onClick={() => { setForm({ ...emptyForm }); setEditingId(null); setShowForm(true); }}
-                    className="inline-flex items-center gap-2 rounded-xl bg-brand-primary px-4 py-2.5 text-sm font-bold text-white hover:bg-brand-primary-hover transition-colors"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-brand-navy px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-navy/90 transition-colors"
                 >
-                    <Plus size={15} /> Add Period
+                    <Plus size={13} /> Add Period
                 </button>
             </div>
 
@@ -174,7 +171,7 @@ export default function AdminFestivePeriodsPage() {
                     <button
                         key={cat}
                         onClick={() => setCategoryFilter(cat)}
-                        className={`rounded-2xl border p-4 text-left transition-colors ${categoryFilter === cat ? 'border-brand-primary bg-brand-primary/5' : 'border-slate-100 bg-white hover:bg-slate-50'}`}
+                        className={`rounded-xl border p-4 text-left transition-colors ${categoryFilter === cat ? 'border-brand-primary bg-brand-primary/5' : 'border-slate-100 bg-white hover:bg-slate-50'}`}
                     >
                         <p className="text-xs text-brand-gray capitalize">{cat === 'all' ? 'All Periods' : cat}</p>
                         <p className="text-xl font-bold text-brand-navy mt-0.5">
@@ -186,7 +183,7 @@ export default function AdminFestivePeriodsPage() {
 
             {/* Create / Edit form */}
             {showForm && (
-                <form onSubmit={handleSubmit} className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4">
+                <form onSubmit={handleSubmit} className="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
                     <div className="flex items-center justify-between">
                         <h2 className="font-semibold text-brand-navy flex items-center gap-2">
                             <CalendarDays size={16} />
@@ -267,7 +264,7 @@ export default function AdminFestivePeriodsPage() {
                     <Loader2 size={16} className="animate-spin" /> Loading...
                 </div>
             ) : (
-                <div className="rounded-2xl border border-slate-100 bg-white overflow-hidden">
+                <div className="rounded-xl border border-slate-100 bg-white overflow-hidden">
                     <div className="divide-y divide-slate-100">
                         {filtered.length === 0 && (
                             <p className="p-6 text-sm text-brand-gray text-center">No festive periods found.</p>

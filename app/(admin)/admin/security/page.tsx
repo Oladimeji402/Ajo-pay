@@ -31,7 +31,7 @@ const MAX_FAILED_ATTEMPTS = 5;
 function SecurityPageSkeleton() {
     return (
         <div className="space-y-5 animate-pulse">
-            <section className="rounded-2xl border border-slate-100 bg-white p-4 md:p-5 space-y-3">
+            <section className="rounded-xl border border-slate-100 bg-white p-4 md:p-5 space-y-3">
                 <div className="h-3 w-16 rounded bg-slate-200" />
                 <div className="h-7 w-56 rounded bg-slate-200" />
                 <div className="h-4 w-80 rounded bg-slate-200" />
@@ -41,10 +41,10 @@ function SecurityPageSkeleton() {
                     <div className="h-10 rounded-lg bg-slate-100" />
                 </div>
             </section>
-            <section className="rounded-2xl border border-slate-100 bg-white p-4 h-40" />
+            <section className="rounded-xl border border-slate-100 bg-white p-4 h-40" />
             <section className="space-y-2">
                 {Array.from({ length: 4 }, (_, idx) => (
-                    <div key={idx} className="rounded-2xl border border-slate-100 bg-white p-4 h-24" />
+                    <div key={idx} className="rounded-xl border border-slate-100 bg-white p-4 h-24" />
                 ))}
             </section>
         </div>
@@ -124,9 +124,8 @@ export default function AdminSecurityPage() {
 
     return (
         <div className="space-y-5">
-            <h1 className="text-2xl font-bold text-brand-navy">Login Attempts</h1>
 
-            <div className="rounded-2xl border border-slate-100 bg-white p-3">
+            <div className="rounded-xl border border-slate-100 bg-white p-3">
                 <div className="grid gap-2 md:grid-cols-3">
                     <select value={windowMinutes} onChange={(event) => setWindowMinutes(event.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-brand-navy">
                         {WINDOW_OPTIONS.map((option) => (
@@ -151,7 +150,7 @@ export default function AdminSecurityPage() {
 
             {error && <div className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-600">{error}</div>}
 
-            <section className="rounded-2xl border border-slate-100 bg-white p-4">
+            <section className="rounded-xl border border-slate-100 bg-white p-4">
                 <h2 className="text-sm font-bold text-brand-navy">High-risk login sources</h2>
                 {failedCounts.length === 0 ? (
                     <p className="mt-2 text-sm text-brand-gray">No failed attempts in this window.</p>
@@ -173,9 +172,9 @@ export default function AdminSecurityPage() {
 
             <section className="space-y-3">
                 {records.length === 0 ? (
-                    <div className="rounded-2xl border border-slate-100 bg-white p-5 text-sm text-brand-gray">No login attempts found for the current filters.</div>
+                    <div className="rounded-xl border border-slate-100 bg-white p-5 text-sm text-brand-gray">No login attempts found for the current filters.</div>
                 ) : records.map((record) => (
-                    <article key={record.id} className="rounded-2xl border border-slate-100 bg-white p-4">
+                    <article key={record.id} className="rounded-xl border border-slate-100 bg-white p-4">
                         <div className="flex flex-wrap items-start justify-between gap-3">
                             <div>
                                 <p className="text-sm font-bold text-brand-navy">{record.email}</p>
