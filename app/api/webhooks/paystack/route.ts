@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { markBulkPaymentSuccess, markContributionPaymentSuccess, markIndividualSavingsPaymentSuccess, markPassbookActivated } from "@/lib/payments";
+import { markBulkPaymentSuccess, markContributionPaymentSuccess, markIndividualSavingsPaymentSuccess, markPassbookActivated, markWalletFundingSuccess } from "@/lib/payments";
 import { isValidPaystackSignature } from "@/lib/paystack";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -202,6 +202,26 @@ export async function POST(request: Request) {
       }
 
       return NextResponse.json({ received: true, individualSavings: result.idempotent ? "already_processed" : "recorded" });
+    }
+
+    // ── Wallet funding ─────────────────────────────────────────────────────
+    if (paymentType === "wallet_funding") {
+      if (!userId) {
+        return NextResponse.json({ received: true, warning: "userId missing." });
+      }
+
+      const result = await markWalletFundingSuccess({ reference });
+      if (!result.idempotent && result.ok) {
+        await insertNotification({
+          userId,
+          type: "wallet_funded",
+          title: "Wallet funded successfully",
+          body: `Your wallet has been credited with NGN ${Number(amount ?? 0).toLocaleString("en-NG")}. You can now split and pay into your savings goals.`,
+          metadata: { reference, amount },
+        });
+      }
+
+      return NextResponse.json({ received: true, wallet: result.idempotent ? "already_processed" : "credited" });
     }
 
     // ── Bulk contribution ──────────────────────────────────────────────────

@@ -1,7 +1,6 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { verifyPaystackTransaction } from "@/lib/paystack";
 import { isWhatsappConfigured, sendGroupReceipt } from "@/lib/whatsapp";
-import { appendContributionPaymentToGoogleSheet } from "@/lib/google-sheets-sync";
 import { generatePassbookSlots } from "@/lib/ajo-schedule";
 
 type PaymentSuccessResult = {
@@ -210,20 +209,6 @@ export async function markContributionPaymentSuccess(params: MarkPaymentSuccessP
       // Intentionally swallow notification errors to keep payment flow resilient.
     });
   }
-
-  void appendContributionPaymentToGoogleSheet({
-    reference: paymentRecord.reference,
-    paidAt: paidAtIso,
-    userId: paymentRecord.user_id,
-    userName: profile?.name ?? "",
-    groupId: paymentRecord.group_id ?? "",
-    groupName: group?.name ?? "",
-    amount: Number(paymentRecord.amount ?? 0),
-    channel: String((params.providerPayload?.channel as string | undefined) ?? "unknown"),
-    providerReference: String((params.providerPayload?.reference as string | undefined) ?? params.reference),
-  }).catch(() => {
-    // Non-blocking integration.
-  });
 
   return {
     ok: true,
@@ -440,6 +425,40 @@ export async function markPassbookActivated(params: {
     },
     { onConflict: "reference", ignoreDuplicates: true },
   );
+
+  return { ok: true };
+}
+
+export async function markWalletFundingSuccess(params: {
+  reference: string;
+}): Promise<{ ok: boolean; idempotent?: boolean; notFound?: boolean }> {
+  const supabase = createSupabaseAdminClient();
+
+  const { data: payment } = await supabase
+    .from("payment_records")
+    .select("id, user_id, amount, status")
+    .eq("reference", params.reference)
+    .eq("type", "wallet_funding")
+    .maybeSingle();
+
+  if (!payment) return { ok: false, notFound: true };
+  if (payment.status === "success") return { ok: true, idempotent: true };
+
+  const { data: debited } = await supabase
+    .rpc("credit_wallet_balance", {
+      p_user_id: payment.user_id,
+      p_amount: Number(payment.amount ?? 0),
+    });
+
+  if (!debited) return { ok: false };
+
+  const { error } = await supabase
+    .from("payment_records")
+    .update({ status: "success" })
+    .eq("id", payment.id)
+    .eq("status", "pending");
+
+  if (error) throw new Error(error.message);
 
   return { ok: true };
 }

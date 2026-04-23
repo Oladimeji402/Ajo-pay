@@ -110,6 +110,7 @@ export default function SignUpPage() {
         }
 
         setIsVerified(true);
+        void fetch('/api/users/sync-registration', { method: 'POST' }).catch(() => {});
         notifySuccess(showToast, 'Email verified! Welcome — redirecting to your dashboard.');
         window.location.href = '/dashboard';
     };

@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, ChevronRight, Copy, ExternalLink, Loader2, Upload, X } from 'lucide-react';
+import { CheckCircle2, ChevronRight, Copy, ExternalLink, Loader2, Upload, X, Calendar, CreditCard } from 'lucide-react';
 import { DateRangeSelector, DateRangeValue } from '@/components/admin/DateRangeSelector';
 import { LastSynced } from '@/components/admin/LastSynced';
 import { ChartCard } from '@/components/admin/charts/ChartCard';
@@ -79,7 +79,235 @@ function AdminPayoutsSkeleton() {
   );
 }
 
+// ── Savings Schedule ──────────────────────────────────────────────────────────
+
+type ScheduleRow = {
+  scheme_id: string;
+  scheme_name: string;
+  frequency: string;
+  minimum_amount: number;
+  status: string;
+  next_payout: string;
+  total_saved: number;
+  total_paid_out: number;
+  amount_owed: number;
+  profile: {
+    id: string;
+    name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    bank_account?: string | null;
+    bank_name?: string | null;
+    bank_account_name?: string | null;
+  } | null;
+};
+
+function SavingsScheduleTab() {
+  const { showToast } = useToast();
+  const [rows, setRows] = useState<ScheduleRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [freqFilter, setFreqFilter] = useState('all');
+  const [selected, setSelected] = useState<ScheduleRow | null>(null);
+  const [recording, setRecording] = useState(false);
+  const [payoutForm, setPayoutForm] = useState({ amount: '', periodLabel: '', notes: '' });
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      const res = await fetch('/api/admin/savings-schedule', { cache: 'no-store' });
+      const json = await res.json();
+      if (res.ok) setRows(Array.isArray(json.data) ? json.data : []);
+      setLoading(false);
+    };
+    void load();
+  }, []);
+
+  const filtered = useMemo(() => {
+    if (freqFilter === 'all') return rows;
+    return rows.filter(r => r.frequency === freqFilter);
+  }, [rows, freqFilter]);
+
+  const handleRecord = async () => {
+    if (!selected) return;
+    const amount = Number(payoutForm.amount);
+    if (!amount || amount <= 0) { notifyError(showToast, new Error('Invalid amount'), 'Enter a valid amount.'); return; }
+    if (!payoutForm.periodLabel.trim()) { notifyError(showToast, new Error('Period required'), 'Enter a period label.'); return; }
+    setRecording(true);
+    try {
+      const res = await fetch('/api/admin/passbook-payouts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          schemeId: selected.scheme_id,
+          userId: selected.profile?.id,
+          amount,
+          periodLabel: payoutForm.periodLabel.trim(),
+          notes: payoutForm.notes.trim(),
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? 'Failed to record payout.');
+      notifySuccess(showToast, 'Payout recorded.');
+      setRows(prev => prev.map(r => r.scheme_id === selected.scheme_id
+        ? { ...r, total_paid_out: r.total_paid_out + amount, amount_owed: Math.max(0, r.amount_owed - amount) }
+        : r));
+      setSelected(null);
+      setPayoutForm({ amount: '', periodLabel: '', notes: '' });
+    } catch (err) {
+      notifyError(showToast, err, 'Could not record payout.');
+    } finally {
+      setRecording(false);
+    }
+  };
+
+  if (loading) return <div className="flex items-center justify-center gap-2 py-16 text-sm text-brand-gray"><Loader2 size={16} className="animate-spin" /> Loading schedule...</div>;
+
+  const totalOwed = filtered.reduce((s, r) => s + r.amount_owed, 0);
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-2xl border border-slate-100 bg-white p-4">
+          <p className="text-xs text-brand-gray">Total Owed (filtered)</p>
+          <p className="text-xl font-bold text-rose-700">{toCurrency(totalOwed)}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-100 bg-white p-4">
+          <p className="text-xs text-brand-gray">Active Schemes</p>
+          <p className="text-xl font-bold text-brand-navy">{filtered.filter(r => r.status === 'active').length}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-100 bg-white p-4">
+          <p className="text-xs text-brand-gray">Total Saved (filtered)</p>
+          <p className="text-xl font-bold text-emerald-700">{toCurrency(filtered.reduce((s, r) => s + r.total_saved, 0))}</p>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-100 bg-white p-3">
+        <select value={freqFilter} onChange={e => setFreqFilter(e.target.value)} className="rounded-xl border border-slate-200 px-3 py-2 text-sm">
+          <option value="all">All Frequencies</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+      </div>
+
+      <div className="rounded-2xl border border-slate-100 bg-white overflow-hidden">
+        <div className="hidden sm:grid sm:grid-cols-[1fr_auto_auto_auto_auto] items-center gap-4 border-b border-slate-100 bg-slate-50/80 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+          <span>User / Scheme</span>
+          <span>Frequency</span>
+          <span>Total Saved</span>
+          <span>Amount Owed</span>
+          <span>Next Payout</span>
+        </div>
+
+        {filtered.length === 0 && <p className="p-8 text-center text-sm text-slate-400">No savings schemes found.</p>}
+
+        {filtered.map((row, idx) => (
+          <div
+            key={row.scheme_id}
+            onClick={() => { setSelected(row); setPayoutForm({ amount: String(row.amount_owed), periodLabel: '', notes: '' }); }}
+            className={`grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_auto_auto_auto_auto] items-center gap-4 px-4 py-3.5 cursor-pointer hover:bg-slate-50 transition-colors${idx < filtered.length - 1 ? ' border-b border-slate-100' : ''}`}
+          >
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-brand-navy">{row.profile?.name || row.profile?.email || 'User'}</p>
+              <p className="text-xs text-slate-400 truncate">{row.scheme_name}</p>
+            </div>
+            <span className="hidden sm:block shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold capitalize text-slate-600">{row.frequency}</span>
+            <p className="hidden sm:block shrink-0 text-sm font-semibold text-brand-navy">{toCurrency(row.total_saved)}</p>
+            <p className={`hidden sm:block shrink-0 text-sm font-bold ${row.amount_owed > 0 ? 'text-rose-700' : 'text-slate-400'}`}>{toCurrency(row.amount_owed)}</p>
+            <p className="hidden sm:block shrink-0 text-xs text-brand-gray">{row.next_payout}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Record payout drawer */}
+      {selected && (
+        <>
+          <div className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-[2px]" onClick={() => setSelected(null)} />
+          <div className="fixed right-0 top-0 z-50 flex h-screen w-full max-w-md flex-col bg-white shadow-2xl">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+              <div>
+                <p className="font-bold text-brand-navy">Record Payout</p>
+                <p className="text-xs text-slate-400">{selected.profile?.name || selected.profile?.email} · {selected.scheme_name}</p>
+              </div>
+              <button onClick={() => setSelected(null)} className="rounded-xl border border-slate-200 p-2 text-slate-500 hover:bg-slate-50">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl bg-slate-50 p-3">
+                  <p className="text-[11px] text-slate-400">Total Saved</p>
+                  <p className="text-lg font-bold text-brand-navy">{toCurrency(selected.total_saved)}</p>
+                </div>
+                <div className="rounded-xl bg-rose-50 p-3">
+                  <p className="text-[11px] text-rose-500">Amount Owed</p>
+                  <p className="text-lg font-bold text-rose-700">{toCurrency(selected.amount_owed)}</p>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">Bank Details</p>
+                <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 space-y-0.5">
+                  <p className="text-xs text-brand-gray">{selected.profile?.bank_name || '—'}</p>
+                  <p className="text-sm font-bold text-brand-navy font-mono">{selected.profile?.bank_account || '—'}</p>
+                  <p className="text-xs text-brand-gray">{selected.profile?.bank_account_name || selected.profile?.name || '—'}</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">Payout Details</p>
+                <div>
+                  <label className="text-xs font-semibold text-brand-navy mb-1 block">Amount (NGN)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={payoutForm.amount}
+                    onChange={e => setPayoutForm(f => ({ ...f, amount: e.target.value }))}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-brand-navy mb-1 block">Period Label (e.g. March 2026)</label>
+                  <input
+                    type="text"
+                    value={payoutForm.periodLabel}
+                    onChange={e => setPayoutForm(f => ({ ...f, periodLabel: e.target.value }))}
+                    placeholder="March 2026"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-brand-navy mb-1 block">Notes (optional)</label>
+                  <textarea
+                    value={payoutForm.notes}
+                    onChange={e => setPayoutForm(f => ({ ...f, notes: e.target.value }))}
+                    rows={2}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm resize-none"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="border-t border-slate-100 p-5">
+              <button
+                disabled={recording}
+                onClick={handleRecord}
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {recording ? <Loader2 size={15} className="animate-spin" /> : <CreditCard size={15} />}
+                {recording ? 'Recording...' : 'Record Payout'}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
+
 export default function AdminPayoutsPage() {
+  const [activeTab, setActiveTab] = useState<'payouts' | 'schedule'>('payouts');
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState('');
   const [error, setError] = useState('');
@@ -338,15 +566,36 @@ export default function AdminPayoutsPage() {
           <h1 className="text-2xl font-bold text-brand-navy">Payouts</h1>
           <LastSynced timestamp={lastSyncedAt} loading={loading || savingId !== ''} />
         </div>
+        {activeTab === 'payouts' && (
+          <button
+            disabled={savingId === 'batch' || selectedIds.length === 0}
+            onClick={runBatchMarkDone}
+            className="inline-flex items-center gap-2 rounded-xl bg-brand-navy px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            <CheckCircle2 size={14} />
+            {selectedIds.length > 0 ? `Mark ${selectedIds.length} Done` : 'Mark Selected Done'}
+          </button>
+        )}
+      </div>
+
+      {/* Tab switcher */}
+      <div className="flex gap-1 rounded-2xl border border-slate-200 bg-slate-50 p-1 max-w-xs">
         <button
-          disabled={savingId === 'batch' || selectedIds.length === 0}
-          onClick={runBatchMarkDone}
-          className="inline-flex items-center gap-2 rounded-xl bg-brand-navy px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          onClick={() => setActiveTab('payouts')}
+          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors ${activeTab === 'payouts' ? 'bg-white shadow-sm text-brand-navy' : 'text-brand-gray hover:text-brand-navy'}`}
         >
-          <CheckCircle2 size={14} />
-          {selectedIds.length > 0 ? `Mark ${selectedIds.length} Done` : 'Mark Selected Done'}
+          Payouts
+        </button>
+        <button
+          onClick={() => setActiveTab('schedule')}
+          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 ${activeTab === 'schedule' ? 'bg-white shadow-sm text-brand-navy' : 'text-brand-gray hover:text-brand-navy'}`}
+        >
+          <Calendar size={11} /> Savings Schedule
         </button>
       </div>
+
+      {activeTab === 'schedule' && <SavingsScheduleTab />}
+      {activeTab === 'payouts' && (<>
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-2xl border border-slate-100 bg-white p-4">
@@ -463,8 +712,8 @@ export default function AdminPayoutsPage() {
           );
         })}
       </div>
-
-      {expandedPayout && (
+      </>)}
+      {activeTab === 'payouts' && expandedPayout && (
         <>
           <div
             className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-[2px]"
@@ -686,3 +935,4 @@ export default function AdminPayoutsPage() {
     </div>
   );
 }
+

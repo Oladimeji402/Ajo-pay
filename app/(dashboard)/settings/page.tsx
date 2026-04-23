@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
     AlertTriangle,
@@ -23,6 +24,7 @@ import {
     Trash2,
     User,
     XCircle,
+    Bell,
 } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/Toast';
@@ -555,6 +557,14 @@ export default function SettingsPage() {
                             <ChevronRight size={16} className="text-slate-400" />
                         </button>
 
+                        <Link href="/notifications" className="w-full px-5 py-4 border-b border-slate-100 flex items-center justify-between text-left hover:bg-slate-50">
+                            <div>
+                                <p className="text-sm font-semibold text-brand-navy">Alerts</p>
+                                <p className="text-xs text-slate-500">View your account notifications</p>
+                            </div>
+                            <ChevronRight size={16} className="text-slate-400" />
+                        </Link>
+
                         <button onClick={() => setMobileView('danger')} className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-red-50">
                             <div>
                                 <p className="text-sm font-semibold text-red-700">Delete Account</p>
@@ -763,6 +773,19 @@ export default function SettingsPage() {
             </section>
 
             <form onSubmit={handleSave} className="hidden md:block bg-white border border-slate-200 rounded-2xl p-5 space-y-5">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 flex items-center justify-between">
+                    <div className="inline-flex items-center gap-2">
+                        <Bell size={15} className="text-brand-gray" />
+                        <div>
+                            <p className="text-sm font-semibold text-brand-navy">Alerts</p>
+                            <p className="text-xs text-slate-500">Open your notifications feed from settings.</p>
+                        </div>
+                    </div>
+                    <Link href="/notifications" className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-brand-navy hover:bg-slate-100">
+                        Open <ChevronRight size={13} />
+                    </Link>
+                </div>
+
                 <div className="flex items-center gap-2">
                     <User size={16} className="text-brand-gray" />
                     <h2 className="font-semibold text-brand-navy">My Profile</h2>

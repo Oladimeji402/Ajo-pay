@@ -61,7 +61,6 @@ export default function AdminGroupsPage() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [groups, setGroups] = useState<GroupRow[]>([]);
-  const [syncingGroupId, setSyncingGroupId] = useState<string | null>(null);
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
   const { showToast } = useToast();
   const { refreshTrigger, lastEvent } = useRealtimeSubscription({
@@ -140,29 +139,6 @@ export default function AdminGroupsPage() {
       notifyError(showToast, err, 'Could not create group.');
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleExportGroup = async (groupId: string, groupName: string) => {
-    setSyncingGroupId(groupId);
-    try {
-      const res = await fetch('/api/admin/integrations/google-sheets/export-group', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          groupId,
-          sheetName: 'GroupMembers',
-        }),
-      });
-
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Export failed.');
-
-      notifySuccess(showToast, `${groupName} exported to Google Sheets.`);
-    } catch (err) {
-      notifyError(showToast, err, 'Could not export group.');
-    } finally {
-      setSyncingGroupId(null);
     }
   };
 
@@ -254,7 +230,6 @@ export default function AdminGroupsPage() {
             const memberCount = asMemberCount(group);
             const cycleProgress = group.total_cycles > 0 ? Math.min(100, (group.current_cycle / group.total_cycles) * 100) : 0;
             const fillProgress = group.max_members > 0 ? Math.min(100, (memberCount / group.max_members) * 100) : 0;
-            const isSyncing = syncingGroupId === group.id;
             const dueDate = getCurrentCycleDueDate(group);
             const dueWindow = getDueWindow(dueDate);
             const successfulContributions = (group.contributions ?? []).filter(
@@ -276,14 +251,6 @@ export default function AdminGroupsPage() {
               <div key={group.id} className="rounded-xl border border-slate-100 p-4 hover:bg-slate-50">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-brand-navy">{group.name}</p>
-                  <button
-                    type="button"
-                    disabled={isSyncing}
-                    onClick={() => void handleExportGroup(group.id, group.name)}
-                    className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {isSyncing ? 'Exporting...' : 'Export to Sheets'}
-                  </button>
                 </div>
 
                 <Link href={`/admin/groups/${group.id}`} className="block rounded-lg">

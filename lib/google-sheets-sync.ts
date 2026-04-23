@@ -103,3 +103,37 @@ export async function appendContributionPaymentToGoogleSheet(params: {
     ],
   });
 }
+
+export async function appendUserRegistrationToGoogleSheet(params: {
+  userId: string;
+  fullName: string;
+  email: string;
+  phone?: string | null;
+  registeredAt: string;
+}) {
+  if (!canUseGoogleSheetsAutoSync()) return;
+
+  const spreadsheetId = getDefaultSpreadsheetId();
+  await appendRowsToGoogleSheet({
+    spreadsheetId,
+    sheetName: process.env.GOOGLE_SHEETS_REGISTRATIONS_SHEET_NAME?.trim() || "Registrations",
+    headers: [
+      "event",
+      "registered_at",
+      "user_id",
+      "full_name",
+      "email",
+      "phone",
+    ],
+    rows: [
+      [
+        "user_registered",
+        params.registeredAt,
+        params.userId,
+        params.fullName,
+        params.email,
+        params.phone ?? "",
+      ],
+    ],
+  });
+}

@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { badRequestResponse, requireUser, serverErrorResponse } from "@/lib/api/auth";
-import { getPendingPaymentExpiryDate } from "@/lib/payments";
-import { initializePaystackTransaction } from "@/lib/paystack";
 import { generatePassbookSlots } from "@/lib/ajo-schedule";
 import type { PassbookFrequency } from "@/lib/ajo-schedule";
 
@@ -15,16 +13,13 @@ const bodySchema = z.object({
 
 function generateReference() {
   const randomPart = Math.random().toString(36).slice(2, 10).toUpperCase();
-  return `AJO-ISG-${Date.now()}-${randomPart}`;
+  return `AJO-WALLET-ISG-${Date.now()}-${randomPart}`;
 }
 
 export async function POST(request: Request) {
   try {
     const auth = await requireUser();
     if (auth.error || !auth.user) return auth.error!;
-
-    const userEmail = auth.user.email;
-    if (!userEmail) return badRequestResponse("Account email is missing.");
 
     // Gate: passbook must be activated.
     const { data: profile } = await auth.supabase
@@ -103,88 +98,38 @@ export async function POST(request: Request) {
       return badRequestResponse(`Period "${targetSlot.periodLabel}" is already paid.`);
     }
 
-    // ── Check for an existing non-expired pending contribution for this slot ──
-    const existingPending = (existingContribs ?? []).find(
-      c => c.period_index === targetSlot!.periodIndex && c.status === "pending",
-    );
-
-    if (existingPending?.paystack_reference) {
-      // Reuse the existing Paystack transaction.
-      const { data: pr } = await auth.supabase
-        .from("payment_records")
-        .select("expires_at, status")
-        .eq("reference", existingPending.paystack_reference)
-        .maybeSingle();
-
-      const isExpired = pr?.expires_at ? new Date(pr.expires_at) < new Date() : false;
-
-      if (!isExpired && pr?.status === "pending") {
-        const paystackData = await initializePaystackTransaction({
-          email: userEmail,
-          amountKobo: Number(goal.contribution_amount) * 100,
-          reference: existingPending.paystack_reference,
-          callbackUrl: `${process.env.APP_URL ?? "http://localhost:3000"}/savings/${goalId}`,
-          metadata: { userId: auth.user.id, goalId, periodIndex: targetSlot.periodIndex, type: "individual_savings" },
-        });
-
-        return NextResponse.json({
-          data: {
-            amount: Number(goal.contribution_amount),
-            reference: existingPending.paystack_reference,
-            email: userEmail,
-            periodLabel: targetSlot.periodLabel,
-            authorizationUrl: paystackData.authorization_url,
-            accessCode: paystackData.access_code,
-          },
-        });
-      }
-
-      // Expired — mark it abandoned.
-      if (existingPending.paystack_reference) {
-        await auth.supabase
-          .from("individual_savings_contributions")
-          .update({ status: "abandoned" })
-          .eq("goal_id", goalId)
-          .eq("period_index", targetSlot.periodIndex)
-          .eq("status", "pending");
-
-        if (pr) {
-          await auth.supabase
-            .from("payment_records")
-            .update({ status: "abandoned" })
-            .eq("reference", existingPending.paystack_reference);
-        }
-      }
-    }
-
-    // ── Create fresh payment ──────────────────────────────────────────────────
+    // Wallet mode: debit from wallet and post as an immediate successful payment.
     const reference = generateReference();
-    const expiresAtIso = getPendingPaymentExpiryDate().toISOString();
     const amount = Number(goal.contribution_amount);
+    const nowIso = new Date().toISOString();
 
-    const paystackData = await initializePaystackTransaction({
-      email: userEmail,
-      amountKobo: amount * 100,
-      reference,
-      callbackUrl: `${process.env.APP_URL ?? "http://localhost:3000"}/savings/${goalId}`,
-      metadata: { userId: auth.user.id, goalId, periodIndex: targetSlot.periodIndex, type: "individual_savings" },
+    const { data: debited } = await auth.supabase.rpc("debit_wallet_balance", {
+      p_user_id: auth.user.id,
+      p_amount: amount,
     });
 
-    // Write payment_record first.
+    if (!debited) {
+      return NextResponse.json(
+        { error: "Insufficient wallet balance. Fund your wallet to continue." },
+        { status: 400 },
+      );
+    }
+
+    // Write payment record first.
     const { data: paymentRecord, error: prError } = await auth.supabase
       .from("payment_records")
       .insert({
         user_id: auth.user.id,
         group_id: null,
         contribution_id: null,
-        provider: "paystack",
+        provider: "wallet",
         type: "individual_savings",
         amount,
         currency: "NGN",
-        status: "pending",
+        status: "success",
         reference,
-        expires_at: expiresAtIso,
-        metadata: { goalId, periodIndex: targetSlot.periodIndex },
+        paid_at: nowIso,
+        metadata: { goalId, periodIndex: targetSlot.periodIndex, fundedFromWallet: true },
       })
       .select("id")
       .single();
@@ -202,24 +147,44 @@ export async function POST(request: Request) {
           period_label: targetSlot.periodLabel,
           period_index: targetSlot.periodIndex,
           period_date: targetSlot.periodDate,
-          status: "pending",
+          status: "success",
           paystack_reference: reference,
           payment_record_id: paymentRecord.id,
-          paid_at: null,
+          paid_at: nowIso,
         },
         { onConflict: "goal_id,period_index" },
       );
 
     if (contribError) return serverErrorResponse(contribError);
 
+    const { error: passbookError } = await auth.supabase
+      .from("passbook_entries")
+      .upsert(
+        {
+          user_id: auth.user.id,
+          entry_type: "individual_savings",
+          source_id: paymentRecord.id,
+          source_table: "individual_savings_contributions",
+          goal_id: goalId,
+          amount,
+          direction: "debit",
+          status: "success",
+          reference,
+          period_label: targetSlot.periodLabel,
+          description: "Wallet payment to individual savings",
+          happened_at: nowIso,
+        },
+        { onConflict: "reference", ignoreDuplicates: true },
+      );
+
+    if (passbookError) return serverErrorResponse(passbookError);
+
     return NextResponse.json({
       data: {
         amount,
         reference,
-        email: userEmail,
         periodLabel: targetSlot.periodLabel,
-        authorizationUrl: paystackData.authorization_url,
-        accessCode: paystackData.access_code,
+        status: "success",
       },
     });
   } catch (error) {

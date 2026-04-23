@@ -1,151 +1,283 @@
 'use client';
 
-import React, { useEffect, useRef, useState, Suspense } from 'react';
+import React, { useEffect, useRef, useState, useMemo, Suspense } from 'react';
 import Link from 'next/link';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
+import { useData } from '@/lib/hooks/useData';
 import {
-    ArrowLeft, Plus, Trash2, Loader2, CreditCard, Users, BookOpen, CheckCircle2, ArrowRight, ShieldCheck, XCircle
+    ArrowLeft, Plus, Trash2, Loader2, CreditCard,
+    CheckCircle2, ArrowRight, ShieldCheck, Search, ChevronDown, Target, Calendar,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess, notifyWarning } from '@/lib/toast';
 
-type GroupOption = {
-    id: string;
-    name: string;
-    contribution_amount: number;
-    current_cycle: number;
-};
+// ── Types ─────────────────────────────────────────────────────────────────────
 
-type GoalOption = {
+type SavingsOption = {
     id: string;
+    /** Composite key: "goal::<uuid>" | "scheme::<uuid>" */
+    key: string;
+    type: 'goal' | 'scheme';
     name: string;
-    contribution_amount: number;
-    frequency: string;
-    status: 'active' | 'paused' | 'completed' | 'cancelled';
-    festive_periods?: { name: string; color: string } | null;
+    subtitle: string;
+    defaultAmount: number;
+    color?: string;
+    frequency?: string;
 };
 
 type AllocationItem = {
     key: string;
-    type: 'group' | 'goal';
+    type: 'goal' | 'scheme';
     id: string;
     label: string;
     amount: number;
     color?: string;
+    frequency?: string;
 };
+
+// ── Searchable dropdown ───────────────────────────────────────────────────────
+
+function SearchableSelect({
+    options,
+    value,
+    onChange,
+    disabled,
+}: {
+    options: SavingsOption[];
+    value: string;
+    onChange: (key: string) => void;
+    disabled?: boolean;
+}) {
+    const [open, setOpen] = useState(false);
+    const [query, setQuery] = useState('');
+    const containerRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    const selected = options.find(o => o.key === value) ?? null;
+    const useSearch = options.length > 3;
+
+    const filtered = useSearch && query.trim()
+        ? options.filter(o =>
+            o.name.toLowerCase().includes(query.toLowerCase()) ||
+            o.subtitle.toLowerCase().includes(query.toLowerCase()),
+        )
+        : options;
+
+    // Close on outside click
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+                setOpen(false);
+                setQuery('');
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
+    const handleOpen = () => {
+        if (disabled) return;
+        setOpen(true);
+        setTimeout(() => inputRef.current?.focus(), 50);
+    };
+
+    const handleSelect = (key: string) => {
+        onChange(key);
+        setOpen(false);
+        setQuery('');
+    };
+
+    // ── ≤3 items: native select ────────────────────────────────────────────
+    if (!useSearch) {
+        return (
+            <select
+                value={value}
+                onChange={e => onChange(e.target.value)}
+                disabled={disabled}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-brand-navy"
+            >
+                <option value="">— Choose savings —</option>
+                {options.map(o => (
+                    <option key={o.key} value={o.key}>
+                        {o.name} · {o.subtitle}
+                    </option>
+                ))}
+            </select>
+        );
+    }
+
+    // ── >3 items: custom searchable dropdown ───────────────────────────────
+    return (
+        <div ref={containerRef} className="relative">
+            {/* Trigger */}
+            <button
+                type="button"
+                onClick={handleOpen}
+                disabled={disabled}
+                className="w-full flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-left disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
+            >
+                {selected ? (
+                    <>
+                        <span className="flex-1 font-medium text-brand-navy truncate">{selected.name}</span>
+                        <span className="shrink-0 text-[10px] text-brand-gray truncate">{selected.subtitle}</span>
+                    </>
+                ) : (
+                    <span className="flex-1 text-slate-400">— Choose savings —</span>
+                )}
+                <ChevronDown size={14} className={`shrink-0 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Dropdown panel */}
+            {open && (
+                <div className="absolute z-50 mt-1 w-full rounded-2xl border border-slate-200 bg-white shadow-lg overflow-hidden">
+                    {/* Search input */}
+                    <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-2">
+                        <Search size={13} className="shrink-0 text-slate-400" />
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={query}
+                            onChange={e => setQuery(e.target.value)}
+                            placeholder="Search savings..."
+                            className="flex-1 bg-transparent text-sm text-brand-navy placeholder:text-slate-400 focus:outline-none"
+                        />
+                    </div>
+
+                    {/* List */}
+                    <ul className="max-h-56 overflow-y-auto py-1">
+                        {filtered.length === 0 ? (
+                            <li className="px-4 py-3 text-sm text-slate-400 text-center">No results</li>
+                        ) : filtered.map(o => (
+                            <li key={o.key}>
+                                <button
+                                    type="button"
+                                    onClick={() => handleSelect(o.key)}
+                                    className={`w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-slate-50 transition-colors ${value === o.key ? 'bg-blue-50' : ''}`}
+                                >
+                                    <div
+                                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
+                                        style={{ backgroundColor: `${o.color ?? (o.type === 'scheme' ? '#10B981' : '#1D4ED8')}18` }}
+                                    >
+                                        {o.type === 'goal'
+                                            ? <Target size={13} style={{ color: o.color ?? '#1D4ED8' }} />
+                                            : <Calendar size={13} className="text-emerald-600" />
+                                        }
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-semibold text-brand-navy truncate">{o.name}</p>
+                                        <p className="text-[10px] text-brand-gray truncate">{o.subtitle}</p>
+                                    </div>
+                                    {value === o.key && <CheckCircle2 size={13} className="shrink-0 text-brand-primary" />}
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ── Main page content ─────────────────────────────────────────────────────────
+
+type RawGoal   = { id: string; name: string; frequency: string; contribution_amount: number; status: string; festive_periods?: { color: string } | null };
+type RawScheme = { id: string; name: string; frequency: string; minimum_amount: number; status: string };
+type SavingsRaw = { goals: RawGoal[]; schemes: RawScheme[]; gated: boolean };
+
+async function fetchSavingsRaw(): Promise<SavingsRaw> {
+    const [goalsRes, schemesRes] = await Promise.all([
+        fetch('/api/savings/goals'),
+        fetch('/api/savings/schemes'),
+    ]);
+    if (goalsRes.status === 403) return { goals: [], schemes: [], gated: true };
+    const goalsJson   = goalsRes.ok   ? await goalsRes.json()   : { data: [] };
+    const schemesJson = schemesRes.ok ? await schemesRes.json() : { data: [] };
+    return {
+        goals:   Array.isArray(goalsJson.data)   ? goalsJson.data   : [],
+        schemes: Array.isArray(schemesJson.data) ? schemesJson.data : [],
+        gated: false,
+    };
+}
 
 function PayPageContent() {
     const searchParams = useSearchParams();
-    const router = useRouter();
-    const prefillGoalId = searchParams.get('goalId');
-    const incomingRef = searchParams.get('ref');
+    const prefillGoalId   = searchParams.get('goalId');
+    const prefillSchemeId = searchParams.get('schemeId');
 
     const { showToast } = useToast();
-    const [groups, setGroups] = useState<GroupOption[]>([]);
-    const [goals, setGoals] = useState<GoalOption[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [paying, setPaying] = useState(false);
-    const [passbookGated, setPassbookGated] = useState(false);
-    const [paymentStatus, setPaymentStatus] = useState<'verifying' | 'success' | 'partial' | 'failed' | null>(null);
-    const verifiedRef = useRef(false);
 
+    // Share the same cache key as the Savings page — instant load if user visited Savings first.
+    const { data: raw, loading } = useData<SavingsRaw>('savings-data', fetchSavingsRaw);
+
+    const options = useMemo<SavingsOption[]>(() => {
+        if (!raw) return [];
+        const goalOpts: SavingsOption[] = raw.goals
+            .filter(g => g.status === 'active')
+            .map(g => ({
+                id: g.id, key: `goal::${g.id}`, type: 'goal' as const,
+                name: g.name,
+                subtitle: `${g.frequency} · NGN ${Number(g.contribution_amount).toLocaleString('en-NG')}`,
+                defaultAmount: g.contribution_amount,
+                color: g.festive_periods?.color, frequency: g.frequency,
+            }));
+        const schemeOpts: SavingsOption[] = raw.schemes
+            .filter(s => s.status === 'active')
+            .map(s => ({
+                id: s.id, key: `scheme::${s.id}`, type: 'scheme' as const,
+                name: s.name,
+                subtitle: `${s.frequency} savings · min NGN ${Number(s.minimum_amount).toLocaleString('en-NG')}`,
+                defaultAmount: s.minimum_amount, frequency: s.frequency,
+            }));
+        return [...goalOpts, ...schemeOpts];
+    }, [raw]);
+
+    const [paying, setPaying] = useState(false);
+    const [paymentStatus, setPaymentStatus] = useState<'success' | 'failed' | null>(null);
     const [allocations, setAllocations] = useState<AllocationItem[]>([]);
-    const [selectedType, setSelectedType] = useState<'group' | 'goal'>('group');
-    const [selectedId, setSelectedId] = useState('');
+    const [selectedKey, setSelectedKey] = useState('');
     const [customAmount, setCustomAmount] = useState('');
 
+    // Pre-fill from URL once options are loaded
     useEffect(() => {
-        const load = async () => {
-            setLoading(true);
-            try {
-                const [groupsRes, goalsRes] = await Promise.all([
-                    fetch('/api/groups', { cache: 'no-store' }),
-                    fetch('/api/savings/goals', { cache: 'no-store' }),
-                ]);
-
-                if (goalsRes.status === 403) {
-                    setPassbookGated(true);
-                }
-
-                const groupsJson = await groupsRes.json();
-                const goalsJson = goalsRes.ok ? await goalsRes.json() : { data: [] };
-
-                setGroups(Array.isArray(groupsJson.data) ? groupsJson.data : []);
-                setGoals(Array.isArray(goalsJson.data) ? goalsJson.data : []);
-
-                // Pre-fill from URL
-                if (prefillGoalId) {
-                    const goal = (goalsJson.data as GoalOption[]).find(g => g.id === prefillGoalId);
-                    if (goal) {
-                        setSelectedType('goal');
-                        setSelectedId(goal.id);
-                        setCustomAmount(String(goal.contribution_amount));
-                    }
-                }
-            } catch (err) {
-                notifyError(showToast, err, 'Could not load savings options.');
-            } finally {
-                setLoading(false);
-            }
-        };
-        void load();
-    }, []);
-
-    // Auto-verify bulk payment callback
-    useEffect(() => {
-        if (!incomingRef || verifiedRef.current) return;
-        verifiedRef.current = true;
-
-        const verify = async () => {
-            setPaymentStatus('verifying');
-            try {
-                const res = await fetch(`/api/payments/verify?reference=${encodeURIComponent(incomingRef)}`);
-                const json = await res.json();
-                if (res.ok && json.data?.status === 'success') {
-                    if (json.data?.bulk?.partial) {
-                        setPaymentStatus('partial');
-                    } else {
-                        setPaymentStatus('success');
-                    }
-                    router.replace('/pay');
-                } else {
-                    setPaymentStatus('failed');
-                }
-            } catch {
-                setPaymentStatus('failed');
-            }
-        };
-        void verify();
-    }, []);
-
-    const getDefaultAmount = () => {
-        if (selectedType === 'group') {
-            return groups.find(g => g.id === selectedId)?.contribution_amount ?? 0;
+        if (!options.length) return;
+        if (prefillGoalId) {
+            const opt = options.find(o => o.type === 'goal' && o.id === prefillGoalId);
+            if (opt) { setSelectedKey(opt.key); setCustomAmount(String(opt.defaultAmount)); }
+        } else if (prefillSchemeId) {
+            const opt = options.find(o => o.type === 'scheme' && o.id === prefillSchemeId);
+            if (opt) { setSelectedKey(opt.key); setCustomAmount(String(opt.defaultAmount)); }
         }
-        return goals.find(g => g.id === selectedId)?.contribution_amount ?? 0;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [options.length]);
+
+    const handleSelectionChange = (key: string) => {
+        setSelectedKey(key);
+        const opt = options.find(o => o.key === key);
+        if (opt) setCustomAmount(String(opt.defaultAmount));
+        else setCustomAmount('');
     };
 
     const handleAdd = () => {
-        if (!selectedId) { notifyWarning(showToast, 'Please select a savings target first.'); return; }
-        const amount = Number(customAmount) || getDefaultAmount();
+        const opt = options.find(o => o.key === selectedKey);
+        if (!opt) { notifyWarning(showToast, 'Please select a savings target first.'); return; }
+        const amount = Number(customAmount) || opt.defaultAmount;
         if (!amount) { notifyWarning(showToast, 'Please enter an amount.'); return; }
 
-        const alreadyAdded = allocations.some(a => a.id === selectedId);
-        if (alreadyAdded) { notifyWarning(showToast, 'Already added. Remove it first to change the amount.'); return; }
-
-        const key = `${selectedType}::${selectedId}`;
-
-        if (selectedType === 'group') {
-            const group = groups.find(g => g.id === selectedId);
-            if (!group) return;
-            setAllocations(a => [...a, { key, type: 'group', id: group.id, label: `${group.name} (Round ${group.current_cycle})`, amount }]);
-        } else {
-            const goal = goals.find(g => g.id === selectedId);
-            if (!goal) return;
-            setAllocations(a => [...a, { key, type: 'goal', id: goal.id, label: goal.name, amount, color: goal.festive_periods?.color }]);
+        if (allocations.some(a => a.key === selectedKey)) {
+            notifyWarning(showToast, 'Already added. Remove it first to change the amount.');
+            return;
         }
 
-        setSelectedId('');
+        setAllocations(prev => [...prev, {
+            key: selectedKey,
+            type: opt.type,
+            id: opt.id,
+            label: opt.name,
+            amount,
+            color: opt.color,
+            frequency: opt.frequency,
+        }]);
+        setSelectedKey('');
         setCustomAmount('');
     };
 
@@ -157,66 +289,68 @@ function PayPageContent() {
             return;
         }
         setPaying(true);
+        setPaymentStatus(null);
         try {
-            const singleAlloc = allocations.length === 1 ? allocations[0]! : null;
+            const goalItems   = allocations.filter(a => a.type === 'goal');
+            const schemeItems = allocations.filter(a => a.type === 'scheme');
+            const errors: string[] = [];
 
-            // ── Single group payment ──────────────────────────────────────────
-            if (singleAlloc?.type === 'group') {
-                const group = groups.find(g => g.id === singleAlloc.id);
-                if (!group) throw new Error('Group not found.');
-                const res = await fetch('/api/payments/initialize', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ groupId: group.id, cycleNumber: group.current_cycle, amount: singleAlloc.amount }),
-                });
-                const json = await res.json();
-                if (!res.ok) throw new Error(json.error);
-                window.location.href = json.data.authorizationUrl;
-                return;
-            }
-
-            // ── Single individual savings goal payment ────────────────────────
-            if (singleAlloc?.type === 'goal') {
+            if (goalItems.length === 1) {
                 const res = await fetch('/api/payments/individual-savings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ goalId: singleAlloc.id }),
+                    body: JSON.stringify({ goalId: goalItems[0]!.id }),
                 });
                 const json = await res.json();
-                if (!res.ok) throw new Error(json.error);
-                window.location.href = json.data.authorizationUrl;
-                return;
+                if (!res.ok) errors.push(json.error ?? 'Goal payment failed.');
+            } else if (goalItems.length > 1) {
+                const res = await fetch('/api/payments/bulk', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        allocations: goalItems.map(a => ({
+                            targetType: 'individual_goal',
+                            targetId: a.id,
+                            amount: a.amount,
+                        })),
+                    }),
+                });
+                const json = await res.json();
+                if (!res.ok) errors.push(json.error ?? 'Bulk goal payment failed.');
             }
 
-            // ── Bulk pay (multiple targets) ───────────────────────────────────
-            const res = await fetch('/api/payments/bulk', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    allocations: allocations.map(a => ({
-                        targetType: a.type === 'group' ? 'group' : 'individual_goal',
-                        targetId: a.id,
-                        amount: a.amount,
-                    })),
-                }),
-            });
-            const json = await res.json();
-            if (!res.ok) throw new Error(json.error);
-            notifySuccess(showToast, 'Payment initiated. Redirecting...');
-            window.location.href = json.data.authorizationUrl;
+            for (const item of schemeItems) {
+                const res = await fetch('/api/payments/general-savings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ schemeId: item.id, amount: item.amount }),
+                });
+                const json = await res.json();
+                if (!res.ok) errors.push(json.error ?? `Payment failed for "${item.label}".`);
+            }
+
+            if (errors.length > 0) {
+                notifyError(showToast, new Error(errors[0]!), errors[0]!);
+                setPaymentStatus('failed');
+            } else {
+                notifySuccess(showToast, 'Payment successful — savings updated.');
+                setPaymentStatus('success');
+                setAllocations([]);
+            }
         } catch (err) {
-            notifyError(showToast, err, 'Could not initiate payment.');
+            setPaymentStatus('failed');
+            notifyError(showToast, err, 'Could not complete payment.');
         } finally {
             setPaying(false);
         }
     };
 
-    const formatCurrency = (v: number) => `NGN ${Number(v).toLocaleString('en-NG')}`;
+    const fmt = (v: number) => `NGN ${Number(v).toLocaleString('en-NG')}`;
 
     if (loading) {
         return (
             <div className="flex items-center justify-center gap-2 py-16 text-sm text-brand-gray">
-                <Loader2 size={16} className="animate-spin" /> Loading your savings options...
+                <Loader2 size={16} className="animate-spin" /> Loading...
             </div>
         );
     }
@@ -227,28 +361,15 @@ function PayPageContent() {
                 <ArrowLeft size={14} /> Back
             </Link>
 
-            {paymentStatus === 'verifying' && (
-                <div className="flex items-center gap-2.5 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-                    <Loader2 size={15} className="animate-spin shrink-0" />
-                    Verifying your payment...
-                </div>
-            )}
             {paymentStatus === 'success' && (
                 <div className="flex items-center gap-2.5 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
                     <CheckCircle2 size={15} className="shrink-0" />
                     Payment successful — your savings have been updated.
                 </div>
             )}
-            {paymentStatus === 'partial' && (
-                <div className="flex items-center gap-2.5 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                    <CheckCircle2 size={15} className="shrink-0 text-amber-600" />
-                    Payment received. Some targets may not have credited — open each savings goal and check the passbook, or contact support if money is missing.
-                </div>
-            )}
             {paymentStatus === 'failed' && (
                 <div className="flex items-center gap-2.5 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                    <XCircle size={15} className="shrink-0" />
-                    Could not verify payment. If you were charged, it will reflect shortly.
+                    Payment failed. Check your wallet balance and try again.
                 </div>
             )}
 
@@ -257,91 +378,47 @@ function PayPageContent() {
                     <CreditCard size={20} className="text-brand-primary" />
                     Make Payment
                 </h1>
-                <p className="text-xs text-brand-gray mt-0.5">Pay into one or multiple savings in a single transaction.</p>
+                <p className="text-xs text-brand-gray mt-0.5">Select savings, enter amount, and pay from wallet.</p>
             </div>
 
-            {/* Passbook gate notice */}
-            {passbookGated && (
-                <div className="flex items-start gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-                    <BookOpen size={14} className="shrink-0 mt-0.5" />
-                    <div>
-                        Activate your passbook to also pay into individual savings goals.{' '}
-                        <Link href="/onboarding/activate-passbook" className="font-bold underline">Activate now →</Link>
-                    </div>
-                </div>
-            )}
+            {/* Step 1 */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-3">
+                <h2 className="text-sm font-bold text-brand-navy">Step 1 — Select &amp; add</h2>
 
-            {/* Step 1: Add targets */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4">
-                <h2 className="text-sm font-bold text-brand-navy">Step 1 — Select savings targets</h2>
-
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setSelectedType('group')}
-                        className={`flex-1 rounded-xl border py-2 text-xs font-bold transition-colors ${selectedType === 'group' ? 'border-brand-primary bg-brand-primary/5 text-brand-primary' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}
-                    >
-                        <Users size={12} className="inline mr-1" /> Groups
-                    </button>
-                    {!passbookGated && (
-                        <button
-                            onClick={() => setSelectedType('goal')}
-                            className={`flex-1 rounded-xl border py-2 text-xs font-bold transition-colors ${selectedType === 'goal' ? 'border-brand-primary bg-brand-primary/5 text-brand-primary' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}
-                        >
-                            <BookOpen size={12} className="inline mr-1" /> Savings Goals
-                        </button>
-                    )}
-                </div>
-
-                <div className="space-y-2">
-                    <select
-                        value={selectedId}
-                        onChange={e => {
-                            setSelectedId(e.target.value);
-                            if (selectedType === 'group') {
-                                const g = groups.find(g => g.id === e.target.value);
-                                if (g) setCustomAmount(String(g.contribution_amount));
-                            } else {
-                                const g = goals.find(g => g.id === e.target.value);
-                                if (g) setCustomAmount(String(g.contribution_amount));
-                            }
-                        }}
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm"
-                    >
-                        <option value="">— Choose {selectedType === 'group' ? 'a group' : 'a savings goal'} —</option>
-                        {selectedType === 'group'
-                            ? groups.map(g => (
-                                <option key={g.id} value={g.id}>
-                                    {g.name} · Round {g.current_cycle} · NGN {Number(g.contribution_amount).toLocaleString('en-NG')}
-                                </option>
-                            ))
-                            : goals.filter(g => g.status === 'active').map(g => (
-                                <option key={g.id} value={g.id}>
-                                    {g.name} · {g.frequency} · NGN {Number(g.contribution_amount).toLocaleString('en-NG')}
-                                </option>
-                            ))
-                        }
-                    </select>
-
-                    <div className="flex gap-2">
-                        <input
-                            type="number"
-                            min={1}
-                            value={customAmount}
-                            onChange={e => setCustomAmount(e.target.value)}
-                            placeholder="Amount (NGN)"
-                            className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm"
+                {options.length === 0 ? (
+                    <p className="text-xs text-brand-gray">
+                        No active savings.{' '}
+                        <Link href="/savings" className="font-semibold text-brand-primary underline">Create one →</Link>
+                    </p>
+                ) : (
+                    <>
+                        <SearchableSelect
+                            options={options}
+                            value={selectedKey}
+                            onChange={handleSelectionChange}
                         />
-                        <button
-                            onClick={handleAdd}
-                            className="inline-flex items-center gap-1.5 rounded-xl bg-brand-primary px-4 py-2.5 text-xs font-bold text-white hover:bg-brand-primary-hover transition-colors"
-                        >
-                            <Plus size={13} /> Add
-                        </button>
-                    </div>
-                </div>
+                        <div className="flex gap-2">
+                            <input
+                                type="number"
+                                min={1}
+                                value={customAmount}
+                                onChange={e => setCustomAmount(e.target.value)}
+                                placeholder="Amount (NGN)"
+                                className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm"
+                            />
+                            <button
+                                onClick={handleAdd}
+                                disabled={!selectedKey}
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-brand-primary px-4 py-2.5 text-xs font-bold text-white hover:bg-brand-primary-hover disabled:opacity-50 transition-colors"
+                            >
+                                <Plus size={13} /> Add
+                            </button>
+                        </div>
+                    </>
+                )}
             </div>
 
-            {/* Step 2: Review */}
+            {/* Step 2 */}
             {allocations.length > 0 && (
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-3">
                     <h2 className="text-sm font-bold text-brand-navy">Step 2 — Review &amp; pay</h2>
@@ -351,17 +428,25 @@ function PayPageContent() {
                             <div key={a.key} className="flex items-center gap-3 px-3 py-3 bg-white hover:bg-slate-50">
                                 <div
                                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
-                                    style={{ backgroundColor: a.type === 'goal' ? `${a.color ?? '#1D4ED8'}20` : '#EFF6FF' }}
+                                    style={{ backgroundColor: `${a.color ?? (a.type === 'scheme' ? '#10B981' : '#1D4ED8')}20` }}
                                 >
-                                    {a.type === 'group' ? <Users size={14} className="text-brand-primary" /> : <BookOpen size={14} style={{ color: a.color ?? '#1D4ED8' }} />}
+                                    {a.type === 'goal'
+                                        ? <Target size={14} style={{ color: a.color ?? '#1D4ED8' }} />
+                                        : <Calendar size={14} className="text-emerald-600" />
+                                    }
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <p className="text-sm font-semibold text-brand-navy truncate">{a.label}</p>
-                                    <p className="text-[10px] text-brand-gray capitalize">{a.type === 'group' ? 'Group contribution' : 'Individual savings'}</p>
+                                    <p className="text-[10px] text-brand-gray capitalize">
+                                        {a.type === 'goal' ? `Target · ${a.frequency}` : `General · ${a.frequency}`}
+                                    </p>
                                 </div>
                                 <div className="shrink-0 flex items-center gap-2">
-                                    <p className="text-sm font-bold text-brand-navy">{formatCurrency(a.amount)}</p>
-                                    <button onClick={() => setAllocations(al => al.filter(x => x.key !== a.key))} className="text-slate-300 hover:text-red-400 transition-colors">
+                                    <p className="text-sm font-bold text-brand-navy">{fmt(a.amount)}</p>
+                                    <button
+                                        onClick={() => setAllocations(al => al.filter(x => x.key !== a.key))}
+                                        className="text-slate-300 hover:text-red-400 transition-colors"
+                                    >
                                         <Trash2 size={13} />
                                     </button>
                                 </div>
@@ -371,12 +456,12 @@ function PayPageContent() {
 
                     <div className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-100 px-4 py-3">
                         <span className="text-sm font-bold text-brand-navy">Total</span>
-                        <span className="text-lg font-bold text-brand-navy">{formatCurrency(totalAmount)}</span>
+                        <span className="text-lg font-bold text-brand-navy">{fmt(totalAmount)}</span>
                     </div>
 
                     <div className="flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-[10px] text-blue-700">
                         <ShieldCheck size={12} className="shrink-0" />
-                        Payments processed securely via Paystack. Each target will be credited on confirmation.
+                        Debited from wallet instantly. General savings are paid out on fixed platform dates.
                     </div>
 
                     <button
@@ -384,19 +469,17 @@ function PayPageContent() {
                         disabled={paying}
                         className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 py-3 text-sm font-bold text-white hover:bg-brand-primary-hover disabled:opacity-60 transition-colors"
                     >
-                        {paying ? (
-                            <><Loader2 size={15} className="animate-spin" /> Processing...</>
-                        ) : (
-                            <>Pay {formatCurrency(totalAmount)} <ArrowRight size={15} /></>
-                        )}
+                        {paying
+                            ? <><Loader2 size={15} className="animate-spin" /> Processing...</>
+                            : <>Pay {fmt(totalAmount)} <ArrowRight size={15} /></>
+                        }
                     </button>
                 </div>
             )}
 
-            {/* Empty state */}
-            {allocations.length === 0 && !loading && (
+            {allocations.length === 0 && (
                 <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center space-y-2">
-                    <CheckCircle2 size={20} className="mx-auto text-slate-300" />
+                    <CreditCard size={20} className="mx-auto text-slate-300" />
                     <p className="text-sm text-brand-gray">Add savings targets above to build your payment.</p>
                 </div>
             )}
