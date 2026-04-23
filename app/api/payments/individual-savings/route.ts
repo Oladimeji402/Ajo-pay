@@ -45,12 +45,24 @@ export async function POST(request: Request) {
     const { goalId, amount: requestedAmount, periodIndex: requestedPeriodIndex } = parsed.data;
 
     // Load the goal.
-    const { data: goal, error: goalError } = await auth.supabase
+    // Try reading minimum_amount if the column exists; fallback for older DBs.
+    let goalQuery = await auth.supabase
       .from("individual_savings_goals")
       .select("id, name, savings_start_date, target_date, frequency, contribution_amount, minimum_amount, status, user_id")
       .eq("id", goalId)
       .eq("user_id", auth.user.id)
       .maybeSingle();
+
+    if (goalQuery.error?.message?.includes("minimum_amount")) {
+      goalQuery = await auth.supabase
+        .from("individual_savings_goals")
+        .select("id, name, savings_start_date, target_date, frequency, contribution_amount, status, user_id")
+        .eq("id", goalId)
+        .eq("user_id", auth.user.id)
+        .maybeSingle();
+    }
+
+    const { data: goal, error: goalError } = goalQuery;
 
     if (goalError) return badRequestResponse(goalError.message);
     if (!goal) return NextResponse.json({ error: "Savings goal not found." }, { status: 404 });

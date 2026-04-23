@@ -45,12 +45,24 @@ export async function POST(request: Request) {
     const { allocations } = parsed.data;
 
     const goalIds = [...new Set(allocations.map((a) => a.targetId))];
-    const { data: goals, error: goalsError } = await auth.supabase
+    // Try reading minimum_amount if present; fallback for older DBs.
+    let goalsQuery = await auth.supabase
       .from("individual_savings_goals")
       .select("id, savings_start_date, target_date, frequency, minimum_amount")
       .in("id", goalIds)
       .eq("user_id", auth.user.id)
       .eq("status", "active");
+
+    if (goalsQuery.error?.message?.includes("minimum_amount")) {
+      goalsQuery = await auth.supabase
+        .from("individual_savings_goals")
+        .select("id, savings_start_date, target_date, frequency")
+        .in("id", goalIds)
+        .eq("user_id", auth.user.id)
+        .eq("status", "active");
+    }
+
+    const { data: goals, error: goalsError } = goalsQuery;
 
     if (goalsError) return badRequestResponse(goalsError.message);
     const goalById = new Map((goals ?? []).map((g) => [g.id, g]));
