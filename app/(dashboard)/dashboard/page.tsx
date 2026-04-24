@@ -36,7 +36,11 @@ type Transaction = {
     status: string;
     created_at: string;
     groups?: { id: string; name: string } | null;
-    metadata?: Record<string, unknown> | null;
+    metadata?: {
+        goalName?: string | null;
+        goalNames?: string[] | null;
+        [key: string]: unknown;
+    } | null;
 };
 
 type DashboardData = {
@@ -332,9 +336,11 @@ export default function DashboardPage() {
                                     : tx.type === 'payout'
                                         ? (tx.groups?.name ? `${tx.groups.name} payout` : 'Payout')
                                         : tx.type === 'individual_savings'
-                                            ? 'Individual savings'
+                                            ? (tx.metadata?.goalName ? `Saved to ${tx.metadata.goalName}` : 'Individual savings')
                                             : tx.type === 'bulk_contribution'
-                                                ? 'Bulk savings payment'
+                                                ? (Array.isArray(tx.metadata?.goalNames) && tx.metadata?.goalNames.length
+                                                    ? `Saved to ${tx.metadata.goalNames[0]}${tx.metadata.goalNames.length > 1 ? ` +${tx.metadata.goalNames.length - 1} more` : ''}`
+                                                    : 'Bulk savings payment')
                                                 : tx.type === 'wallet_funding'
                                                     ? 'Wallet funding'
                                                     : 'Passbook activation';
