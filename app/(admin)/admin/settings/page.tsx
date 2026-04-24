@@ -9,6 +9,7 @@ import { useRealtimeSubscription } from '@/lib/hooks/useRealtimeSubscription';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
 import { formatNigeriaPhoneE164, isValidNigeriaPhoneLocal, normalizeNigeriaPhoneLocalInput, parseNigeriaPhoneToLocal } from '@/lib/phone';
+import { ConfirmPopup } from '@/components/ui/ConfirmPopup';
 
 const SETTINGS_REALTIME_TABLES = ['payment_records', 'payouts', 'profiles'];
 const inputClassName = 'h-11 w-full rounded-xl border border-slate-200/80 bg-white px-3 text-sm text-brand-navy shadow-sm transition-all duration-200 placeholder:text-slate-400 hover:border-slate-300 hover:shadow focus:border-brand-primary/60 focus:outline-none focus:ring-4 focus:ring-brand-primary/15';
@@ -71,6 +72,7 @@ export default function AdminSettingsPage() {
   const [pendingPayoutCount, setPendingPayoutCount] = useState(0);
   const [clearingRegistrations, setClearingRegistrations] = useState(false);
   const [clearingLegacy, setClearingLegacy] = useState(false);
+  const [confirmType, setConfirmType] = useState<null | 'registrations' | 'legacy'>(null);
   const { showToast } = useToast();
 
   const { connectionStatus, lastEvent, refreshTrigger } = useRealtimeSubscription({
@@ -190,11 +192,6 @@ export default function AdminSettingsPage() {
   };
 
   const clearRegistrationsSheet = async () => {
-    const confirmed = window.confirm(
-      'Clear all rows in Registrations sheet and keep only the new headers?',
-    );
-    if (!confirmed) return;
-
     setClearingRegistrations(true);
     try {
       const res = await fetch('/api/admin/integrations/google-sheets/reset-registrations', {
@@ -211,11 +208,6 @@ export default function AdminSettingsPage() {
   };
 
   const clearLegacySheets = async () => {
-    const confirmed = window.confirm(
-      'Clear MemberEvents and PaymentEvents sheets and keep only their headers?',
-    );
-    if (!confirmed) return;
-
     setClearingLegacy(true);
     try {
       const res = await fetch('/api/admin/integrations/google-sheets/reset-legacy', {
@@ -327,7 +319,7 @@ export default function AdminSettingsPage() {
           <button
             type="button"
             disabled={clearingRegistrations}
-            onClick={() => void clearRegistrationsSheet()}
+            onClick={() => setConfirmType('registrations')}
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-navy shadow-sm transition-all duration-200 hover:bg-slate-50 disabled:opacity-50"
           >
             {clearingRegistrations ? <span className="h-2.5 w-2.5 rounded-full bg-brand-navy animate-pulse" /> : null}
@@ -337,7 +329,7 @@ export default function AdminSettingsPage() {
           <button
             type="button"
             disabled={clearingLegacy}
-            onClick={() => void clearLegacySheets()}
+            onClick={() => setConfirmType('legacy')}
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 shadow-sm transition-all duration-200 hover:bg-red-100 disabled:opacity-50"
           >
             {clearingLegacy ? <span className="h-2.5 w-2.5 rounded-full bg-red-600 animate-pulse" /> : null}
@@ -345,6 +337,32 @@ export default function AdminSettingsPage() {
           </button>
         </div>
       </div>
+
+      <ConfirmPopup
+        open={confirmType === 'registrations'}
+        title="Clear Registrations sheet?"
+        message="This removes all rows and keeps only headers."
+        confirmLabel="Clear Registrations"
+        tone="danger"
+        loading={clearingRegistrations}
+        onCancel={() => setConfirmType(null)}
+        onConfirm={() => {
+          void clearRegistrationsSheet().finally(() => setConfirmType(null));
+        }}
+      />
+
+      <ConfirmPopup
+        open={confirmType === 'legacy'}
+        title="Clear legacy sheets?"
+        message="This clears MemberEvents and PaymentEvents and keeps only headers."
+        confirmLabel="Clear Legacy"
+        tone="danger"
+        loading={clearingLegacy}
+        onCancel={() => setConfirmType(null)}
+        onConfirm={() => {
+          void clearLegacySheets().finally(() => setConfirmType(null));
+        }}
+      />
     </div>
   );
 }

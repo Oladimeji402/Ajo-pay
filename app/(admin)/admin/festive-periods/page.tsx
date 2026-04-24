@@ -5,6 +5,7 @@ import { CalendarDays, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Loader2 } 
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
 import { getTodayDateInputValue } from '@/lib/ajo-schedule';
+import { ConfirmPopup } from '@/components/ui/ConfirmPopup';
 
 type FestivePeriod = {
     id: string;
@@ -52,6 +53,7 @@ export default function AdminFestivePeriodsPage() {
     const [showForm, setShowForm] = useState(false);
     const [form, setForm] = useState({ ...emptyForm });
     const [categoryFilter, setCategoryFilter] = useState('all');
+    const [deletingPeriod, setDeletingPeriod] = useState<FestivePeriod | null>(null);
     const { showToast } = useToast();
 
     const load = async () => {
@@ -116,7 +118,6 @@ export default function AdminFestivePeriodsPage() {
     };
 
     const handleDelete = async (period: FestivePeriod) => {
-        if (!confirm(`Delete "${period.name}"? This cannot be undone.`)) return;
         try {
             const res = await fetch(`/api/admin/festive-periods/${period.id}`, { method: 'DELETE' });
             const json = await res.json();
@@ -298,7 +299,7 @@ export default function AdminFestivePeriodsPage() {
                                     <button onClick={() => handleEdit(period)} className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-brand-navy transition-colors">
                                         <Pencil size={14} />
                                     </button>
-                                    <button onClick={() => void handleDelete(period)} className="p-2 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors">
+                                    <button onClick={() => setDeletingPeriod(period)} className="p-2 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors">
                                         <Trash2 size={14} />
                                     </button>
                                 </div>
@@ -307,6 +308,19 @@ export default function AdminFestivePeriodsPage() {
                     </div>
                 </div>
             )}
+
+            <ConfirmPopup
+                open={Boolean(deletingPeriod)}
+                title="Delete festive period?"
+                message={deletingPeriod ? `Delete "${deletingPeriod.name}"? This cannot be undone.` : ''}
+                confirmLabel="Delete"
+                tone="danger"
+                onCancel={() => setDeletingPeriod(null)}
+                onConfirm={() => {
+                    if (!deletingPeriod) return;
+                    void handleDelete(deletingPeriod).finally(() => setDeletingPeriod(null));
+                }}
+            />
         </div>
     );
 }
