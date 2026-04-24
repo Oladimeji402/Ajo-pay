@@ -73,6 +73,8 @@ export default function AdminSettingsPage() {
   const [pendingPayoutCount, setPendingPayoutCount] = useState(0);
   const [clearingRegistrations, setClearingRegistrations] = useState(false);
   const [clearingLegacy, setClearingLegacy] = useState(false);
+  const [syncingRegistrations, setSyncingRegistrations] = useState(false);
+  const [syncingPayments, setSyncingPayments] = useState(false);
   const [confirmType, setConfirmType] = useState<null | 'registrations' | 'legacy'>(null);
   const { showToast } = useToast();
 
@@ -232,6 +234,40 @@ export default function AdminSettingsPage() {
     }
   };
 
+  const syncRegistrationsSheet = async () => {
+    setSyncingRegistrations(true);
+    try {
+      const res = await fetch('/api/admin/integrations/google-sheets/sync-registrations', {
+        method: 'POST',
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to sync registrations sheet.');
+      notifySuccess(showToast, `Registrations synced (${Number(json.data?.syncedRows ?? 0).toLocaleString('en-NG')} rows).`);
+      setLastSyncedAt(new Date().toISOString());
+    } catch (err) {
+      notifyError(showToast, err, 'Unable to sync registrations sheet.');
+    } finally {
+      setSyncingRegistrations(false);
+    }
+  };
+
+  const syncPaymentsSheet = async () => {
+    setSyncingPayments(true);
+    try {
+      const res = await fetch('/api/admin/integrations/google-sheets/sync-payments', {
+        method: 'POST',
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to sync payments sheet.');
+      notifySuccess(showToast, `Payments synced to Daily, Weekly and Monthly sheets (${Number(json.data?.syncedRows ?? 0).toLocaleString('en-NG')} rows).`);
+      setLastSyncedAt(new Date().toISOString());
+    } catch (err) {
+      notifyError(showToast, err, 'Unable to sync payments sheet.');
+    } finally {
+      setSyncingPayments(false);
+    }
+  };
+
   if (loading) {
     return <AdminSettingsSkeleton />;
   }
@@ -325,6 +361,26 @@ export default function AdminSettingsPage() {
         </p>
 
         <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <button
+            type="button"
+            disabled={syncingRegistrations}
+            onClick={() => void syncRegistrationsSheet()}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 shadow-sm transition-all duration-200 hover:bg-emerald-100 disabled:opacity-50"
+          >
+            {syncingRegistrations ? <span className="h-2.5 w-2.5 rounded-full bg-emerald-600 animate-pulse" /> : null}
+            {syncingRegistrations ? 'Syncing Registrations...' : 'Manual Sync Registrations'}
+          </button>
+
+          <button
+            type="button"
+            disabled={syncingPayments}
+            onClick={() => void syncPaymentsSheet()}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-semibold text-indigo-700 shadow-sm transition-all duration-200 hover:bg-indigo-100 disabled:opacity-50"
+          >
+            {syncingPayments ? <span className="h-2.5 w-2.5 rounded-full bg-indigo-600 animate-pulse" /> : null}
+            {syncingPayments ? 'Syncing Payments...' : 'Manual Sync Payments (Daily/Weekly/Monthly)'}
+          </button>
+
           <button
             type="button"
             disabled={clearingRegistrations}

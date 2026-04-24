@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { badRequestResponse, requireUser, serverErrorResponse } from "@/lib/api/auth";
+import { upsertSavingsPaymentToGoogleSheet } from "@/lib/google-sheets-sync";
 
 const schema = z.object({
   schemeId: z.string().uuid("schemeId must be a valid UUID"),
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
     // Load scheme — must belong to user and be active.
     const { data: scheme, error: schemeError } = await auth.supabase
       .from("savings_schemes")
-      .select("id, frequency, minimum_amount, status")
+      .select("id, name, frequency, minimum_amount, status")
       .eq("id", schemeId)
       .eq("user_id", auth.user.id)
       .maybeSingle();
@@ -80,6 +81,25 @@ export async function POST(request: Request) {
       }
       return badRequestResponse(`Unable to complete payment (${code}).`);
     }
+
+    const { data: customerProfile } = await auth.supabase
+      .from("profiles")
+      .select("name, phone")
+      .eq("id", auth.user.id)
+      .maybeSingle();
+
+    void upsertSavingsPaymentToGoogleSheet({
+      paidAt: new Date().toISOString(),
+      customerName: customerProfile?.name ?? auth.user.email ?? "Customer",
+      phone: customerProfile?.phone ?? null,
+      planName: String(scheme.name ?? "General Savings"),
+      planType: "General",
+      frequency: (scheme.frequency as "daily" | "weekly" | "monthly") ?? "monthly",
+      channel: "Wallet",
+      amount,
+      status: "Successful",
+      reference,
+    }).catch(() => {});
 
     return NextResponse.json({
       data: {

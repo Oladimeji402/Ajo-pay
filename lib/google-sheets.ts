@@ -151,6 +151,74 @@ export async function appendRowsToGoogleSheet(params: {
   return { appendedRows: rows.length };
 }
 
+export async function upsertRowInGoogleSheet(params: {
+  spreadsheetId: string;
+  sheetName: string;
+  headers: string[];
+  keyHeader: string;
+  keyValue: string;
+  row: GoogleSheetRow;
+}) {
+  const { spreadsheetId, sheetName, headers, keyHeader, keyValue, row } = params;
+  await ensureHeaderRow(spreadsheetId, sheetName, headers);
+
+  if (!keyValue.trim()) {
+    await appendRowsToGoogleSheet({
+      spreadsheetId,
+      sheetName,
+      headers,
+      rows: [row],
+    });
+    return { mode: "inserted" as const };
+  }
+
+  const sheets = await getSheetsClient();
+  const existing = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${sheetName}!A:ZZ`,
+    majorDimension: "ROWS",
+  });
+
+  const values = existing.data.values ?? [];
+  const headerRow = (values[0] ?? headers).map((value) => String(value));
+  const keyColumnIndex = headerRow.findIndex((h) => h === keyHeader);
+
+  if (keyColumnIndex < 0) {
+    await appendRowsToGoogleSheet({
+      spreadsheetId,
+      sheetName,
+      headers,
+      rows: [row],
+    });
+    return { mode: "inserted" as const };
+  }
+
+  const bodyRows = values.slice(1);
+  const matchIndex = bodyRows.findIndex((r) => String(r[keyColumnIndex] ?? "") === keyValue);
+
+  if (matchIndex < 0) {
+    await appendRowsToGoogleSheet({
+      spreadsheetId,
+      sheetName,
+      headers,
+      rows: [row],
+    });
+    return { mode: "inserted" as const };
+  }
+
+  const targetRowNumber = matchIndex + 2;
+  await sheets.spreadsheets.values.update({
+    spreadsheetId,
+    range: `${sheetName}!A${targetRowNumber}`,
+    valueInputOption: "RAW",
+    requestBody: {
+      values: [row],
+    },
+  });
+
+  return { mode: "updated" as const };
+}
+
 export async function replaceGroupRowsInGoogleSheet(params: {
   spreadsheetId: string;
   sheetName: string;
