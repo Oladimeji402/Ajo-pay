@@ -210,7 +210,10 @@ export async function POST(request: Request) {
         return NextResponse.json({ received: true, warning: "userId missing." });
       }
 
-      const result = await markWalletFundingSuccess({ reference });
+      const result = await markWalletFundingSuccess({
+        reference,
+        providerPayload: payload.data as unknown as Record<string, unknown>,
+      });
       if (!result.idempotent && result.ok) {
         await insertNotification({
           userId,
@@ -219,6 +222,24 @@ export async function POST(request: Request) {
           body: `Your wallet has been credited with NGN ${Number(amount ?? 0).toLocaleString("en-NG")}. You can now split and pay into your savings goals.`,
           metadata: { reference, amount },
         });
+
+        // Notify admins for complaint triage/monitoring.
+        const supabase = createSupabaseAdminClient();
+        const { data: admins } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("role", "admin")
+          .eq("status", "active");
+        if (admins?.length) {
+          const adminNotifications = admins.map((admin) => ({
+            user_id: admin.id,
+            type: "admin_wallet_funding",
+            title: "Wallet funding completed",
+            body: `User wallet funding succeeded. Amount: NGN ${Number(amount ?? 0).toLocaleString("en-NG")}. Reference: ${reference}.`,
+            metadata: { reference, amount, userId },
+          }));
+          await supabase.from("notifications").insert(adminNotifications);
+        }
       }
 
       return NextResponse.json({ received: true, wallet: result.idempotent ? "already_processed" : "credited" });

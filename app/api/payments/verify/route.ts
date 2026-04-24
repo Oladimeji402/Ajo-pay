@@ -7,6 +7,7 @@ import {
   markContributionPaymentTerminalStatus,
   markIndividualSavingsPaymentSuccess,
   markPassbookActivated,
+  markWalletFundingSuccess,
 } from "@/lib/payments";
 import { verifyPaystackTransaction } from "@/lib/paystack";
 
@@ -15,7 +16,8 @@ type PaymentType =
   | "payout"
   | "passbook_activation"
   | "individual_savings"
-  | "bulk_contribution";
+  | "bulk_contribution"
+  | "wallet_funding";
 
 async function buildBulkTargetsSummary(reference: string, supabase: Awaited<ReturnType<typeof requireUser>>["supabase"]) {
   const { data: allocations } = await supabase
@@ -226,6 +228,24 @@ export async function GET(request: Request) {
           bulk: { failedAllocations, pendingAllocations, partial: bulkPartial },
         },
       });
+    }
+
+    if (paymentType === "wallet_funding") {
+      const result = await markWalletFundingSuccess({
+        reference,
+        providerPayload: verifyData as unknown as Record<string, unknown>,
+      });
+      if (result.notFound) {
+        return NextResponse.json({ error: "Payment record not found." }, { status: 404 });
+      }
+      if (!result.ok) {
+        return NextResponse.json(
+          { error: "Payment verified but wallet credit could not be finalized. Contact support with your reference." },
+          { status: 422 },
+        );
+      }
+
+      return NextResponse.json({ data: { status: "success", reference } });
     }
 
     // Fallback for unknown types — just confirm success.

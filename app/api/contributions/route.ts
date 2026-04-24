@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { badRequestResponse, requireUser, serverErrorResponse } from "@/lib/api/auth";
-import { reconcileStalePendingContributionPayments } from "@/lib/payments";
+import { reconcileStalePendingPayments } from "@/lib/payments";
 
 export async function GET(request: Request) {
   try {
     const auth = await requireUser();
     if (auth.error || !auth.user) return auth.error;
 
-    await reconcileStalePendingContributionPayments({ userId: auth.user.id, limit: 10 });
+    await reconcileStalePendingPayments({ userId: auth.user.id, limit: 10 });
 
     const url = new URL(request.url);
     const groupId = url.searchParams.get("groupId");

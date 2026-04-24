@@ -431,6 +431,7 @@ export async function markPassbookActivated(params: {
 
 export async function markWalletFundingSuccess(params: {
   reference: string;
+  providerPayload?: Record<string, unknown>;
 }): Promise<{ ok: boolean; idempotent?: boolean; notFound?: boolean }> {
   const supabase = createSupabaseAdminClient();
 
@@ -442,25 +443,20 @@ export async function markWalletFundingSuccess(params: {
     .maybeSingle();
 
   if (!payment) return { ok: false, notFound: true };
-  if (payment.status === "success") return { ok: true, idempotent: true };
+  const { data: finalizeStatus, error: finalizeError } = await supabase.rpc("finalize_wallet_funding", {
+    p_reference: params.reference,
+    p_provider_reference: String((params.providerPayload?.reference as string | undefined) ?? params.reference),
+    p_channel: String((params.providerPayload?.channel as string | undefined) ?? "paystack"),
+    p_payload: params.providerPayload ?? {},
+    p_request_id: null,
+  });
+  if (finalizeError) throw new Error(finalizeError.message);
 
-  const { data: debited } = await supabase
-    .rpc("credit_wallet_balance", {
-      p_user_id: payment.user_id,
-      p_amount: Number(payment.amount ?? 0),
-    });
-
-  if (!debited) return { ok: false };
-
-  const { error } = await supabase
-    .from("payment_records")
-    .update({ status: "success" })
-    .eq("id", payment.id)
-    .eq("status", "pending");
-
-  if (error) throw new Error(error.message);
-
-  return { ok: true };
+  const status = String(finalizeStatus ?? "");
+  if (status === "credited") return { ok: true };
+  if (status === "already_success") return { ok: true, idempotent: true };
+  if (status === "not_found") return { ok: false, notFound: true };
+  return { ok: false };
 }
 
 export async function markIndividualSavingsPaymentSuccess(params: {
@@ -762,6 +758,116 @@ export async function reconcileStalePendingContributionPayments(params: Reconcil
 
   return {
     checked: references.length,
+    results,
+  };
+}
+
+export async function reconcileStalePendingPayments(params: ReconcilePendingPaymentsParams = {}) {
+  const supabase = createSupabaseAdminClient();
+  const nowIso = new Date().toISOString();
+  const limit = Math.min(Math.max(params.limit ?? 20, 1), 100);
+  const results: Array<{ reference: string; status: string; terminal: boolean }> = [];
+
+  let query = supabase
+    .from("payment_records")
+    .select("reference, type")
+    .eq("status", "pending")
+    .lte("expires_at", nowIso)
+    .order("created_at", { ascending: true })
+    .limit(limit);
+
+  if (params.userId) {
+    query = query.eq("user_id", params.userId);
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+
+  for (const row of data ?? []) {
+    const reference = String(row.reference ?? "");
+    const type = String(row.type ?? "");
+    if (!reference) continue;
+
+    try {
+      const verifyData = await verifyPaystackTransaction(reference);
+      const mappedStatus = mapPaystackTransactionStatus(verifyData.status);
+
+      if (mappedStatus.resolvedStatus === "success") {
+        if (type === "wallet_funding") {
+          await markWalletFundingSuccess({ reference });
+        } else if (type === "individual_savings") {
+          await markIndividualSavingsPaymentSuccess({ reference });
+        } else if (type === "bulk_contribution") {
+          await markBulkPaymentSuccess({ reference });
+        } else {
+          await markContributionPaymentSuccess({
+            reference,
+            providerPayload: verifyData as unknown as Record<string, unknown>,
+          });
+        }
+
+        await supabase
+          .from("payment_records")
+          .update({
+            last_reconciled_at: nowIso,
+            reconcile_attempts: 1,
+            pending_reason: null,
+          })
+          .eq("reference", reference);
+
+        results.push({ reference, status: "success", terminal: true });
+        continue;
+      }
+
+      if (mappedStatus.terminal) {
+        const terminalStatus = mappedStatus.resolvedStatus;
+        if (type === "wallet_funding") {
+          await supabase
+            .from("payment_records")
+            .update({
+              status: terminalStatus,
+              last_reconciled_at: nowIso,
+              reconcile_attempts: 1,
+              pending_reason: `provider_${terminalStatus}`,
+            })
+            .eq("reference", reference)
+            .eq("status", "pending");
+        } else {
+          await markContributionPaymentTerminalStatus({
+            reference,
+            status: terminalStatus,
+            providerPayload: verifyData as unknown as Record<string, unknown>,
+          });
+        }
+        results.push({ reference, status: terminalStatus, terminal: true });
+        continue;
+      }
+
+      await supabase
+        .from("payment_records")
+        .update({
+          last_reconciled_at: nowIso,
+          pending_reason: "provider_pending",
+        })
+        .eq("reference", reference)
+        .eq("status", "pending");
+
+      results.push({ reference, status: "pending", terminal: false });
+    } catch (reconcileError) {
+      console.error("[payments/reconcile] Failed reference:", reference, reconcileError);
+      await supabase
+        .from("payment_records")
+        .update({
+          last_reconciled_at: nowIso,
+          pending_reason: "reconcile_error",
+        })
+        .eq("reference", reference)
+        .eq("status", "pending");
+    }
+  }
+
+  return {
+    checked: (data ?? []).length,
     results,
   };
 }

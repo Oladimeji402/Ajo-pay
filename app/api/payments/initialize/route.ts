@@ -15,6 +15,11 @@ function generateReference() {
   return `AJO-${Date.now()}-${randomPart}`;
 }
 
+function generateRequestId() {
+  const randomPart = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `REQ-CONTRIB-${Date.now()}-${randomPart}`;
+}
+
 export async function POST(request: Request) {
   try {
     const auth = await requireUser();
@@ -80,6 +85,7 @@ export async function POST(request: Request) {
     }
 
     const reference = generateReference();
+    const requestId = generateRequestId();
 
     const appUrl = process.env.APP_URL;
     if (!appUrl && process.env.NODE_ENV === "production") {
@@ -150,8 +156,11 @@ export async function POST(request: Request) {
       status: "pending",
       reference,
       expires_at: expiresAtIso,
+      request_id: requestId,
+      pending_reason: "awaiting_provider_confirmation",
       metadata: {
         cycleNumber,
+        requestId,
       },
     });
 
@@ -164,6 +173,7 @@ export async function POST(request: Request) {
         groupName: group.name,
         amount: requestedAmount,
         reference,
+        requestId,
         authorizationUrl: paystackData.authorization_url,
         accessCode: paystackData.access_code,
       },

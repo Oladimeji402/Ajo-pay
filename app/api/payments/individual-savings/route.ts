@@ -18,6 +18,11 @@ function generateReference() {
   return `AJO-WALLET-ISG-${Date.now()}-${randomPart}`;
 }
 
+function generateRequestId() {
+  const randomPart = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `REQ-ISG-${Date.now()}-${randomPart}`;
+}
+
 export async function POST(request: Request) {
   try {
     const auth = await requireUser();
@@ -120,87 +125,37 @@ export async function POST(request: Request) {
       return badRequestResponse(`Minimum amount for this target is NGN ${minAmount.toLocaleString("en-NG")}.`);
     }
     const nowIso = new Date().toISOString();
-
-    const { data: debited } = await auth.supabase.rpc("debit_wallet_balance", {
+    const requestId = generateRequestId();
+    const { data: rpcResult, error: rpcError } = await auth.supabase.rpc("pay_individual_savings_from_wallet", {
       p_user_id: auth.user.id,
+      p_goal_id: goalId,
       p_amount: amount,
+      p_period_label: targetSlot.periodLabel,
+      p_period_index: targetSlot.periodIndex,
+      p_period_date: targetSlot.periodDate,
+      p_reference: reference,
+      p_request_id: requestId,
     });
 
-    if (!debited) {
-      return NextResponse.json(
-        { error: "Insufficient wallet balance. Fund your wallet to continue." },
-        { status: 400 },
-      );
+    if (rpcError) return serverErrorResponse(rpcError);
+    const ok = Boolean((rpcResult as { ok?: boolean } | null)?.ok);
+    const code = String((rpcResult as { code?: string } | null)?.code ?? "unknown_error");
+    if (!ok) {
+      if (code === "insufficient_balance") {
+        return NextResponse.json(
+          { error: "Insufficient wallet balance. Fund your wallet to continue." },
+          { status: 400 },
+        );
+      }
+      return badRequestResponse(`Unable to complete payment (${code}).`);
     }
-
-    // Write payment record first.
-    const { data: paymentRecord, error: prError } = await auth.supabase
-      .from("payment_records")
-      .insert({
-        user_id: auth.user.id,
-        group_id: null,
-        contribution_id: null,
-        provider: "wallet",
-        type: "individual_savings",
-        amount,
-        currency: "NGN",
-        status: "success",
-        reference,
-        paid_at: nowIso,
-        metadata: { goalId, periodIndex: targetSlot.periodIndex, fundedFromWallet: true },
-      })
-      .select("id")
-      .single();
-
-    if (prError) return serverErrorResponse(prError);
-
-    // Upsert the contribution slot (handles the case where an expired row existed).
-    const { error: contribError } = await auth.supabase
-      .from("individual_savings_contributions")
-      .upsert(
-        {
-          goal_id: goalId,
-          user_id: auth.user.id,
-          amount,
-          period_label: targetSlot.periodLabel,
-          period_index: targetSlot.periodIndex,
-          period_date: targetSlot.periodDate,
-          status: "success",
-          paystack_reference: reference,
-          payment_record_id: paymentRecord.id,
-          paid_at: nowIso,
-        },
-        { onConflict: "goal_id,period_index" },
-      );
-
-    if (contribError) return serverErrorResponse(contribError);
-
-    const { error: passbookError } = await auth.supabase
-      .from("passbook_entries")
-      .upsert(
-        {
-          user_id: auth.user.id,
-          entry_type: "individual_savings",
-          source_id: paymentRecord.id,
-          source_table: "individual_savings_contributions",
-          goal_id: goalId,
-          amount,
-          direction: "debit",
-          status: "success",
-          reference,
-          period_label: targetSlot.periodLabel,
-          description: "Wallet payment to individual savings",
-          happened_at: nowIso,
-        },
-        { onConflict: "reference", ignoreDuplicates: true },
-      );
-
-    if (passbookError) return serverErrorResponse(passbookError);
 
     return NextResponse.json({
       data: {
         amount,
         reference,
+        requestId,
+        paidAt: nowIso,
         periodLabel: targetSlot.periodLabel,
         status: "success",
       },

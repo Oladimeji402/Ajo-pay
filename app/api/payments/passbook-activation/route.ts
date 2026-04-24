@@ -1,13 +1,18 @@
 import { NextResponse } from "next/server";
 import { badRequestResponse, requireUser, serverErrorResponse } from "@/lib/api/auth";
 import { getPendingPaymentExpiryDate } from "@/lib/payments";
-import { initializePaystackTransaction, verifyPaystackTransaction } from "@/lib/paystack";
+import { initializePaystackTransaction } from "@/lib/paystack";
 
 const PASSBOOK_FEE_NGN = 500;
 
 function generateReference() {
   const randomPart = Math.random().toString(36).slice(2, 10).toUpperCase();
   return `PB-ACTIVATE-${Date.now()}-${randomPart}`;
+}
+
+function generateRequestId() {
+  const randomPart = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `REQ-PASSBOOK-${Date.now()}-${randomPart}`;
 }
 
 export async function POST() {
@@ -81,6 +86,7 @@ export async function POST() {
 
     // 3. No valid pending record — create a fresh one.
     const reference = generateReference();
+    const requestId = generateRequestId();
     const expiresAtIso = getPendingPaymentExpiryDate().toISOString();
     const callbackUrl = `${process.env.APP_URL ?? "http://localhost:3000"}/dashboard`;
 
@@ -105,7 +111,9 @@ export async function POST() {
         status: "pending",
         reference,
         expires_at: expiresAtIso,
-        metadata: { type: "passbook_activation" },
+        request_id: requestId,
+        pending_reason: "awaiting_provider_confirmation",
+        metadata: { type: "passbook_activation", requestId },
       });
 
     if (paymentRecordError) return serverErrorResponse(paymentRecordError);
@@ -114,6 +122,7 @@ export async function POST() {
       data: {
         amount: PASSBOOK_FEE_NGN,
         reference,
+        requestId,
         email: userEmail,
         authorizationUrl: paystackData.authorization_url,
         accessCode: paystackData.access_code,
