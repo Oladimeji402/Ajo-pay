@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin, serverErrorResponse } from "@/lib/api/auth";
 
-type AdminActivityType = "contribution" | "payout" | "signup" | "group";
+type AdminActivityType = "contribution" | "payout" | "signup";
 
 type AdminActivity = {
   id: string;
@@ -27,27 +27,30 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const limit = getLimitParam(url.searchParams.get("limit"));
 
-    const [contributionsResult, payoutsResult, usersResult, groupsResult] = await Promise.all([
+    const [targetContributionsResult, schemeDepositsResult, payoutsResult, usersResult] = await Promise.all([
       auth.supabase
-        .from("contributions")
-        .select("id, amount, status, created_at, profiles:user_id(name, email), groups:group_id(name)")
+        .from("individual_savings_contributions")
+        .select("id, amount, status, created_at, profiles:user_id(name, email), goals:goal_id(name)")
         .order("created_at", { ascending: false })
         .limit(limit),
       auth.supabase
-        .from("payouts")
-        .select("id, amount, status, created_at, profiles:user_id(name, email), groups:group_id(name)")
+        .from("savings_deposits")
+        .select("id, amount, status, created_at, profiles:user_id(name, email), schemes:scheme_id(name)")
+        .order("created_at", { ascending: false })
+        .limit(limit),
+      auth.supabase
+        .from("passbook_payouts")
+        .select("id, amount, period_label, created_at, profiles:user_id(name, email), schemes:scheme_id(name)")
         .order("created_at", { ascending: false })
         .limit(limit),
       auth.supabase.from("profiles").select("id, name, email, created_at").order("created_at", { ascending: false }).limit(limit),
-      auth.supabase
-        .from("groups")
-        .select("id, name, category, status, created_at")
-        .order("created_at", { ascending: false })
-        .limit(limit),
     ]);
 
-    if (contributionsResult.error) {
-      return NextResponse.json({ error: contributionsResult.error.message }, { status: 400 });
+    if (targetContributionsResult.error) {
+      return NextResponse.json({ error: targetContributionsResult.error.message }, { status: 400 });
+    }
+    if (schemeDepositsResult.error) {
+      return NextResponse.json({ error: schemeDepositsResult.error.message }, { status: 400 });
     }
     if (payoutsResult.error) {
       return NextResponse.json({ error: payoutsResult.error.message }, { status: 400 });
@@ -55,19 +58,16 @@ export async function GET(request: Request) {
     if (usersResult.error) {
       return NextResponse.json({ error: usersResult.error.message }, { status: 400 });
     }
-    if (groupsResult.error) {
-      return NextResponse.json({ error: groupsResult.error.message }, { status: 400 });
-    }
 
-    const contributionActivities: AdminActivity[] = (contributionsResult.data ?? []).map((item) => {
+    const contributionActivities: AdminActivity[] = (targetContributionsResult.data ?? []).map((item) => {
       const profile = Array.isArray(item.profiles) ? item.profiles[0] : item.profiles;
-      const group = Array.isArray(item.groups) ? item.groups[0] : item.groups;
+      const goal = Array.isArray(item.goals) ? item.goals[0] : item.goals;
 
       return {
       id: `contribution-${item.id}`,
       type: "contribution",
-      title: "New contribution",
-      description: `${profile?.name ?? profile?.email ?? "A user"} contributed NGN ${Number(item.amount ?? 0).toLocaleString()} to ${group?.name ?? "a group"}`,
+      title: "Target contribution",
+      description: `${profile?.name ?? profile?.email ?? "A user"} contributed NGN ${Number(item.amount ?? 0).toLocaleString()} to ${goal?.name ?? "a target plan"}`,
       timestamp: item.created_at,
       metadata: {
         status: item.status ?? null,
@@ -75,20 +75,36 @@ export async function GET(request: Request) {
       };
     });
 
-    const payoutActivities: AdminActivity[] = (payoutsResult.data ?? []).map((item) => {
+    const generalContributionActivities: AdminActivity[] = (schemeDepositsResult.data ?? []).map((item) => {
       const profile = Array.isArray(item.profiles) ? item.profiles[0] : item.profiles;
-      const group = Array.isArray(item.groups) ? item.groups[0] : item.groups;
+      const scheme = Array.isArray(item.schemes) ? item.schemes[0] : item.schemes;
 
       return {
-      id: `payout-${item.id}`,
-      type: "payout",
-      title: "Payout update",
-      description: `${profile?.name ?? profile?.email ?? "A user"} payout for ${group?.name ?? "a group"} is ${item.status ?? "pending"}`,
+      id: `scheme-contribution-${item.id}`,
+      type: "contribution",
+      title: "General contribution",
+      description: `${profile?.name ?? profile?.email ?? "A user"} contributed NGN ${Number(item.amount ?? 0).toLocaleString()} to ${scheme?.name ?? "a general plan"}`,
       timestamp: item.created_at,
       metadata: {
         status: item.status ?? null,
         amount: Number(item.amount ?? 0),
       },
+      };
+    });
+
+    const payoutActivities: AdminActivity[] = (payoutsResult.data ?? []).map((item) => {
+      const profile = Array.isArray(item.profiles) ? item.profiles[0] : item.profiles;
+      const scheme = Array.isArray(item.schemes) ? item.schemes[0] : item.schemes;
+
+      return {
+        id: `payout-${item.id}`,
+        type: "payout",
+        title: "Savings payout recorded",
+        description: `${profile?.name ?? profile?.email ?? "A user"} payout for ${scheme?.name ?? "a general plan"} (${item.period_label || "period"})`,
+        timestamp: item.created_at,
+        metadata: {
+          amount: Number(item.amount ?? 0),
+        },
       };
     });
 
@@ -100,18 +116,7 @@ export async function GET(request: Request) {
       timestamp: item.created_at,
     }));
 
-    const groupActivities: AdminActivity[] = (groupsResult.data ?? []).map((item) => ({
-      id: `group-${item.id}`,
-      type: "group",
-      title: "Group created",
-      description: `${item.name} (${item.category ?? "uncategorized"}) was created`,
-      timestamp: item.created_at,
-      metadata: {
-        status: item.status ?? null,
-      },
-    }));
-
-    const activities = [...contributionActivities, ...payoutActivities, ...signupActivities, ...groupActivities]
+    const activities = [...contributionActivities, ...generalContributionActivities, ...payoutActivities, ...signupActivities]
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, limit);
 

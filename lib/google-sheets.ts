@@ -79,6 +79,20 @@ async function ensureSheetExists(spreadsheetId: string, sheetName: string) {
   });
 }
 
+async function getSheetTitles(spreadsheetId: string) {
+  const sheets = await getSheetsClient();
+  const metadata = await sheets.spreadsheets.get({
+    spreadsheetId,
+    fields: "sheets(properties(title))",
+  });
+
+  return new Set(
+    (metadata.data.sheets ?? [])
+      .map((sheet) => sheet.properties?.title)
+      .filter((title): title is string => Boolean(title)),
+  );
+}
+
 async function ensureHeaderRow(
   spreadsheetId: string,
   sheetName: string,
@@ -197,4 +211,60 @@ export async function replaceGroupRowsInGoogleSheet(params: {
     replacedRows: rows.length,
     preservedRows: preservedRows.length,
   };
+}
+
+export async function clearAndSeedGoogleSheet(params: {
+  spreadsheetId: string;
+  sheetName: string;
+  headers: string[];
+}) {
+  const { spreadsheetId, sheetName, headers } = params;
+
+  await ensureSheetExists(spreadsheetId, sheetName);
+
+  const sheets = await getSheetsClient();
+  await sheets.spreadsheets.values.clear({
+    spreadsheetId,
+    range: `${sheetName}!A:ZZ`,
+  });
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId,
+    range: `${sheetName}!A1`,
+    valueInputOption: "RAW",
+    requestBody: {
+      values: [headers],
+    },
+  });
+
+  return { cleared: true, seededHeaders: headers.length };
+}
+
+export async function clearAndSeedGoogleSheetIfExists(params: {
+  spreadsheetId: string;
+  sheetName: string;
+  headers: string[];
+}) {
+  const { spreadsheetId, sheetName, headers } = params;
+  const titles = await getSheetTitles(spreadsheetId);
+  if (!titles.has(sheetName)) {
+    return { cleared: false, seededHeaders: 0 };
+  }
+
+  const sheets = await getSheetsClient();
+  await sheets.spreadsheets.values.clear({
+    spreadsheetId,
+    range: `${sheetName}!A:ZZ`,
+  });
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId,
+    range: `${sheetName}!A1`,
+    valueInputOption: "RAW",
+    requestBody: {
+      values: [headers],
+    },
+  });
+
+  return { cleared: true, seededHeaders: headers.length };
 }
