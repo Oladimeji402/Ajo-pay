@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { DataTable, DataTableColumn } from '@/components/admin/DataTable';
 import { LastSynced } from '@/components/admin/LastSynced';
@@ -9,6 +9,7 @@ import { AdminAreaChart } from '@/components/admin/charts/AreaChart';
 import { useRealtimeSubscription } from '@/lib/hooks/useRealtimeSubscription';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
+import { useRefreshOnFocus } from '@/lib/hooks/useRefreshOnFocus';
 
 const USERS_REALTIME_TABLES = ['profiles'];
 
@@ -79,7 +80,7 @@ export default function AdminUsersPage() {
     }
   }, [lastEvent]);
 
-  const loadAll = async () => {
+  const loadAll = useCallback(async () => {
     const [usersRes, trendsRes] = await Promise.all([
       fetch('/api/admin/users?page=1&pageSize=500', { cache: 'no-store' }),
       fetch('/api/admin/stats/trends?days=90', { cache: 'no-store' }),
@@ -93,7 +94,7 @@ export default function AdminUsersPage() {
     setUsers(Array.isArray(usersJson.data) ? usersJson.data : []);
     setUserGrowth(Array.isArray(trendsJson.data?.userGrowth) ? trendsJson.data.userGrowth : []);
     setLastSyncedAt(new Date().toISOString());
-  };
+  }, []);
 
   useEffect(() => {
     const run = async () => {
@@ -109,7 +110,11 @@ export default function AdminUsersPage() {
     };
 
     void run();
-  }, [refreshTrigger]);
+  }, [refreshTrigger, loadAll]);
+
+  useRefreshOnFocus(() => {
+    void loadAll();
+  });
 
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
@@ -246,7 +251,7 @@ export default function AdminUsersPage() {
               NGN {Number(user.wallet_balance || 0).toLocaleString('en-NG')}
             </span>
             <span className="rounded-lg bg-indigo-50 px-2 py-1 font-semibold text-indigo-700">
-              NGN {Number(user.total_contributed || 0).toLocaleString('en-NG')} contributed
+              NGN {Number(user.total_contributed || 0).toLocaleString('en-NG')} saved
             </span>
           </div>
         ),

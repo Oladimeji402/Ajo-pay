@@ -24,8 +24,49 @@ export async function GET(request: Request) {
     const { data, error, count } = await query;
     if (error) return badRequestResponse(error.message);
 
+    const rows = Array.isArray(data) ? data : [];
+    const userIds = rows.map((row) => row.id).filter(Boolean);
+    const savedByUser = new Map<string, number>();
+
+    if (userIds.length > 0) {
+      const [targetContributionsRes, generalDepositsRes] = await Promise.all([
+        auth.supabase
+          .from("individual_savings_contributions")
+          .select("user_id, amount, status")
+          .in("user_id", userIds)
+          .eq("status", "success"),
+        auth.supabase
+          .from("savings_deposits")
+          .select("user_id, amount, status")
+          .in("user_id", userIds)
+          .eq("status", "success"),
+      ]);
+
+      if (targetContributionsRes.error) return badRequestResponse(targetContributionsRes.error.message);
+      if (generalDepositsRes.error) return badRequestResponse(generalDepositsRes.error.message);
+
+      for (const row of targetContributionsRes.data ?? []) {
+        const current = savedByUser.get(row.user_id) ?? 0;
+        savedByUser.set(row.user_id, current + Number(row.amount ?? 0));
+      }
+
+      for (const row of generalDepositsRes.data ?? []) {
+        const current = savedByUser.get(row.user_id) ?? 0;
+        savedByUser.set(row.user_id, current + Number(row.amount ?? 0));
+      }
+    }
+
+    const enrichedRows = rows.map((row) => {
+      const totalSaved = savedByUser.get(row.id) ?? 0;
+      return {
+        ...row,
+        total_saved: totalSaved,
+        total_contributed: totalSaved,
+      };
+    });
+
     return NextResponse.json({
-      data,
+      data: enrichedRows,
       pagination: {
         page,
         pageSize,

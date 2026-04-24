@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Activity, ArrowLeft, Banknote, Landmark, Shield, TriangleAlert, UserCog, X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
+import { useRefreshOnFocus } from '@/lib/hooks/useRefreshOnFocus';
 
 type UserDetail = {
     id: string;
@@ -125,6 +126,10 @@ export default function AdminUserDetailPage() {
         void run();
     }, [id, loadUser]);
 
+    useRefreshOnFocus(() => {
+        void loadUser();
+    });
+
     const patchUser = async (updates: Record<string, unknown>) => {
         setSaving(true);
         setError('');
@@ -188,7 +193,7 @@ export default function AdminUserDetailPage() {
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-3 text-sm">
-                    <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3"><p className="text-xs text-brand-gray">Total Contribution</p><p className="font-bold text-brand-navy">NGN {Number(user.total_contributed).toLocaleString('en-NG')}</p></div>
+                    <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3"><p className="text-xs text-brand-gray">Total Saved</p><p className="font-bold text-brand-navy">NGN {Number(user.total_contributed).toLocaleString('en-NG')}</p></div>
                     <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-3"><p className="text-xs text-brand-gray">Total Received</p><p className="font-bold text-brand-navy">NGN {Number(user.total_received).toLocaleString('en-NG')}</p></div>
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-xs text-brand-gray">Role</p><p className="font-bold text-brand-navy capitalize">{user.role}</p></div>
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-xs text-brand-gray">Status</p><p className="font-bold text-brand-navy capitalize">{user.status}</p></div>
