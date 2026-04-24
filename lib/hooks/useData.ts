@@ -76,6 +76,36 @@ export function useData<T>(
     }
   }, [cacheKey, skip, ttl, run]);
 
+  useEffect(() => {
+    if (skip) return;
+
+    let lastRefreshAt = 0;
+    const MIN_REFRESH_GAP_MS = 1_500;
+
+    const refreshInBackground = () => {
+      const now = Date.now();
+      if (now - lastRefreshAt < MIN_REFRESH_GAP_MS) return;
+      lastRefreshAt = now;
+      void run(true);
+    };
+
+    const onFocus = () => refreshInBackground();
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') refreshInBackground();
+    };
+    const onPageShow = () => refreshInBackground();
+
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('pageshow', onPageShow);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('pageshow', onPageShow);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [skip, run]);
+
   /** Force a fresh fetch and invalidate the cache entry. */
   const mutate = useCallback(() => {
     clientCache.invalidate(cacheKey);

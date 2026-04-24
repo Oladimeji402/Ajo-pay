@@ -31,7 +31,7 @@ function getTxMeta(tx: TransactionRow) {
                 Icon: Target,
                 iconBg: 'bg-purple-50',
                 iconColor: 'text-purple-600',
-                label: 'Individual Savings',
+                label: tx.metadata?.goalName ? `Saved to ${tx.metadata.goalName}` : 'Individual Savings',
                 sign: '-',
                 amountColor: 'text-brand-navy',
             };
@@ -40,7 +40,9 @@ function getTxMeta(tx: TransactionRow) {
                 Icon: Layers,
                 iconBg: 'bg-indigo-50',
                 iconColor: 'text-indigo-600',
-                label: 'Bulk Payment',
+                label: Array.isArray(tx.metadata?.goalNames) && tx.metadata.goalNames.length
+                    ? `Saved to ${tx.metadata.goalNames[0]}${tx.metadata.goalNames.length > 1 ? ` +${tx.metadata.goalNames.length - 1} more` : ''}`
+                    : 'Bulk Payment',
                 sign: '-',
                 amountColor: 'text-brand-navy',
             };
@@ -75,6 +77,11 @@ type TransactionRow = {
     groups?: {
         id: string;
         name: string;
+    } | null;
+    metadata?: {
+        goalName?: string | null;
+        goalNames?: string[] | null;
+        [key: string]: unknown;
     } | null;
 };
 
