@@ -31,6 +31,7 @@ import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess, notifyWarning } from '@/lib/toast';
 import { mapAuthError } from '@/lib/auth-errors';
 import { formatNigeriaPhoneE164, isValidNigeriaPhoneLocal, normalizeNigeriaPhoneLocalInput, parseNigeriaPhoneToLocal } from '@/lib/phone';
+import { ConfirmPopup } from '@/components/ui/ConfirmPopup';
 
 type Profile = {
     id: string;
@@ -63,6 +64,7 @@ export default function SettingsPage() {
     const [emailChanging, setEmailChanging] = useState(false);
     const [passwordChanging, setPasswordChanging] = useState(false);
     const [deletingAccount, setDeletingAccount] = useState(false);
+    const [showDeleteConfirmPopup, setShowDeleteConfirmPopup] = useState(false);
     const [error, setError] = useState('');
     const [verificationError, setVerificationError] = useState('');
 
@@ -480,9 +482,6 @@ export default function SettingsPage() {
             return;
         }
 
-        const confirmed = window.confirm('Delete your account permanently? This action cannot be undone.');
-        if (!confirmed) return;
-
         setDeletingAccount(true);
         try {
             const response = await fetch('/api/user/account', {
@@ -762,7 +761,7 @@ export default function SettingsPage() {
                                 </div>
                                 <p className="text-sm text-slate-600">Delete your account permanently. This action cannot be undone.</p>
                                 <input value={deleteConfirm} onChange={(e) => setDeleteConfirm(e.target.value)} className="w-full rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm" placeholder="Type DELETE ACCOUNT to confirm" />
-                                <button type="button" onClick={handleDeleteAccount} disabled={deletingAccount} className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60">
+                                <button type="button" onClick={() => setShowDeleteConfirmPopup(true)} disabled={deletingAccount} className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60">
                                     <Trash2 size={14} />
                                     {deletingAccount ? 'Deleting...' : 'Delete account'}
                                 </button>
@@ -1083,7 +1082,7 @@ export default function SettingsPage() {
                     />
                     <button
                         type="button"
-                        onClick={handleDeleteAccount}
+                        onClick={() => setShowDeleteConfirmPopup(true)}
                         disabled={deletingAccount}
                         className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
                     >
@@ -1102,6 +1101,21 @@ export default function SettingsPage() {
             </button>
 
             {error && <div className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+
+            <ConfirmPopup
+                open={showDeleteConfirmPopup}
+                title="Delete account permanently?"
+                message="This action cannot be undone."
+                confirmLabel="Delete account"
+                tone="danger"
+                loading={deletingAccount}
+                onCancel={() => setShowDeleteConfirmPopup(false)}
+                onConfirm={() => {
+                    void handleDeleteAccount().finally(() => {
+                        setShowDeleteConfirmPopup(false);
+                    });
+                }}
+            />
         </div>
     );
 }

@@ -1,13 +1,16 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Download, Search } from 'lucide-react';
+import { Download, Loader2, Search } from 'lucide-react';
 import { LastSynced } from '@/components/admin/LastSynced';
 import { DateRangeSelector, DateRangeValue } from '@/components/admin/DateRangeSelector';
 import { DataTable, DataTableColumn } from '@/components/admin/DataTable';
 import { ChartCard } from '@/components/admin/charts/ChartCard';
 import { AdminAreaChart } from '@/components/admin/charts/AreaChart';
 import { useRealtimeSubscription } from '@/lib/hooks/useRealtimeSubscription';
+import { useToast } from '@/components/ui/Toast';
+import { notifyError, notifySuccess } from '@/lib/toast';
+import { ConfirmPopup } from '@/components/ui/ConfirmPopup';
 
 const TRANSACTIONS_REALTIME_TABLES = ['payment_records'];
 
@@ -65,6 +68,8 @@ export default function AdminTransactionsPage() {
   const [error, setError] = useState('');
   const [transactions, setTransactions] = useState<TxRow[]>([]);
   const [highlightedTxId, setHighlightedTxId] = useState('');
+  const [actingReference, setActingReference] = useState<string>('');
+  const [confirmAction, setConfirmAction] = useState<{ reference: string; action: 'reconcile_now' | 'open_case' } | null>(null);
   const { refreshTrigger, lastEvent } = useRealtimeSubscription({
     channelName: 'admin-transactions-live',
     tables: TRANSACTIONS_REALTIME_TABLES,
@@ -80,6 +85,7 @@ export default function AdminTransactionsPage() {
   const [page, setPage] = useState(1);
 
   const pageSize = 12;
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (lastEvent?.timestamp) {
@@ -152,16 +158,29 @@ export default function AdminTransactionsPage() {
   }, [transactions, statusFilter, typeFilter, pendingBucket, range, search]);
 
   const runAdminAction = useCallback(async (reference: string, action: 'reconcile_now' | 'open_case') => {
-    const res = await fetch('/api/admin/transactions/reconcile', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reference, action }),
-    });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error ?? 'Action failed');
-    setLastSyncedAt(new Date().toISOString());
-    return json;
-  }, []);
+    setActingReference(reference);
+    try {
+      const res = await fetch('/api/admin/transactions/reconcile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reference, action }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? 'Action failed');
+      if (action === 'reconcile_now') {
+        notifySuccess(showToast, `Reconcile completed for ${reference}.`);
+      } else {
+        notifySuccess(showToast, `Support case opened for ${reference}.`);
+      }
+      setLastSyncedAt(new Date().toISOString());
+      return json;
+    } catch (error) {
+      notifyError(showToast, error, `Failed to ${action === 'reconcile_now' ? 'reconcile payment' : 'open case'}.`);
+      throw error;
+    } finally {
+      setActingReference('');
+    }
+  }, [showToast]);
 
   const sorted = useMemo(() => {
     const clone = [...filtered];
@@ -296,15 +315,17 @@ export default function AdminTransactionsPage() {
               <div className="flex gap-1">
                 <button
                   type="button"
-                  onClick={() => { void runAdminAction(tx.reference, 'reconcile_now'); }}
-                  className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800"
+                  disabled={actingReference === tx.reference}
+                  onClick={() => setConfirmAction({ reference: tx.reference, action: 'reconcile_now' })}
+                  className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 disabled:opacity-60"
                 >
-                  Reconcile now
+                  {actingReference === tx.reference ? <span className="inline-flex items-center gap-1"><Loader2 size={10} className="animate-spin" />Working...</span> : 'Reconcile now'}
                 </button>
                 <button
                   type="button"
-                  onClick={() => { void runAdminAction(tx.reference, 'open_case'); }}
-                  className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700"
+                  disabled={actingReference === tx.reference}
+                  onClick={() => setConfirmAction({ reference: tx.reference, action: 'open_case' })}
+                  className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700 disabled:opacity-60"
                 >
                   Open case
                 </button>
@@ -403,6 +424,21 @@ export default function AdminTransactionsPage() {
           ))}
         </div>
       </div>
+
+      <ConfirmPopup
+        open={Boolean(confirmAction)}
+        title={confirmAction?.action === 'reconcile_now' ? 'Reconcile payment?' : 'Open support case?'}
+        message={confirmAction
+          ? `Reference: ${confirmAction.reference}`
+          : ''}
+        confirmLabel={confirmAction?.action === 'reconcile_now' ? 'Reconcile now' : 'Open case'}
+        loading={Boolean(confirmAction && actingReference === confirmAction.reference)}
+        onCancel={() => setConfirmAction(null)}
+        onConfirm={() => {
+          if (!confirmAction) return;
+          void runAdminAction(confirmAction.reference, confirmAction.action).finally(() => setConfirmAction(null));
+        }}
+      />
     </div>
   );
 }
