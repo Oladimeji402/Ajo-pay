@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { reconcileStalePendingContributionPayments } from "@/lib/payments";
+import { reconcileStalePendingPayments } from "@/lib/payments";
 
 function isAuthorized(request: Request) {
   const cronSecret = process.env.CRON_SECRET;
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const result = await reconcileStalePendingContributionPayments({ limit: 50 });
+    const result = await reconcileStalePendingPayments({ limit: 50 });
     return NextResponse.json({
       data: result,
     });

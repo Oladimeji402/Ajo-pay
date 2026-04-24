@@ -98,6 +98,16 @@ function nextPayoutDate(freq: string): string {
 
 function LedgerTable({ schemes, freq }: { schemes: SchemeRow[]; freq: Tab }) {
     const cols = getColumns(freq);
+    const totals = useMemo(() => {
+        let balance = 0;
+
+        for (const scheme of schemes) {
+            balance += Number((scheme.total ?? 0) - (scheme.totalWithdrawals ?? 0));
+        }
+
+        return { balance };
+    }, [schemes]);
+
     return (
         <div className="rounded-2xl border border-slate-200 bg-white overflow-x-auto">
             <table className="min-w-full text-xs">
@@ -135,6 +145,14 @@ function LedgerTable({ schemes, freq }: { schemes: SchemeRow[]; freq: Tab }) {
                         );
                     })}
                 </tbody>
+                {schemes.length > 0 && (
+                    <tfoot>
+                        <tr className="border-t-2 border-slate-200 bg-slate-50/70">
+                            <td colSpan={cols.length + 5} className="px-3 py-2.5 text-right font-bold text-brand-navy">Total Balance</td>
+                            <td className="px-3 py-2.5 text-right font-extrabold text-emerald-700">{fmt(totals.balance)}</td>
+                        </tr>
+                    </tfoot>
+                )}
             </table>
         </div>
     );

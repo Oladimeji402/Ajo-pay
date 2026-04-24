@@ -12,6 +12,11 @@ function generateReference() {
   return `AJO-GS-${Date.now()}-${r}`;
 }
 
+function generateRequestId() {
+  const r = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `REQ-GS-${Date.now()}-${r}`;
+}
+
 export async function POST(request: Request) {
   try {
     const auth = await requireUser();
@@ -53,42 +58,38 @@ export async function POST(request: Request) {
       return badRequestResponse(`Minimum deposit for this scheme is NGN ${minimum.toLocaleString("en-NG")}.`);
     }
 
-    // Debit wallet atomically — fails if insufficient balance.
-    const { data: debited } = await auth.supabase.rpc("debit_wallet_balance", {
-      p_user_id: auth.user.id,
-      p_amount: amount,
-    });
-
-    if (!debited) {
-      return NextResponse.json(
-        { error: "Insufficient wallet balance. Fund your wallet first." },
-        { status: 400 },
-      );
-    }
-
     const reference = generateReference();
-    const now = new Date().toISOString();
+    const requestId = generateRequestId();
+    const { data: rpcResult, error: rpcError } = await auth.supabase.rpc("pay_general_savings_from_wallet", {
+      p_user_id: auth.user.id,
+      p_scheme_id: schemeId,
+      p_amount: amount,
+      p_reference: reference,
+      p_request_id: requestId,
+    });
+    if (rpcError) return serverErrorResponse(rpcError);
 
-    const { data: deposit, error: depositError } = await auth.supabase
-      .from("savings_deposits")
-      .insert({
-        scheme_id: schemeId,
-        user_id: auth.user.id,
-        amount,
-        reference,
-        status: "success",
-        paid_at: now,
-      })
-      .select("id, amount, reference, paid_at")
-      .single();
-
-    if (depositError) {
-      // Refund wallet if deposit write fails.
-      await auth.supabase.rpc("credit_wallet_balance", { p_user_id: auth.user.id, p_amount: amount });
-      return serverErrorResponse(depositError);
+    const ok = Boolean((rpcResult as { ok?: boolean } | null)?.ok);
+    const code = String((rpcResult as { code?: string } | null)?.code ?? "unknown_error");
+    if (!ok) {
+      if (code === "insufficient_balance") {
+        return NextResponse.json(
+          { error: "Insufficient wallet balance. Fund your wallet first." },
+          { status: 400 },
+        );
+      }
+      return badRequestResponse(`Unable to complete payment (${code}).`);
     }
 
-    return NextResponse.json({ data: { deposit, frequency: scheme.frequency } }, { status: 201 });
+    return NextResponse.json({
+      data: {
+        frequency: scheme.frequency,
+        reference,
+        amount,
+        requestId,
+        status: "success",
+      },
+    }, { status: 201 });
   } catch (error) {
     return serverErrorResponse(error);
   }

@@ -18,9 +18,13 @@ type TxRow = {
   amount: number;
   reference: string;
   provider_reference?: string | null;
+  pending_reason?: string | null;
+  request_id?: string | null;
+  last_reconciled_at?: string | null;
+  reconcile_attempts?: number | null;
   created_at: string;
   groups?: { id: string; name: string } | null;
-  profiles?: { id: string; name: string; email: string } | null;
+  profiles?: { id: string; name: string; email: string; phone?: string | null } | null;
 };
 
 type SortKey = 'amount' | 'created_at' | 'status';
@@ -69,6 +73,7 @@ export default function AdminTransactionsPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [pendingBucket, setPendingBucket] = useState('all');
   const [range, setRange] = useState<DateRangeValue>('30');
   const [sortKey, setSortKey] = useState<SortKey>('created_at');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
@@ -118,6 +123,13 @@ export default function AdminTransactionsPage() {
     return transactions.filter((tx) => {
       if (statusFilter !== 'all' && tx.status !== statusFilter) return false;
       if (typeFilter !== 'all' && tx.type !== typeFilter) return false;
+      if (pendingBucket !== 'all' && tx.status === 'pending') {
+        const ageMinutes = (Date.now() - new Date(tx.created_at).getTime()) / (60 * 1000);
+        if (pendingBucket === '5m' && ageMinutes < 5) return false;
+        if (pendingBucket === '30m' && ageMinutes < 30) return false;
+        if (pendingBucket === '2h' && ageMinutes < 120) return false;
+        if (pendingBucket === '24h' && ageMinutes < 1440) return false;
+      }
 
       if (range !== 'all' && Number.isFinite(days)) {
         const diff = now - new Date(tx.created_at).getTime();
@@ -137,7 +149,19 @@ export default function AdminTransactionsPage() {
         .toLowerCase();
       return haystack.includes(search.toLowerCase());
     });
-  }, [transactions, statusFilter, typeFilter, range, search]);
+  }, [transactions, statusFilter, typeFilter, pendingBucket, range, search]);
+
+  const runAdminAction = useCallback(async (reference: string, action: 'reconcile_now' | 'open_case') => {
+    const res = await fetch('/api/admin/transactions/reconcile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reference, action }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error ?? 'Action failed');
+    setLastSyncedAt(new Date().toISOString());
+    return json;
+  }, []);
 
   const sorted = useMemo(() => {
     const clone = [...filtered];
@@ -233,7 +257,12 @@ export default function AdminTransactionsPage() {
       {
         key: 'reference',
         header: 'Reference',
-        render: (tx) => <span className="text-xs text-slate-500">{tx.reference} . {tx.provider_reference || '-'}</span>,
+        render: (tx) => (
+          <div className="text-xs text-slate-500">
+            <p>{tx.reference} . {tx.provider_reference || '-'}</p>
+            <p className="text-[11px]">{tx.request_id || 'request:-'} {tx.pending_reason ? `. ${tx.pending_reason}` : ''}</p>
+          </div>
+        ),
       },
       {
         key: 'amount',
@@ -254,16 +283,38 @@ export default function AdminTransactionsPage() {
         render: (tx) => <span className="capitalize">{tx.status}</span>,
       },
       {
-        key: 'date',
+        key: 'dateActions',
         header: (
           <button type="button" onClick={() => toggleSort('created_at')} className="font-semibold text-brand-navy">
             Date
           </button>
         ),
-        render: (tx) => <span className="text-xs text-slate-600">{new Date(tx.created_at).toLocaleString()}</span>,
+        render: (tx) => (
+          <div className="space-y-1">
+            <p className="text-xs text-slate-600">{new Date(tx.created_at).toLocaleString()}</p>
+            {tx.status === 'pending' && (
+              <div className="flex gap-1">
+                <button
+                  type="button"
+                  onClick={() => { void runAdminAction(tx.reference, 'reconcile_now'); }}
+                  className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800"
+                >
+                  Reconcile now
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { void runAdminAction(tx.reference, 'open_case'); }}
+                  className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700"
+                >
+                  Open case
+                </button>
+              </div>
+            )}
+          </div>
+        ),
       },
     ],
-    [toggleSort],
+    [toggleSort, runAdminAction],
   );
 
   if (loading) return <AdminTransactionsSkeleton />;
@@ -310,6 +361,16 @@ export default function AdminTransactionsPage() {
             <option value="all">All Types</option>
             <option value="contribution">Contribution</option>
             <option value="payout">Payout</option>
+            <option value="wallet_funding">Wallet funding</option>
+            <option value="individual_savings">Individual savings</option>
+            <option value="bulk_contribution">Bulk contribution</option>
+          </select>
+          <select value={pendingBucket} onChange={(e) => { setPendingBucket(e.target.value); setPage(1); }} className="rounded-xl border border-slate-200 px-3 py-2 text-sm">
+            <option value="all">Pending age</option>
+            <option value="5m">5m+</option>
+            <option value="30m">30m+</option>
+            <option value="2h">2h+</option>
+            <option value="24h">24h+</option>
           </select>
           <DateRangeSelector
             value={range}

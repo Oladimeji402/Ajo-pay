@@ -281,13 +281,9 @@ function PayPageContent() {
             }
         }
 
-        if (allocations.some(a => a.key === selectedKey)) {
-            notifyWarning(showToast, 'Already added. Remove it first to change the amount.');
-            return;
-        }
-
+        const allocationKey = `${selectedKey}::${Date.now()}::${Math.random().toString(36).slice(2, 6)}`;
         setAllocations(prev => [...prev, {
-            key: selectedKey,
+            key: allocationKey,
             type: opt.type,
             id: opt.id,
             label: opt.name,
@@ -396,7 +392,7 @@ function PayPageContent() {
                     <CreditCard size={20} className="text-brand-primary" />
                     Make Payment
                 </h1>
-                <p className="text-xs text-brand-gray mt-0.5">Select savings, enter amount, and pay from wallet.</p>
+                <p className="text-xs text-brand-gray mt-0.5">Select savings, enter amount, and pay from wallet. Add the same target multiple times to pay ahead periods.</p>
             </div>
 
             {/* Step 1 */}

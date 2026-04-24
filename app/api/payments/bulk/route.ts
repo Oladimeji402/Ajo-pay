@@ -26,6 +26,11 @@ function generateReference() {
   return `AJO-WALLET-BULK-${Date.now()}-${randomPart}`;
 }
 
+function generateRequestId() {
+  const randomPart = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `REQ-BULK-${Date.now()}-${randomPart}`;
+}
+
 export async function POST(request: Request) {
   try {
     const auth = await requireUser();
@@ -91,7 +96,15 @@ export async function POST(request: Request) {
       }
     }
 
-    const targetSlotByGoal = new Map<string, { periodIndex: number; periodLabel: string; periodDate: string }>();
+    const allocatedSlotByIndex = new Map<number, { periodIndex: number; periodLabel: string; periodDate: string }>();
+    const goalAllocIndices = new Map<string, number[]>();
+    for (let i = 0; i < allocations.length; i += 1) {
+      const goalId = allocations[i]!.targetId;
+      const current = goalAllocIndices.get(goalId) ?? [];
+      current.push(i);
+      goalAllocIndices.set(goalId, current);
+    }
+
     for (const goalId of goalIds) {
       const goal = goalById.get(goalId)!;
       if (!goal.savings_start_date || !goal.target_date || !goal.frequency) {
@@ -103,96 +116,58 @@ export async function POST(request: Request) {
         .select("period_index, status")
         .eq("goal_id", goalId);
 
+      const reserved = new Set<number>();
       const paid = new Set((existing ?? []).filter((r) => r.status === "success").map((r) => r.period_index));
-      const nextSlot = slots.find((s) => !paid.has(s.periodIndex));
-      if (!nextSlot) {
-        return NextResponse.json({ error: "One of the selected goals has no unpaid period left." }, { status: 409 });
+      const indices = goalAllocIndices.get(goalId) ?? [];
+      for (const allocIdx of indices) {
+        const nextSlot = slots.find((s) => !paid.has(s.periodIndex) && !reserved.has(s.periodIndex));
+        if (!nextSlot) {
+          return NextResponse.json({ error: "One of the selected goals has no unpaid period left for all requested pay-ahead entries." }, { status: 409 });
+        }
+        allocatedSlotByIndex.set(allocIdx, nextSlot);
+        reserved.add(nextSlot.periodIndex);
       }
-      targetSlotByGoal.set(goalId, nextSlot);
     }
 
     const totalAmount = allocations.reduce((sum, a) => sum + a.amount, 0);
     const reference = generateReference();
+    const requestId = generateRequestId();
     const nowIso = new Date().toISOString();
-
-    const { data: debited } = await auth.supabase.rpc("debit_wallet_balance", {
-      p_user_id: auth.user.id,
-      p_amount: totalAmount,
+    const rpcAllocations = allocations.map((alloc, i) => {
+      const slot = allocatedSlotByIndex.get(i)!;
+      return {
+        goalId: alloc.targetId,
+        amount: alloc.amount,
+        periodLabel: slot.periodLabel,
+        periodIndex: slot.periodIndex,
+        periodDate: slot.periodDate,
+        reference: `${reference}-A${i + 1}`,
+      };
     });
-    if (!debited) {
-      return NextResponse.json({ error: "Insufficient wallet balance. Fund your wallet to continue." }, { status: 400 });
-    }
 
-    const { data: parentPayment, error: paymentRecordError } = await auth.supabase
-      .from("payment_records")
-      .insert({
-        user_id: auth.user.id,
-        group_id: null,
-        contribution_id: null,
-        provider: "wallet",
-        type: "individual_savings",
-        amount: totalAmount,
-        currency: "NGN",
-        status: "success",
-        reference,
-        paid_at: nowIso,
-        metadata: { type: "wallet_split", allocations },
-      })
-      .select("id")
-      .single();
-
-    if (paymentRecordError) return badRequestResponse(paymentRecordError.message);
-
-    for (let i = 0; i < allocations.length; i += 1) {
-      const alloc = allocations[i]!;
-      const slot = targetSlotByGoal.get(alloc.targetId)!;
-      const allocRef = `${reference}-A${i + 1}`;
-
-      const { error: contribError } = await auth.supabase
-        .from("individual_savings_contributions")
-        .upsert(
-          {
-            goal_id: alloc.targetId,
-            user_id: auth.user.id,
-            amount: alloc.amount,
-            period_label: slot.periodLabel,
-            period_index: slot.periodIndex,
-            period_date: slot.periodDate,
-            status: "success",
-            paystack_reference: allocRef,
-            payment_record_id: parentPayment?.id ?? null,
-            paid_at: nowIso,
-          },
-          { onConflict: "goal_id,period_index" },
-        );
-      if (contribError) return badRequestResponse(contribError.message);
-
-      const { error: passbookError } = await auth.supabase
-        .from("passbook_entries")
-        .upsert(
-          {
-            user_id: auth.user.id,
-            entry_type: "individual_savings",
-            source_id: null,
-            source_table: "individual_savings_contributions",
-            goal_id: alloc.targetId,
-            amount: alloc.amount,
-            direction: "debit",
-            status: "success",
-            reference: allocRef,
-            period_label: slot.periodLabel,
-            description: "Wallet split payment to savings goal",
-            happened_at: nowIso,
-          },
-          { onConflict: "reference", ignoreDuplicates: true },
-        );
-      if (passbookError) return badRequestResponse(passbookError.message);
+    const { data: rpcResult, error: rpcError } = await auth.supabase.rpc("pay_bulk_from_wallet", {
+      p_user_id: auth.user.id,
+      p_total_amount: totalAmount,
+      p_reference: reference,
+      p_allocations: rpcAllocations,
+      p_request_id: requestId,
+    });
+    if (rpcError) return badRequestResponse(rpcError.message);
+    const ok = Boolean((rpcResult as { ok?: boolean } | null)?.ok);
+    const code = String((rpcResult as { code?: string } | null)?.code ?? "unknown_error");
+    if (!ok) {
+      if (code === "insufficient_balance") {
+        return NextResponse.json({ error: "Insufficient wallet balance. Fund your wallet to continue." }, { status: 400 });
+      }
+      return badRequestResponse(`Unable to complete bulk payment (${code}).`);
     }
 
     return NextResponse.json({
       data: {
         totalAmount,
         reference,
+        requestId,
+        paidAt: nowIso,
         allocationCount: allocations.length,
         status: "success",
       },

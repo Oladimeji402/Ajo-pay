@@ -13,6 +13,11 @@ function generateReference() {
   return `AJO-WALLET-${Date.now()}-${randomPart}`;
 }
 
+function generateRequestId() {
+  const randomPart = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `REQ-WALLET-FUND-${Date.now()}-${randomPart}`;
+}
+
 export async function POST(request: Request) {
   try {
     const auth = await requireUser();
@@ -33,6 +38,7 @@ export async function POST(request: Request) {
 
     const amount = parsed.data.amount;
     const reference = generateReference();
+    const requestId = generateRequestId();
     const expiresAtIso = getPendingPaymentExpiryDate().toISOString();
     const callbackUrl = `${process.env.APP_URL ?? "http://localhost:3000"}/dashboard`;
 
@@ -57,7 +63,9 @@ export async function POST(request: Request) {
         status: "pending",
         reference,
         expires_at: expiresAtIso,
-        metadata: { type: "wallet_funding" },
+        request_id: requestId,
+        pending_reason: "awaiting_provider_confirmation",
+        metadata: { type: "wallet_funding", requestId },
       });
 
     if (error) return serverErrorResponse(error);
@@ -66,6 +74,7 @@ export async function POST(request: Request) {
       data: {
         amount,
         reference,
+        requestId,
         authorizationUrl: paystackData.authorization_url,
       },
     });
