@@ -3,6 +3,7 @@ import { z } from "zod";
 import { badRequestResponse, requireAdmin, serverErrorResponse } from "@/lib/api/auth";
 import { logAdminAction } from "@/lib/admin-audit";
 import { formatNigeriaPhoneE164, isValidNigeriaPhoneLocal, parseNigeriaPhoneToLocal } from "@/lib/phone";
+import { generatePassbookSlots } from "@/lib/ajo-schedule";
 
 const updateUserSchema = z.object({
   name: z.string().min(1).optional(),
@@ -13,6 +14,62 @@ const updateUserSchema = z.object({
 });
 
 type Context = { params: Promise<{ id: string }> };
+
+function toUtcDateOnly(value: string | null | undefined) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
+
+function startOfMonthUtc(date: Date) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
+}
+
+function getMonthKey(date: Date) {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+function getDuePeriodsCountForGeneralScheme(frequency: string, createdAt: string | null | undefined, now = new Date()) {
+  const created = toUtcDateOnly(createdAt);
+  if (!created) return 0;
+
+  const nowDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  if (created > nowDate) return 0;
+
+  if (frequency === "daily") {
+    const diffDays = Math.floor((nowDate.getTime() - created.getTime()) / (24 * 60 * 60 * 1000));
+    return diffDays + 1;
+  }
+
+  if (frequency === "weekly") {
+    const diffDays = Math.floor((nowDate.getTime() - created.getTime()) / (24 * 60 * 60 * 1000));
+    return Math.floor(diffDays / 7) + 1;
+  }
+
+  const start = startOfMonthUtc(created);
+  const end = startOfMonthUtc(nowDate);
+  const monthDiff = (end.getUTCFullYear() - start.getUTCFullYear()) * 12 + (end.getUTCMonth() - start.getUTCMonth());
+  return monthDiff + 1;
+}
+
+function getGeneralDepositPeriodKey(frequency: string, createdAt: string | null | undefined) {
+  const date = toUtcDateOnly(createdAt);
+  if (!date) return null;
+
+  if (frequency === "daily") {
+    return date.toISOString().slice(0, 10);
+  }
+
+  if (frequency === "weekly") {
+    const anchor = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+    const diffDays = Math.floor((date.getTime() - anchor.getTime()) / (24 * 60 * 60 * 1000));
+    const weekNumber = Math.floor(diffDays / 7) + 1;
+    return `${date.getUTCFullYear()}-W${String(weekNumber).padStart(2, "0")}`;
+  }
+
+  return getMonthKey(date);
+}
 
 export async function GET(_request: Request, context: Context) {
   try {
@@ -85,10 +142,22 @@ export async function GET(_request: Request, context: Context) {
       ...targetGoals.map((goal) => {
         const entries = targetContributions.filter((row) => row.goal_id === goal.id);
         const successfulCount = entries.filter((row) => row.status === "success").length;
-        const missedCount = entries.filter((row) => row.status === "failed").length;
         const skippedCount = entries.filter((row) => row.status === "abandoned").length;
         const pendingCount = entries.filter((row) => row.status === "pending").length;
         const lastPaidAt = entries.find((row) => row.status === "success")?.paid_at ?? null;
+
+        const slots = generatePassbookSlots(
+          goal.savings_start_date,
+          goal.target_date,
+          goal.frequency as "daily" | "weekly" | "monthly",
+        );
+        const today = new Date();
+        const dueSlotsCount = slots.filter((slot) => {
+          const slotDate = toUtcDateOnly(slot.periodDate);
+          return slotDate ? slotDate <= today : false;
+        }).length;
+        const missedCount = Math.max(0, dueSlotsCount - successfulCount);
+        const computedSkippedCount = Math.max(skippedCount, missedCount);
 
         return {
           id: goal.id,
@@ -100,7 +169,7 @@ export async function GET(_request: Request, context: Context) {
           totalSaved: Number(goal.total_saved ?? 0),
           successfulCount,
           missedCount,
-          skippedCount,
+          skippedCount: computedSkippedCount,
           pendingCount,
           startDate: goal.savings_start_date,
           targetDate: goal.target_date,
@@ -112,9 +181,15 @@ export async function GET(_request: Request, context: Context) {
         const entries = generalDeposits.filter((row) => row.scheme_id === scheme.id);
         const successfulEntries = entries.filter((row) => row.status === "success");
         const totalSaved = successfulEntries.reduce((sum, row) => sum + Number(row.amount ?? 0), 0);
-        const successfulCount = successfulEntries.length;
-        const missedCount = entries.filter((row) => row.status === "failed").length;
-        const skippedCount = 0;
+        const successfulPeriodKeys = new Set(
+          successfulEntries
+            .map((row) => getGeneralDepositPeriodKey(scheme.frequency, row.paid_at ?? row.created_at))
+            .filter((key): key is string => Boolean(key)),
+        );
+        const successfulCount = successfulPeriodKeys.size;
+        const duePeriodsCount = getDuePeriodsCountForGeneralScheme(scheme.frequency, scheme.created_at);
+        const missedCount = Math.max(0, duePeriodsCount - successfulCount);
+        const skippedCount = missedCount;
         const pendingCount = 0;
         const lastPaidAt = successfulEntries[0]?.paid_at ?? null;
 
@@ -168,8 +243,22 @@ export async function GET(_request: Request, context: Context) {
       })),
     ].sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime()).slice(0, 20);
 
+    const targetSavedTotal = targetContributions
+      .filter((row) => row.status === "success")
+      .reduce((sum, row) => sum + Number(row.amount ?? 0), 0);
+    const generalSavedTotal = generalDeposits
+      .filter((row) => row.status === "success")
+      .reduce((sum, row) => sum + Number(row.amount ?? 0), 0);
+    const totalSaved = targetSavedTotal + generalSavedTotal;
+
+    const profileWithTotals = {
+      ...profile,
+      total_saved: totalSaved,
+      total_contributed: totalSaved,
+    };
+
     return NextResponse.json({
-      data: profile,
+      data: profileWithTotals,
       savingsPlans,
       recentActivity,
     });

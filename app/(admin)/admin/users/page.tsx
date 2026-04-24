@@ -246,7 +246,7 @@ export default function AdminUsersPage() {
               NGN {Number(user.wallet_balance || 0).toLocaleString('en-NG')}
             </span>
             <span className="rounded-lg bg-indigo-50 px-2 py-1 font-semibold text-indigo-700">
-              NGN {Number(user.total_contributed || 0).toLocaleString('en-NG')} contributed
+              NGN {Number(user.total_contributed || 0).toLocaleString('en-NG')} saved
             </span>
           </div>
         ),
