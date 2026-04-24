@@ -3,6 +3,7 @@ import { z } from "zod";
 import { badRequestResponse, requireUser, serverErrorResponse } from "@/lib/api/auth";
 import { generatePassbookSlots } from "@/lib/ajo-schedule";
 import type { PassbookFrequency } from "@/lib/ajo-schedule";
+import { upsertSavingsPaymentToGoogleSheet } from "@/lib/google-sheets-sync";
 
 const bodySchema = z.object({
   goalId: z.string().uuid("goalId must be a UUID"),
@@ -149,6 +150,25 @@ export async function POST(request: Request) {
       }
       return badRequestResponse(`Unable to complete payment (${code}).`);
     }
+
+    const { data: profile } = await auth.supabase
+      .from("profiles")
+      .select("name, phone")
+      .eq("id", auth.user.id)
+      .maybeSingle();
+
+    void upsertSavingsPaymentToGoogleSheet({
+      paidAt: nowIso,
+      customerName: profile?.name ?? auth.user.email ?? "Customer",
+      phone: profile?.phone ?? null,
+      planName: String(goal.name ?? "Target Savings"),
+      planType: "Target",
+      frequency: (goal.frequency as "daily" | "weekly" | "monthly") ?? "monthly",
+      channel: "Wallet",
+      amount,
+      status: "Successful",
+      reference,
+    }).catch(() => {});
 
     return NextResponse.json({
       data: {

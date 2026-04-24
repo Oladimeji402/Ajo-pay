@@ -1,4 +1,4 @@
-import { appendRowsToGoogleSheet } from "@/lib/google-sheets";
+import { appendRowsToGoogleSheet, upsertRowInGoogleSheet } from "@/lib/google-sheets";
 
 function isAutoSyncEnabled() {
   return process.env.GOOGLE_SHEETS_AUTO_SYNC === "true";
@@ -114,7 +114,7 @@ export async function appendUserRegistrationToGoogleSheet(params: {
   if (!canUseGoogleSheetsAutoSync()) return;
 
   const spreadsheetId = getDefaultSpreadsheetId();
-  await appendRowsToGoogleSheet({
+  await upsertRowInGoogleSheet({
     spreadsheetId,
     sheetName: process.env.GOOGLE_SHEETS_REGISTRATIONS_SHEET_NAME?.trim() || "Registrations",
     headers: [
@@ -123,13 +123,78 @@ export async function appendUserRegistrationToGoogleSheet(params: {
       "phone",
       "registered_at",
     ],
-    rows: [
-      [
-        params.fullName,
-        params.email,
-        params.phone ?? "",
-        params.registeredAt,
-      ],
+    keyHeader: "email",
+    keyValue: params.email,
+    row: [
+      params.fullName,
+      params.email,
+      params.phone ?? "",
+      params.registeredAt,
     ],
   });
+}
+
+const FRIENDLY_PAYMENT_HEADERS = [
+  "Date",
+  "Customer Name",
+  "Phone",
+  "Savings Plan",
+  "Plan Type",
+  "Payment Channel",
+  "Amount (NGN)",
+  "Payment Status",
+  "Reference",
+];
+
+export async function upsertSavingsPaymentToGoogleSheet(params: {
+  paidAt: string;
+  customerName: string;
+  phone?: string | null;
+  planName: string;
+  planType: "Target" | "General";
+  frequency: "daily" | "weekly" | "monthly";
+  channel?: string | null;
+  amount: number;
+  status?: string;
+  reference: string;
+}) {
+  if (!canUseGoogleSheetsAutoSync()) return;
+
+  const spreadsheetId = getDefaultSpreadsheetId();
+  const row = [
+    params.paidAt,
+    params.customerName,
+    params.phone ?? "",
+    params.planName,
+    params.planType,
+    params.channel ?? "Wallet",
+    Number(params.amount ?? 0),
+    params.status ?? "Successful",
+    params.reference,
+  ] as Array<string | number>;
+
+  const frequencySheetName = params.frequency === "daily"
+    ? (process.env.GOOGLE_SHEETS_DAILY_PAYMENTS_SHEET_NAME?.trim() || "DailyPayments")
+    : params.frequency === "weekly"
+      ? (process.env.GOOGLE_SHEETS_WEEKLY_PAYMENTS_SHEET_NAME?.trim() || "WeeklyPayments")
+      : (process.env.GOOGLE_SHEETS_MONTHLY_PAYMENTS_SHEET_NAME?.trim() || "MonthlyPayments");
+
+  await Promise.all([
+    upsertRowInGoogleSheet({
+      spreadsheetId,
+      sheetName: frequencySheetName,
+      headers: FRIENDLY_PAYMENT_HEADERS,
+      keyHeader: "Reference",
+      keyValue: params.reference,
+      row,
+    }),
+    upsertRowInGoogleSheet({
+      spreadsheetId,
+      sheetName: process.env.GOOGLE_SHEETS_PAYMENTS_SHEET_NAME?.trim() || "PaymentEvents",
+      headers: FRIENDLY_PAYMENT_HEADERS,
+      keyHeader: "Reference",
+      keyValue: params.reference,
+      row,
+    }),
+  ]);
 }

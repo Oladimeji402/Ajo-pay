@@ -2,6 +2,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { verifyPaystackTransaction } from "@/lib/paystack";
 import { isWhatsappConfigured, sendGroupReceipt } from "@/lib/whatsapp";
 import { generatePassbookSlots } from "@/lib/ajo-schedule";
+import { upsertSavingsPaymentToGoogleSheet } from "@/lib/google-sheets-sync";
 
 type PaymentSuccessResult = {
   ok: boolean;
@@ -523,6 +524,32 @@ export async function markIndividualSavingsPaymentSuccess(params: {
     },
     { onConflict: "reference", ignoreDuplicates: true },
   );
+
+  const [{ data: goal }, { data: profile }] = await Promise.all([
+    supabase
+      .from("individual_savings_goals")
+      .select("name, frequency")
+      .eq("id", goalId)
+      .maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("name, phone")
+      .eq("id", pr.user_id)
+      .maybeSingle(),
+  ]);
+
+  void upsertSavingsPaymentToGoogleSheet({
+    paidAt: now,
+    customerName: profile?.name ?? "Customer",
+    phone: profile?.phone ?? null,
+    planName: goal?.name ?? "Target Savings",
+    planType: "Target",
+    frequency: (goal?.frequency as "daily" | "weekly" | "monthly" | undefined) ?? "monthly",
+    channel: "Wallet",
+    amount: Number(pr.amount ?? 0),
+    status: "Successful",
+    reference: params.reference,
+  }).catch(() => {});
 
   return { ok: true };
 }
