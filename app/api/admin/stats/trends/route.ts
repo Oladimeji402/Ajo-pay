@@ -91,23 +91,29 @@ export async function GET(request: Request) {
     const since = start.toISOString();
     const buckets = buildDateBuckets(days);
 
-    const [contributionsResult, payoutsResult, usersResult] = await Promise.all([
+    const [targetContributionsResult, schemeDepositsResult, payoutsResult, usersResult] = await Promise.all([
       auth.supabase
-        .from("contributions")
+        .from("individual_savings_contributions")
         .select("created_at, amount")
         .eq("status", "success")
         .gte("created_at", since),
       auth.supabase
-        .from("payment_records")
+        .from("savings_deposits")
         .select("created_at, amount")
-        .eq("type", "payout")
         .eq("status", "success")
+        .gte("created_at", since),
+      auth.supabase
+        .from("passbook_payouts")
+        .select("created_at, amount")
         .gte("created_at", since),
       auth.supabase.from("profiles").select("created_at").gte("created_at", since),
     ]);
 
-    if (contributionsResult.error) {
-      return NextResponse.json({ error: contributionsResult.error.message }, { status: 400 });
+    if (targetContributionsResult.error) {
+      return NextResponse.json({ error: targetContributionsResult.error.message }, { status: 400 });
+    }
+    if (schemeDepositsResult.error) {
+      return NextResponse.json({ error: schemeDepositsResult.error.message }, { status: 400 });
     }
     if (payoutsResult.error) {
       return NextResponse.json({ error: payoutsResult.error.message }, { status: 400 });
@@ -116,7 +122,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: usersResult.error.message }, { status: 400 });
     }
 
-    const contributionTrends = aggregateTrendData(contributionsResult.data ?? [], buckets);
+    const contributionTrends = aggregateTrendData(
+      [...(targetContributionsResult.data ?? []), ...(schemeDepositsResult.data ?? [])],
+      buckets,
+    );
     const payoutTrends = aggregateTrendData(payoutsResult.data ?? [], buckets);
     const userGrowth = aggregateUserGrowth(usersResult.data ?? [], buckets);
 

@@ -69,6 +69,8 @@ export default function AdminSettingsPage() {
   const [lastWebhookReceivedAt, setLastWebhookReceivedAt] = useState<string | null>(null);
   const [failedTxCount, setFailedTxCount] = useState(0);
   const [pendingPayoutCount, setPendingPayoutCount] = useState(0);
+  const [clearingRegistrations, setClearingRegistrations] = useState(false);
+  const [clearingLegacy, setClearingLegacy] = useState(false);
   const { showToast } = useToast();
 
   const { connectionStatus, lastEvent, refreshTrigger } = useRealtimeSubscription({
@@ -187,6 +189,48 @@ export default function AdminSettingsPage() {
     }
   };
 
+  const clearRegistrationsSheet = async () => {
+    const confirmed = window.confirm(
+      'Clear all rows in Registrations sheet and keep only the new headers?',
+    );
+    if (!confirmed) return;
+
+    setClearingRegistrations(true);
+    try {
+      const res = await fetch('/api/admin/integrations/google-sheets/reset-registrations', {
+        method: 'POST',
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to clear registrations sheet.');
+      notifySuccess(showToast, 'Registrations sheet cleared successfully.');
+    } catch (err) {
+      notifyError(showToast, err, 'Unable to clear registrations sheet.');
+    } finally {
+      setClearingRegistrations(false);
+    }
+  };
+
+  const clearLegacySheets = async () => {
+    const confirmed = window.confirm(
+      'Clear MemberEvents and PaymentEvents sheets and keep only their headers?',
+    );
+    if (!confirmed) return;
+
+    setClearingLegacy(true);
+    try {
+      const res = await fetch('/api/admin/integrations/google-sheets/reset-legacy', {
+        method: 'POST',
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to clear legacy sheets.');
+      notifySuccess(showToast, 'Legacy sheets cleared successfully.');
+    } catch (err) {
+      notifyError(showToast, err, 'Unable to clear legacy sheets.');
+    } finally {
+      setClearingLegacy(false);
+    }
+  };
+
   if (loading) {
     return <AdminSettingsSkeleton />;
   }
@@ -268,6 +312,37 @@ export default function AdminSettingsPage() {
             Save Changes
           </button>
           {error ? <p className="text-xs font-semibold text-red-600">{error}</p> : null}
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-slate-100 bg-white p-5">
+        <h2 className="inline-flex items-center gap-1.5 text-base font-bold text-brand-navy">
+          <Shield size={15} className="text-amber-600" /> Google Sheets Cleanup
+        </h2>
+        <p className="mt-1 text-xs text-slate-500">
+          Use these actions to clear old rows so non-technical admins only see clean sheet formats.
+        </p>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <button
+            type="button"
+            disabled={clearingRegistrations}
+            onClick={() => void clearRegistrationsSheet()}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-navy shadow-sm transition-all duration-200 hover:bg-slate-50 disabled:opacity-50"
+          >
+            {clearingRegistrations ? <span className="h-2.5 w-2.5 rounded-full bg-brand-navy animate-pulse" /> : null}
+            {clearingRegistrations ? 'Clearing Registrations...' : 'Clear Registrations Sheet'}
+          </button>
+
+          <button
+            type="button"
+            disabled={clearingLegacy}
+            onClick={() => void clearLegacySheets()}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 shadow-sm transition-all duration-200 hover:bg-red-100 disabled:opacity-50"
+          >
+            {clearingLegacy ? <span className="h-2.5 w-2.5 rounded-full bg-red-600 animate-pulse" /> : null}
+            {clearingLegacy ? 'Clearing Legacy...' : 'Clear Legacy Sheets'}
+          </button>
         </div>
       </div>
     </div>
