@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Activity, ArrowLeft, Banknote, Landmark, Shield, TriangleAlert, UserCog, X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
+import { useRefreshOnFocus } from '@/lib/hooks/useRefreshOnFocus';
 
 type UserDetail = {
     id: string;
@@ -124,6 +125,10 @@ export default function AdminUserDetailPage() {
         };
         void run();
     }, [id, loadUser]);
+
+    useRefreshOnFocus(() => {
+        void loadUser();
+    });
 
     const patchUser = async (updates: Record<string, unknown>) => {
         setSaving(true);

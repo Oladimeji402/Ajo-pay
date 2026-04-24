@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Banknote,
@@ -18,6 +18,7 @@ import { AdminAreaChart } from '@/components/admin/charts/AreaChart';
 import { AdminPieChart } from '@/components/admin/charts/PieChart';
 import { AdminBarChart } from '@/components/admin/charts/BarChart';
 import { useRealtimeSubscription } from '@/lib/hooks/useRealtimeSubscription';
+import { useRefreshOnFocus } from '@/lib/hooks/useRefreshOnFocus';
 
 const OVERVIEW_REALTIME_TABLES = ['contributions', 'payment_records', 'payouts', 'profiles', 'savings_schemes', 'passbook_payouts'];
 
@@ -161,66 +162,70 @@ export default function AdminOverviewPage() {
     }
   }, [lastEvent]);
 
-  useEffect(() => {
-    const run = async () => {
-      if (refreshTrigger > 0) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-      setError('');
+  const loadDashboard = useCallback(async (background = false) => {
+    if (background || refreshTrigger > 0) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+    setError('');
 
-      try {
-        const requestedDays = Math.max(Number(trendRange) || 30, 90);
+    try {
+      const requestedDays = Math.max(Number(trendRange) || 30, 90);
 
-        const [statsRes, trendsRes, breakdownRes, activityRes] = await Promise.all([
-          fetch('/api/admin/stats', { cache: 'no-store' }),
-          fetch(`/api/admin/stats/trends?days=${requestedDays}`, { cache: 'no-store' }),
-          fetch('/api/admin/stats/breakdown', { cache: 'no-store' }),
-          fetch('/api/admin/activity?limit=20', { cache: 'no-store' }),
-        ]);
+      const [statsRes, trendsRes, breakdownRes, activityRes] = await Promise.all([
+        fetch('/api/admin/stats', { cache: 'no-store' }),
+        fetch(`/api/admin/stats/trends?days=${requestedDays}`, { cache: 'no-store' }),
+        fetch('/api/admin/stats/breakdown', { cache: 'no-store' }),
+        fetch('/api/admin/activity?limit=20', { cache: 'no-store' }),
+      ]);
 
-        const [statsJson, trendsJson, breakdownJson, activityJson] = await Promise.all([
-          statsRes.json(),
-          trendsRes.json(),
-          breakdownRes.json(),
-          activityRes.json(),
-        ]);
+      const [statsJson, trendsJson, breakdownJson, activityJson] = await Promise.all([
+        statsRes.json(),
+        trendsRes.json(),
+        breakdownRes.json(),
+        activityRes.json(),
+      ]);
 
-        if (!statsRes.ok) throw new Error(statsJson.error || 'Failed to load stats.');
-        if (!trendsRes.ok) throw new Error(trendsJson.error || 'Failed to load trends.');
-        if (!breakdownRes.ok) throw new Error(breakdownJson.error || 'Failed to load breakdown.');
-        if (!activityRes.ok) throw new Error(activityJson.error || 'Failed to load activity.');
+      if (!statsRes.ok) throw new Error(statsJson.error || 'Failed to load stats.');
+      if (!trendsRes.ok) throw new Error(trendsJson.error || 'Failed to load trends.');
+      if (!breakdownRes.ok) throw new Error(breakdownJson.error || 'Failed to load breakdown.');
+      if (!activityRes.ok) throw new Error(activityJson.error || 'Failed to load activity.');
 
-        setDashboard({
-          stats: (statsJson.data ?? {}) as AdminStats,
-          contributionTrends: Array.isArray(trendsJson.data?.contributionTrends)
-            ? trendsJson.data.contributionTrends
-            : [],
-          payoutTrends: Array.isArray(trendsJson.data?.payoutTrends) ? trendsJson.data.payoutTrends : [],
-          userGrowth: Array.isArray(trendsJson.data?.userGrowth) ? trendsJson.data.userGrowth : [],
-          groupsByCategory: Array.isArray(breakdownJson.data?.groupsByCategory)
-            ? breakdownJson.data.groupsByCategory
-            : [],
-          contributionsByStatus: Array.isArray(breakdownJson.data?.contributionsByStatus)
-            ? breakdownJson.data.contributionsByStatus
-            : [],
-          topGroupsByContributions: Array.isArray(breakdownJson.data?.topGroupsByContributions)
-            ? breakdownJson.data.topGroupsByContributions
-            : [],
-          activities: Array.isArray(activityJson.data?.activities) ? activityJson.data.activities : [],
-        });
-        setLastSyncedAt(new Date().toISOString());
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unable to load admin dashboard.');
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    };
-
-    void run();
+      setDashboard({
+        stats: (statsJson.data ?? {}) as AdminStats,
+        contributionTrends: Array.isArray(trendsJson.data?.contributionTrends)
+          ? trendsJson.data.contributionTrends
+          : [],
+        payoutTrends: Array.isArray(trendsJson.data?.payoutTrends) ? trendsJson.data.payoutTrends : [],
+        userGrowth: Array.isArray(trendsJson.data?.userGrowth) ? trendsJson.data.userGrowth : [],
+        groupsByCategory: Array.isArray(breakdownJson.data?.groupsByCategory)
+          ? breakdownJson.data.groupsByCategory
+          : [],
+        contributionsByStatus: Array.isArray(breakdownJson.data?.contributionsByStatus)
+          ? breakdownJson.data.contributionsByStatus
+          : [],
+        topGroupsByContributions: Array.isArray(breakdownJson.data?.topGroupsByContributions)
+          ? breakdownJson.data.topGroupsByContributions
+          : [],
+        activities: Array.isArray(activityJson.data?.activities) ? activityJson.data.activities : [],
+      });
+      setLastSyncedAt(new Date().toISOString());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to load admin dashboard.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [refreshTrigger, trendRange]);
+
+  useEffect(() => {
+    void loadDashboard();
+  }, [loadDashboard]);
+
+  useRefreshOnFocus(() => {
+    void loadDashboard(true);
+  });
 
   if (loading && !dashboard) {
     return <AdminOverviewSkeleton />;

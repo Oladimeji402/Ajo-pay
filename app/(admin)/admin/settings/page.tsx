@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
 import { formatNigeriaPhoneE164, isValidNigeriaPhoneLocal, normalizeNigeriaPhoneLocalInput, parseNigeriaPhoneToLocal } from '@/lib/phone';
 import { ConfirmPopup } from '@/components/ui/ConfirmPopup';
+import { useRefreshOnFocus } from '@/lib/hooks/useRefreshOnFocus';
 
 const SETTINGS_REALTIME_TABLES = ['payment_records', 'payouts', 'profiles'];
 const inputClassName = 'h-11 w-full rounded-xl border border-slate-200/80 bg-white px-3 text-sm text-brand-navy shadow-sm transition-all duration-200 placeholder:text-slate-400 hover:border-slate-300 hover:shadow focus:border-brand-primary/60 focus:outline-none focus:ring-4 focus:ring-brand-primary/15';
@@ -86,73 +87,81 @@ export default function AdminSettingsPage() {
     }
   }, [lastEvent]);
 
-  useEffect(() => {
-    const load = async () => {
+  const loadSettings = React.useCallback(async (background = false) => {
+    if (!background) {
       setLoading(true);
-      setError('');
+    }
+    setError('');
 
-      try {
-        const email = await getAdminEmail();
-        setAdminEmail(email ?? 'Unknown');
+    try {
+      const email = await getAdminEmail();
+      setAdminEmail(email ?? 'Unknown');
 
-        const supabase = createSupabaseBrowserClient();
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
+      const supabase = createSupabaseBrowserClient();
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-        if (userError || !user) throw new Error('Unable to resolve signed-in admin user.');
+      if (userError || !user) throw new Error('Unable to resolve signed-in admin user.');
 
-        const { data: adminProfile, error: profileError } = await supabase
-          .from('profiles')
-          .select('id, name, email, phone, role, status, created_at, updated_at')
-          .eq('id', user.id)
-          .maybeSingle();
+      const { data: adminProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, name, email, phone, role, status, created_at, updated_at')
+        .eq('id', user.id)
+        .maybeSingle();
 
-        if (profileError) throw new Error(profileError.message);
-        if (!adminProfile) throw new Error('Admin profile not found.');
+      if (profileError) throw new Error(profileError.message);
+      if (!adminProfile) throw new Error('Admin profile not found.');
 
-        setProfile(adminProfile as AdminProfile);
-        setName(adminProfile.name ?? '');
-        setPhone(parseNigeriaPhoneToLocal(adminProfile.phone));
+      setProfile(adminProfile as AdminProfile);
+      setName(adminProfile.name ?? '');
+      setPhone(parseNigeriaPhoneToLocal(adminProfile.phone));
 
-        const [activityRes, statsRes, failedTxRes] = await Promise.all([
-          fetch('/api/admin/activity?limit=30', { cache: 'no-store' }),
-          fetch('/api/admin/stats', { cache: 'no-store' }),
-          fetch('/api/admin/transactions?status=failed&page=1&pageSize=100', { cache: 'no-store' }),
-        ]);
+      const [activityRes, statsRes, failedTxRes] = await Promise.all([
+        fetch('/api/admin/activity?limit=30', { cache: 'no-store' }),
+        fetch('/api/admin/stats', { cache: 'no-store' }),
+        fetch('/api/admin/transactions?status=failed&page=1&pageSize=100', { cache: 'no-store' }),
+      ]);
 
-        const [activityJson, statsJson, failedTxJson] = await Promise.all([
-          activityRes.json(),
-          statsRes.json(),
-          failedTxRes.json(),
-        ]);
+      const [activityJson, statsJson, failedTxJson] = await Promise.all([
+        activityRes.json(),
+        statsRes.json(),
+        failedTxRes.json(),
+      ]);
 
-        if (activityRes.ok && Array.isArray(activityJson.data?.activities)) {
-          const latestPaymentEvent = (activityJson.data.activities as ActivityItem[]).find(
-            (item) => item.type === 'contribution' || item.type === 'payout',
-          );
-          setLastWebhookReceivedAt(latestPaymentEvent?.timestamp ?? null);
-        }
+      if (activityRes.ok && Array.isArray(activityJson.data?.activities)) {
+        const latestPaymentEvent = (activityJson.data.activities as ActivityItem[]).find(
+          (item) => item.type === 'contribution' || item.type === 'payout',
+        );
+        setLastWebhookReceivedAt(latestPaymentEvent?.timestamp ?? null);
+      }
 
-        if (statsRes.ok) {
-          setPendingPayoutCount(Number(statsJson.data?.pendingPayouts ?? 0));
-        }
+      if (statsRes.ok) {
+        setPendingPayoutCount(Number(statsJson.data?.pendingPayouts ?? 0));
+      }
 
-        if (failedTxRes.ok && Array.isArray(failedTxJson.data)) {
-          setFailedTxCount(failedTxJson.data.length);
-        }
+      if (failedTxRes.ok && Array.isArray(failedTxJson.data)) {
+        setFailedTxCount(failedTxJson.data.length);
+      }
 
-        setLastSyncedAt(new Date().toISOString());
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unable to load admin settings.');
-      } finally {
+      setLastSyncedAt(new Date().toISOString());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to load admin settings.');
+    } finally {
+      if (!background) {
         setLoading(false);
       }
-    };
+    }
+  }, []);
 
-    void load();
-  }, [refreshTrigger]);
+  useEffect(() => {
+    void loadSettings();
+  }, [refreshTrigger, loadSettings]);
+
+  useRefreshOnFocus(() => {
+    void loadSettings(true);
+  });
 
   const canSave = useMemo(() => {
     if (!profile) return false;

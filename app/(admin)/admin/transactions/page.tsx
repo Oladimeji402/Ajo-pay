@@ -11,6 +11,7 @@ import { useRealtimeSubscription } from '@/lib/hooks/useRealtimeSubscription';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
 import { ConfirmPopup } from '@/components/ui/ConfirmPopup';
+import { useRefreshOnFocus } from '@/lib/hooks/useRefreshOnFocus';
 
 const TRANSACTIONS_REALTIME_TABLES = ['payment_records'];
 
@@ -93,34 +94,43 @@ export default function AdminTransactionsPage() {
     }
   }, [lastEvent]);
 
-  useEffect(() => {
-    const run = async () => {
+  const loadTransactions = useCallback(async (background = false) => {
+    if (!background) {
       setLoading(true);
-      setError('');
-      try {
-        const res = await fetch('/api/admin/transactions?page=1&pageSize=500', { cache: 'no-store' });
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || 'Failed to load transactions.');
-        const nextRows = Array.isArray(json.data) ? json.data : [];
+    }
+    setError('');
+    try {
+      const res = await fetch('/api/admin/transactions?page=1&pageSize=500', { cache: 'no-store' });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to load transactions.');
+      const nextRows = Array.isArray(json.data) ? json.data : [];
 
-        setTransactions((previousRows) => {
-          if (refreshTrigger > 0 && nextRows.length > 0 && nextRows[0]?.id !== previousRows[0]?.id) {
-            const nextId = String(nextRows[0].id);
-            setHighlightedTxId(nextId);
-            setTimeout(() => setHighlightedTxId(''), 2200);
-          }
+      setTransactions((previousRows) => {
+        if (refreshTrigger > 0 && nextRows.length > 0 && nextRows[0]?.id !== previousRows[0]?.id) {
+          const nextId = String(nextRows[0].id);
+          setHighlightedTxId(nextId);
+          setTimeout(() => setHighlightedTxId(''), 2200);
+        }
 
-          return nextRows;
-        });
-        setLastSyncedAt(new Date().toISOString());
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unable to load transactions.');
-      } finally {
+        return nextRows;
+      });
+      setLastSyncedAt(new Date().toISOString());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to load transactions.');
+    } finally {
+      if (!background) {
         setLoading(false);
       }
-    };
-    void run();
+    }
   }, [refreshTrigger]);
+
+  useEffect(() => {
+    void loadTransactions();
+  }, [loadTransactions]);
+
+  useRefreshOnFocus(() => {
+    void loadTransactions(true);
+  });
 
   const filtered = useMemo(() => {
     const now = Date.now();
