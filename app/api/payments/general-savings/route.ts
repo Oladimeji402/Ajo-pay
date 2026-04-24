@@ -82,7 +82,7 @@ export async function POST(request: Request) {
       return badRequestResponse(`Unable to complete payment (${code}).`);
     }
 
-    const { data: profile } = await auth.supabase
+    const { data: customerProfile } = await auth.supabase
       .from("profiles")
       .select("name, phone")
       .eq("id", auth.user.id)
@@ -90,8 +90,8 @@ export async function POST(request: Request) {
 
     void upsertSavingsPaymentToGoogleSheet({
       paidAt: new Date().toISOString(),
-      customerName: profile?.name ?? auth.user.email ?? "Customer",
-      phone: profile?.phone ?? null,
+      customerName: customerProfile?.name ?? auth.user.email ?? "Customer",
+      phone: customerProfile?.phone ?? null,
       planName: String(scheme.name ?? "General Savings"),
       planType: "General",
       frequency: (scheme.frequency as "daily" | "weekly" | "monthly") ?? "monthly",

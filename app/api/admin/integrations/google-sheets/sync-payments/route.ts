@@ -14,6 +14,12 @@ const PAYMENT_HEADERS = [
   "Reference",
 ];
 
+type PaymentFrequency = "daily" | "weekly" | "monthly";
+
+function isPaymentFrequency(value: unknown): value is PaymentFrequency {
+  return value === "daily" || value === "weekly" || value === "monthly";
+}
+
 function getSpreadsheetId() {
   return process.env.GOOGLE_SHEETS_SPREADSHEET_ID?.trim() ?? "";
 }
@@ -73,7 +79,7 @@ export async function POST() {
     return NextResponse.json({ error: generalError.message }, { status: 400 });
   }
 
-  const byFrequency: Record<"daily" | "weekly" | "monthly", Array<(string | number | null)>> = {
+  const byFrequency: Record<PaymentFrequency, Array<Array<string | number | null>>> = {
     daily: [],
     weekly: [],
     monthly: [],
@@ -82,9 +88,7 @@ export async function POST() {
   for (const row of targetRows ?? []) {
     const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
     const goal = Array.isArray(row.goals) ? row.goals[0] : row.goals;
-    const frequency = goal?.frequency === "daily" || goal?.frequency === "weekly" || goal?.frequency === "monthly"
-      ? goal.frequency
-      : "monthly";
+    const frequency: PaymentFrequency = isPaymentFrequency(goal?.frequency) ? goal.frequency : "monthly";
 
     byFrequency[frequency].push([
       row.paid_at ?? "",
@@ -102,9 +106,7 @@ export async function POST() {
   for (const row of generalRows ?? []) {
     const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
     const scheme = Array.isArray(row.schemes) ? row.schemes[0] : row.schemes;
-    const frequency = scheme?.frequency === "daily" || scheme?.frequency === "weekly" || scheme?.frequency === "monthly"
-      ? scheme.frequency
-      : "monthly";
+    const frequency: PaymentFrequency = isPaymentFrequency(scheme?.frequency) ? scheme.frequency : "monthly";
 
     byFrequency[frequency].push([
       row.paid_at ?? "",
@@ -153,7 +155,7 @@ export async function POST() {
     });
   }
 
-  const frequencySheets: Array<{ sheetName: string; rows: Array<(string | number | null)> }> = [
+  const frequencySheets: Array<{ sheetName: string; rows: Array<Array<string | number | null>> }> = [
     { sheetName: dailySheetName, rows: byFrequency.daily },
     { sheetName: weeklySheetName, rows: byFrequency.weekly },
     { sheetName: monthlySheetName, rows: byFrequency.monthly },
