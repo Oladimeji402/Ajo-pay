@@ -49,6 +49,17 @@ export async function POST(request: Request) {
 
     if (profileError) return serverErrorResponse(profileError);
 
+    // Fire-and-forget virtual account provisioning after profile onboarding succeeds.
+    const appUrl = process.env.APP_URL ?? "http://localhost:3000";
+    const cookieHeader = request.headers.get("cookie") ?? "";
+    void fetch(`${appUrl}/api/user/provision-virtual-account`, {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader,
+      },
+      cache: "no-store",
+    }).catch(() => {});
+
     return NextResponse.json({ data: { id: auth.user.id } }, { status: 200 });
   } catch {
     return serverErrorResponse();

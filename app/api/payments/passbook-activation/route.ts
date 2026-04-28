@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { badRequestResponse, requireUser, serverErrorResponse } from "@/lib/api/auth";
-import { getPendingPaymentExpiryDate } from "@/lib/payments";
-import { initializePaystackTransaction } from "@/lib/paystack";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const PASSBOOK_FEE_NGN = 500;
 
@@ -20,11 +19,6 @@ export async function POST() {
     const auth = await requireUser();
     if (auth.error || !auth.user) return auth.error!;
 
-    const userEmail = auth.user.email;
-    if (!userEmail) {
-      return badRequestResponse("Your account email is missing. Please update your profile.");
-    }
-
     // 1. Already activated — never charge again.
     const { data: profile, error: profileError } = await auth.supabase
       .from("profiles")
@@ -38,94 +32,44 @@ export async function POST() {
       return NextResponse.json({ error: "Passbook already activated." }, { status: 409 });
     }
 
-    // 2. Look for an existing non-expired pending activation for this user.
-    //    If one exists, reuse it so the user cannot accumulate multiple charges.
-    const { data: existingRecord } = await auth.supabase
-      .from("payment_records")
-      .select("reference, expires_at, status")
-      .eq("user_id", auth.user.id)
-      .eq("type", "passbook_activation")
-      .eq("status", "pending")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (existingRecord) {
-      const isExpired = existingRecord.expires_at
-        ? new Date(existingRecord.expires_at) < new Date()
-        : false;
-
-      if (!isExpired) {
-        // Reuse: re-initialise a Paystack transaction for the SAME reference.
-        // This gives the user a fresh popup without creating a second charge record.
-        const paystackData = await initializePaystackTransaction({
-          email: userEmail,
-          amountKobo: PASSBOOK_FEE_NGN * 100,
-          reference: existingRecord.reference,
-          callbackUrl: `${process.env.APP_URL ?? "http://localhost:3000"}/dashboard`,
-          metadata: { userId: auth.user.id, type: "passbook_activation" },
-        });
-
-        return NextResponse.json({
-          data: {
-            amount: PASSBOOK_FEE_NGN,
-            reference: existingRecord.reference,
-            email: userEmail,
-            authorizationUrl: paystackData.authorization_url,
-            accessCode: paystackData.access_code,
-          },
-        });
-      }
-
-      // Expired — mark it abandoned so it doesn't show as pending forever.
-      await auth.supabase
-        .from("payment_records")
-        .update({ status: "abandoned" })
-        .eq("reference", existingRecord.reference);
-    }
-
-    // 3. No valid pending record — create a fresh one.
+    // Activate immediately using wallet balance (no Paystack).
     const reference = generateReference();
     const requestId = generateRequestId();
-    const expiresAtIso = getPendingPaymentExpiryDate().toISOString();
-    const callbackUrl = `${process.env.APP_URL ?? "http://localhost:3000"}/dashboard`;
-
-    const paystackData = await initializePaystackTransaction({
-      email: userEmail,
-      amountKobo: PASSBOOK_FEE_NGN * 100,
-      reference,
-      callbackUrl,
-      metadata: { userId: auth.user.id, type: "passbook_activation" },
+    const adminSupabase = createSupabaseAdminClient();
+    const { data: activationStatus, error: activationError } = await adminSupabase.rpc("activate_passbook_from_wallet", {
+      p_user_id: auth.user.id,
+      p_reference: reference,
+      p_request_id: requestId,
     });
+    if (activationError) return serverErrorResponse(activationError);
 
-    const { error: paymentRecordError } = await auth.supabase
-      .from("payment_records")
-      .insert({
-        user_id: auth.user.id,
-        group_id: null,
-        contribution_id: null,
-        provider: "paystack",
-        type: "passbook_activation",
-        amount: PASSBOOK_FEE_NGN,
-        currency: "NGN",
-        status: "pending",
-        reference,
-        expires_at: expiresAtIso,
-        request_id: requestId,
-        pending_reason: "awaiting_provider_confirmation",
-        metadata: { type: "passbook_activation", requestId },
-      });
+    const status = String(activationStatus ?? "");
+    if (status === "already_active") {
+      return NextResponse.json({ error: "Passbook already activated." }, { status: 409 });
+    }
+    if (status === "insufficient_balance") {
+      return NextResponse.json({
+        error: `Insufficient wallet balance. You need at least NGN ${PASSBOOK_FEE_NGN.toLocaleString("en-NG")} to activate passbook.`,
+      }, { status: 422 });
+    }
+    if (status !== "activated") {
+      return badRequestResponse("Could not activate passbook from wallet.");
+    }
 
-    if (paymentRecordError) return serverErrorResponse(paymentRecordError);
+    await auth.supabase.from("notifications").insert({
+      user_id: auth.user.id,
+      type: "passbook_activated",
+      title: "Passbook activated!",
+      body: `Your one-time NGN 500 passbook activation fee was debited from wallet successfully.`,
+      metadata: { reference, amount: PASSBOOK_FEE_NGN, provider: "wallet" },
+    });
 
     return NextResponse.json({
       data: {
         amount: PASSBOOK_FEE_NGN,
         reference,
         requestId,
-        email: userEmail,
-        authorizationUrl: paystackData.authorization_url,
-        accessCode: paystackData.access_code,
+        status: "success",
       },
     });
   } catch (error) {

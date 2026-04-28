@@ -13,7 +13,7 @@ import {
     EyeOff,
     FileText,
     Landmark,
-    Phone,
+    RefreshCw,
     Wallet,
     Target,
 } from 'lucide-react';
@@ -86,8 +86,9 @@ async function fetchDashboard(): Promise<DashboardData> {
 export default function DashboardPage() {
     const [activityFilter, setActivityFilter] = useState<'all' | 'contribution' | 'payout'>('all');
     const [savedVisible, setSavedVisible] = useState(true);
+    const [refreshingBalance, setRefreshingBalance] = useState(false);
 
-    const { data, loading, error } = useData<DashboardData>('dashboard', fetchDashboard, { ttl: 30_000 });
+    const { data, loading, error, mutate } = useData<DashboardData>('dashboard', fetchDashboard, { ttl: 30_000 });
 
     const profile = data?.profile ?? null;
     const transactions = data?.transactions ?? [];
@@ -99,6 +100,17 @@ export default function DashboardPage() {
     }, [activityFilter, transactions]);
 
     const formatCurrency = (value: number) => Number(value).toLocaleString('en-NG');
+
+    const refreshWalletBalance = async () => {
+        setRefreshingBalance(true);
+        try {
+            // Trigger Monicredit sync first so new transfers are reflected before refetching profile.
+            await fetch('/api/wallet/check-deposits', { method: 'POST' });
+        } finally {
+            mutate();
+            setRefreshingBalance(false);
+        }
+    };
 
     if (loading) {
         return (
@@ -169,13 +181,24 @@ export default function DashboardPage() {
                             <Wallet size={12} className="text-white/60" />
                             <span className="text-[11px] font-medium text-white/70">Wallet Balance</span>
                         </div>
-                        <button
-                            onClick={() => setSavedVisible((v) => !v)}
-                            className="text-white/50 transition-colors hover:text-white/90"
-                            aria-label={savedVisible ? 'Hide total saved' : 'Show total saved'}
-                        >
-                            {savedVisible ? <Eye size={13} /> : <EyeOff size={13} />}
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={refreshWalletBalance}
+                                disabled={refreshingBalance}
+                                className="inline-flex items-center gap-1 rounded-md border border-white/20 bg-white/10 px-2 py-1 text-[10px] font-semibold text-white/80 transition-colors hover:bg-white/20 disabled:opacity-60"
+                                aria-label="Refresh wallet balance"
+                            >
+                                <RefreshCw size={11} className={refreshingBalance ? 'animate-spin' : ''} />
+                                {refreshingBalance ? 'Refreshing' : 'Refresh'}
+                            </button>
+                            <button
+                                onClick={() => setSavedVisible((v) => !v)}
+                                className="text-white/50 transition-colors hover:text-white/90"
+                                aria-label={savedVisible ? 'Hide total saved' : 'Show total saved'}
+                            >
+                                {savedVisible ? <Eye size={13} /> : <EyeOff size={13} />}
+                            </button>
+                        </div>
                     </div>
                     <p className="text-[18px] font-semibold leading-snug tracking-normal text-white/90">
                         {savedVisible ? (
@@ -222,11 +245,11 @@ export default function DashboardPage() {
             {(() => {
                 const items = [
                     {
-                        done: !!profile?.phone,
-                        icon: Phone,
-                        label: 'Add your phone number',
-                        sub: 'Get WhatsApp payment receipts',
-                        href: '/settings',
+                        done: Number(profile?.wallet_balance ?? 0) > 0,
+                        icon: Wallet,
+                        label: 'Fund your wallet first',
+                        sub: 'Use your permanent account details to make your first deposit',
+                        href: '/wallet',
                     },
                     {
                         done: !!profile?.bank_account,
@@ -250,7 +273,7 @@ export default function DashboardPage() {
                     <section className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
                         <div className="mb-3 flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-bold text-brand-navy">Complete your profile</p>
+                                <p className="text-sm font-bold text-brand-navy">Get started</p>
                                 <p className="text-[11px] text-brand-gray">{completedCount}/{items.length} done</p>
                             </div>
                             <div className="flex gap-1">
