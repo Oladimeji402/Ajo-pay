@@ -2,9 +2,8 @@
 
 import React, { useState } from 'react';
 import { BookOpen, CheckCircle2, ShieldCheck, ArrowRight, Loader2 } from 'lucide-react';
-import { openPaystackInline } from '@/lib/paystack-inline';
 import { useToast } from '@/components/ui/Toast';
-import { notifyError, notifySuccess, notifyWarning } from '@/lib/toast';
+import { notifyError, notifySuccess } from '@/lib/toast';
 
 const PASSBOOK_FEE = 500;
 
@@ -31,52 +30,8 @@ export default function ActivatePassbookPage() {
                 throw new Error(initJson.error || 'Could not initialise payment.');
             }
 
-            const { reference, accessCode, authorizationUrl, email } = initJson.data as {
-                reference: string;
-                accessCode: string;
-                authorizationUrl: string;
-                email: string;
-            };
-
-            const publicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
-            if (!publicKey) {
-                window.location.href = authorizationUrl;
-                return;
-            }
-
-            await openPaystackInline({
-                key: publicKey,
-                email,
-                amount: PASSBOOK_FEE * 100,
-                ref: reference,
-                access_code: accessCode,
-                callback: (response) => {
-                    void (async () => {
-                        try {
-                            const verifyRes = await fetch(
-                                `/api/payments/verify?reference=${encodeURIComponent(response.reference)}`,
-                                { cache: 'no-store' },
-                            );
-                            const verifyJson = await verifyRes.json();
-
-                            if (!verifyRes.ok || verifyJson.data?.status !== 'success') {
-                                notifyWarning(showToast, 'Payment not yet confirmed. Please wait a moment and refresh.');
-                                return;
-                            }
-
-                            notifySuccess(showToast, 'Passbook activated! Welcome to your savings journey.');
-                            // Hard navigate so the layout re-fetches the updated passbook_activated flag.
-                            window.location.href = '/dashboard';
-                        } catch (err) {
-                            notifyError(showToast, err, 'Could not verify payment.');
-                        }
-                    })();
-                },
-                onClose: () => {
-                    notifyWarning(showToast, 'Payment window closed. Your passbook is not yet active.');
-                    setLoading(false);
-                },
-            });
+            notifySuccess(showToast, 'Passbook activated from wallet balance.');
+            window.location.href = '/dashboard';
         } catch (err) {
             notifyError(showToast, err, 'Unable to start passbook activation.');
         } finally {
@@ -131,7 +86,7 @@ export default function ActivatePassbookPage() {
 
                     <div className="flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-700">
                         <ShieldCheck size={13} className="shrink-0" />
-                        Payment verified securely by Paystack. Your funds are safe.
+                        Payment is debited securely from your wallet balance.
                     </div>
 
                     <button

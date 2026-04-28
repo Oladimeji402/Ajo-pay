@@ -2,7 +2,6 @@
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { motion } from 'motion/react';
@@ -11,6 +10,7 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { notifySuccess } from '@/lib/toast';
 import { isDuplicateSignupWithoutError, mapAuthError } from '@/lib/auth-errors';
+import { formatNigeriaPhoneE164, isValidNigeriaPhoneLocal, parseNigeriaPhoneToLocal } from '@/lib/phone';
 
 
 export default function SignUpPage() {
@@ -23,18 +23,29 @@ export default function SignUpPage() {
     const [agreedToTerms, setAgreedToTerms] = useState(false);
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
     const [otp, setOtp] = useState('');
     const [pendingEmail, setPendingEmail] = useState('');
+    const [pendingPhoneE164, setPendingPhoneE164] = useState('');
     const [verificationMode, setVerificationMode] = useState(false);
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
-    const router = useRouter();
     const { showToast } = useToast();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setNotice('');
+
+        const localPhone = parseNigeriaPhoneToLocal(phone);
+        if (!isValidNigeriaPhoneLocal(localPhone)) {
+            const message = 'Enter a valid Nigerian mobile number (e.g. 08012345678).';
+            setError(message);
+            showToast(message, { type: 'error' });
+            return;
+        }
+        const phoneE164 = formatNigeriaPhoneE164(localPhone);
+
         setIsLoading(true);
 
         const supabase = createSupabaseBrowserClient();
@@ -46,6 +57,7 @@ export default function SignUpPage() {
             options: {
                 data: {
                     name: fullName.trim(),
+                    phone: phoneE164,
                 },
             },
         });
@@ -68,6 +80,7 @@ export default function SignUpPage() {
 
         await supabase.auth.signOut();
         setPendingEmail(normalizedEmail);
+        setPendingPhoneE164(phoneE164);
         setIsVerified(false);
         setVerificationMode(true);
         const otpNotice = 'A 6-digit OTP has been sent to your email. Enter it below to verify your account.';
@@ -111,6 +124,8 @@ export default function SignUpPage() {
 
         setIsVerified(true);
         void fetch('/api/users/sync-registration', { method: 'POST' }).catch(() => {});
+        // Fire-and-forget: provision Monicredit virtual account immediately after signup.
+        void fetch('/api/user/provision-virtual-account', { method: 'POST' }).catch(() => {});
         notifySuccess(showToast, 'Email verified! Welcome — redirecting to your dashboard.');
         window.location.href = '/dashboard';
     };
@@ -260,6 +275,26 @@ export default function SignUpPage() {
                 <Input label="Full name" type="text" autoComplete="name" placeholder="Your full name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
 
                 <Input label="Email address" type="email" autoComplete="email" placeholder="name@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+
+                <div className="space-y-1 w-full">
+                    <label htmlFor="signup-phone" className="block text-sm font-semibold text-brand-navy">Phone number</label>
+                    <div className="flex items-center rounded-lg border border-brand-border focus-within:ring-2 focus-within:ring-brand-primary/20 focus-within:border-brand-primary transition-all duration-200 overflow-hidden">
+                        <span className="px-3 py-3 text-sm text-slate-500 bg-slate-50 border-r border-brand-border select-none">+234</span>
+                        <input
+                            id="signup-phone"
+                            type="tel"
+                            inputMode="numeric"
+                            autoComplete="tel"
+                            placeholder="08012345678"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                            required
+                            maxLength={11}
+                            className="flex-1 px-3 py-3 text-sm text-brand-navy placeholder-slate-400 bg-white focus:outline-none"
+                        />
+                    </div>
+                    <p className="text-[11px] text-slate-400">Your permanent account number will be linked to this.</p>
+                </div>
 
                 <div>
                     <div className="space-y-1 w-full">
