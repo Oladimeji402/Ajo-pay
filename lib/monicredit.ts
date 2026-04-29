@@ -5,7 +5,7 @@ type MonicreditConfig = {
   merchantPassword: string;
 };
 
-class MonicreditHttpError extends Error {
+export class MonicreditHttpError extends Error {
   status: number;
   constructor(message: string, status: number) {
     super(message);

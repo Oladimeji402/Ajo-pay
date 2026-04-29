@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { badRequestResponse, requireUser, serverErrorResponse } from "@/lib/api/auth";
-import { createMonicreditVirtualAccount } from "@/lib/monicredit";
+import { createMonicreditVirtualAccount, MonicreditHttpError } from "@/lib/monicredit";
 
 function splitName(fullName: string) {
   const normalized = fullName.trim().replace(/\s+/g, " ");
@@ -106,6 +106,10 @@ export async function POST() {
       },
     });
   } catch (error) {
+    if (error instanceof MonicreditHttpError && error.status >= 400 && error.status < 500) {
+      return NextResponse.json({ error: error.message, code: "MONICREDIT_VALIDATION_ERROR" }, { status: 400 });
+    }
+
     return serverErrorResponse(error);
   }
 }
