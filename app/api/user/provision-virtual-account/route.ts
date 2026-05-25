@@ -16,9 +16,22 @@ function splitName(fullName: string) {
 function normalizePhoneForMonicredit(phone: string) {
   const digits = phone.replace(/\D/g, "");
   if (!digits) return "";
+  
+  // Convert 234XXXXXXXXXX to 0XXXXXXXXXX
   if (digits.startsWith("234") && digits.length === 13) {
     return `0${digits.slice(3)}`;
   }
+  
+  // Ensure it starts with 0 and is 11 digits
+  if (digits.length === 10 && !digits.startsWith("0")) {
+    return `0${digits}`;
+  }
+  
+  // If it's 11 digits and starts with 0, return as-is
+  if (digits.length === 11 && digits.startsWith("0")) {
+    return digits;
+  }
+  
   return digits;
 }
 
@@ -124,6 +137,16 @@ export async function POST() {
           status: error.status,
           message: error.message,
         });
+        
+        // Check if it's a duplicate customer error
+        if (error.message.includes("Customer cannot be created")) {
+          return NextResponse.json({ 
+            error: "This phone number is already registered with another account. Please use a different phone number or contact support.", 
+            code: "DUPLICATE_PHONE_NUMBER",
+            details: "The phone number is already associated with an existing virtual account in the payment system."
+          }, { status: 400 });
+        }
+        
         return NextResponse.json({ 
           error: "Virtual account service is temporarily unavailable. Please try again later.", 
           code: "MONICREDIT_SERVER_ERROR",

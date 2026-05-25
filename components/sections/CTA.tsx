@@ -9,7 +9,7 @@ export const CTA = () => {
     return (
         <section
             className="py-24 lg:py-32 relative overflow-hidden"
-            style={{ backgroundColor: '#F59E0B' }}
+            style={{ backgroundColor: '#0D1A6E' }}
         >
             {/* Texture — subtle dark dot grid */}
             <div
@@ -44,7 +44,7 @@ export const CTA = () => {
                             className="leading-[1.0] mb-5"
                             style={{
                                 fontSize: 'clamp(2.4rem, 5vw, 3.8rem)',
-                                color: '#2563EB',
+                                color: '#FFFFFF',
                             }}
                         >
                             <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 400 }}>Ready</span>
@@ -54,7 +54,7 @@ export const CTA = () => {
                         </h2>
                         <p
                             className="text-[15.5px] leading-relaxed mb-8 max-w-sm"
-                            style={{ color: 'rgba(15,23,42,0.55)' }}
+                            style={{ color: 'rgba(255,255,255,0.65)' }}
                         >
                             Create your free account, set up target or general savings, and track payouts with full clarity.
                         </p>
@@ -65,12 +65,12 @@ export const CTA = () => {
                                 <button
                                     className="inline-flex items-center justify-center gap-2 text-[15px] font-bold px-8 py-4 rounded-2xl group transition-all"
                                     style={{
-                                        backgroundColor: '#2563EB',
-                                        color: '#F59E0B',
-                                        boxShadow: '0 8px 24px rgba(15,23,42,0.20)',
+                                        backgroundColor: '#F5A623',
+                                        color: '#6B3C00',
+                                        boxShadow: '0 8px 24px rgba(245,162,35,0.30)',
                                     }}
-                                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#1D4ED8')}
-                                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#2563EB')}
+                                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#FBBF24')}
+                                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#F5A623')}
                                 >
                                     Join Free
                                     <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
@@ -80,17 +80,17 @@ export const CTA = () => {
                                 <button
                                     className="inline-flex items-center justify-center text-[15px] font-semibold px-8 py-4 rounded-2xl transition-all"
                                     style={{
-                                        color: 'rgba(15,23,42,0.55)',
-                                        border: '1.5px solid rgba(15,23,42,0.15)',
+                                        color: 'rgba(255,255,255,0.70)',
+                                        border: '1.5px solid rgba(255,255,255,0.20)',
                                         backgroundColor: 'transparent',
                                     }}
                                     onMouseEnter={e => {
-                                        e.currentTarget.style.color = '#2563EB';
-                                        e.currentTarget.style.borderColor = 'rgba(15,23,42,0.35)';
+                                        e.currentTarget.style.color = '#FFFFFF';
+                                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.40)';
                                     }}
                                     onMouseLeave={e => {
-                                        e.currentTarget.style.color = 'rgba(15,23,42,0.55)';
-                                        e.currentTarget.style.borderColor = 'rgba(15,23,42,0.15)';
+                                        e.currentTarget.style.color = 'rgba(255,255,255,0.70)';
+                                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.20)';
                                     }}
                                 >
                                     Sign In
@@ -109,20 +109,20 @@ export const CTA = () => {
                             <div
                                 key={i}
                                 className={`${i > 0 ? 'border-l lg:border-l-0 lg:border-t pl-6 lg:pl-0 lg:pt-6' : ''}`}
-                                style={{ borderColor: 'rgba(15,23,42,0.12)' }}
+                                style={{ borderColor: 'rgba(255,255,255,0.15)' }}
                             >
                                 <p
                                     className="text-[2rem] font-black leading-none tracking-tight"
                                     style={{
                                         fontFamily: 'var(--font-display)',
-                                        color: '#2563EB',
+                                        color: '#FFFFFF',
                                     }}
                                 >
                                     {stat.value}
                                 </p>
                                 <p
                                     className="text-[12px] mt-1.5 font-medium"
-                                    style={{ color: 'rgba(15,23,42,0.45)' }}
+                                    style={{ color: 'rgba(255,255,255,0.50)' }}
                                 >
                                     {stat.label}
                                 </p>

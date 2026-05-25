@@ -86,7 +86,7 @@ export const SocialProof = () => {
   const row2 = [...testimonials.slice(2), ...testimonials.slice(2)];
 
   return (
-    <section id="testimonials" className="py-24 lg:py-32 bg-white relative overflow-hidden">
+    <section id="testimonials" className="py-24 lg:py-32 bg-[#1A35D4] relative overflow-hidden">
       <Container className="relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -98,7 +98,7 @@ export const SocialProof = () => {
             What Members Say
           </p>
           <h2
-            className="text-brand-navy leading-[1.05]"
+            className="text-white leading-[1.05]"
             style={{ fontSize: 'clamp(2rem, 4vw, 2.8rem)' }}
           >
             <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 400 }}>People </span>
@@ -109,8 +109,8 @@ export const SocialProof = () => {
 
       {/* Row 1 — scrolls left */}
       <div className="relative overflow-hidden mb-4">
-        <div className="absolute left-0 top-0 bottom-0 w-16 lg:w-20 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
-        <div className="absolute right-0 top-0 bottom-0 w-16 lg:w-20 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
+        <div className="absolute left-0 top-0 bottom-0 w-16 lg:w-20 bg-gradient-to-r from-[#1A35D4] to-transparent z-10 pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-16 lg:w-20 bg-gradient-to-l from-[#1A35D4] to-transparent z-10 pointer-events-none" />
         <div
           className="flex py-2"
           style={{ animation: 'marquee-left 32s linear infinite', willChange: 'transform' }}
@@ -123,8 +123,8 @@ export const SocialProof = () => {
 
       {/* Row 2 — scrolls right */}
       <div className="relative overflow-hidden">
-        <div className="absolute left-0 top-0 bottom-0 w-16 lg:w-20 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
-        <div className="absolute right-0 top-0 bottom-0 w-16 lg:w-20 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
+        <div className="absolute left-0 top-0 bottom-0 w-16 lg:w-20 bg-gradient-to-r from-[#1A35D4] to-transparent z-10 pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-16 lg:w-20 bg-gradient-to-l from-[#1A35D4] to-transparent z-10 pointer-events-none" />
         <div
           className="flex py-2"
           style={{ animation: 'marquee-right 28s linear infinite', willChange: 'transform' }}

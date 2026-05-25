@@ -31,7 +31,7 @@ export const Footer = () => {
     ];
 
     return (
-        <footer className="bg-brand-navy relative overflow-hidden">
+        <footer className="relative overflow-hidden" style={{ backgroundColor: '#0D1A6E' }}>
             <div className="h-px bg-gradient-to-r from-transparent via-brand-accent/20 to-transparent" />
 
             {/* Main Footer */}

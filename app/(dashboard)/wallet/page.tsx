@@ -23,6 +23,10 @@ export default function WalletPage() {
   const [accountName, setAccountName] = useState<string | null>(null);
   const [lastCheckedAt, setLastCheckedAt] = useState<string | null>(null);
   const [creditedNow, setCreditedNow] = useState(0);
+  const [showPhoneUpdate, setShowPhoneUpdate] = useState(false);
+  const [newPhone, setNewPhone] = useState('');
+  const [updatingPhone, setUpdatingPhone] = useState(false);
+  const [provisionError, setProvisionError] = useState<string | null>(null);
   const { showToast } = useToast();
 
   const writeCache = (next: Partial<WalletCache>) => {
@@ -55,10 +59,19 @@ export default function WalletPage() {
 
   const provisionVirtualAccount = async () => {
     setProvisioning(true);
+    setProvisionError(null);
     try {
       const response = await fetch('/api/user/provision-virtual-account', { method: 'POST' });
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error ?? 'Could not provision virtual account.');
+      if (!response.ok) {
+        // Check if it's a duplicate phone number error
+        if (payload.code === 'DUPLICATE_PHONE_NUMBER') {
+          setProvisionError(payload.error);
+          setShowPhoneUpdate(true);
+          return false;
+        }
+        throw new Error(payload.error ?? 'Could not provision virtual account.');
+      }
 
       const nextAccountNumber = payload.data.accountNumber ?? null;
       const nextBankName = payload.data.bankName ?? null;
@@ -77,6 +90,36 @@ export default function WalletPage() {
       return false;
     } finally {
       setProvisioning(false);
+    }
+  };
+
+  const updatePhone = async () => {
+    if (!newPhone.trim()) {
+      notifyError(showToast, new Error('Please enter a phone number.'), 'Phone number required');
+      return;
+    }
+
+    setUpdatingPhone(true);
+    try {
+      const response = await fetch('/api/user/account', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: newPhone.trim() }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? 'Could not update phone number.');
+
+      notifySuccess(showToast, 'Phone number updated successfully.');
+      setShowPhoneUpdate(false);
+      setNewPhone('');
+      setProvisionError(null);
+      
+      // Try provisioning again with new phone
+      await provisionVirtualAccount();
+    } catch (error) {
+      notifyError(showToast, error, 'Could not update phone number.');
+    } finally {
+      setUpdatingPhone(false);
     }
   };
 
@@ -214,13 +257,66 @@ export default function WalletPage() {
           </p>
         </div>
 
-        <button
-          onClick={provisionVirtualAccount}
-          disabled={provisioning}
-          className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 py-3 text-sm font-bold text-white hover:bg-brand-primary-hover disabled:opacity-60 transition-colors"
-        >
-          {provisioning ? <><Loader2 size={15} className="animate-spin" /> Creating account...</> : 'Try again'}
-        </button>
+        {provisionError && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 space-y-3">
+            <p className="text-sm text-red-800 font-medium">{provisionError}</p>
+          </div>
+        )}
+
+        {showPhoneUpdate && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4">
+            <div>
+              <h3 className="text-sm font-bold text-brand-navy mb-1">Update Phone Number</h3>
+              <p className="text-xs text-brand-gray">
+                Enter a different phone number to create your virtual account.
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="phone" className="text-xs font-semibold text-brand-navy">
+                New Phone Number
+              </label>
+              <input
+                id="phone"
+                type="tel"
+                value={newPhone}
+                onChange={(e) => setNewPhone(e.target.value)}
+                placeholder="e.g., 08012345678"
+                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={updatePhone}
+                disabled={updatingPhone}
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 py-3 text-sm font-bold text-white hover:bg-brand-primary-hover disabled:opacity-60 transition-colors"
+              >
+                {updatingPhone ? <><Loader2 size={15} className="animate-spin" /> Updating...</> : 'Update & Retry'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowPhoneUpdate(false);
+                  setProvisionError(null);
+                }}
+                disabled={updatingPhone}
+                className="px-4 py-3 text-sm font-semibold text-brand-gray hover:text-brand-navy disabled:opacity-60"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!showPhoneUpdate && (
+          <button
+            onClick={provisionVirtualAccount}
+            disabled={provisioning}
+            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 py-3 text-sm font-bold text-white hover:bg-brand-primary-hover disabled:opacity-60 transition-colors"
+          >
+            {provisioning ? <><Loader2 size={15} className="animate-spin" /> Creating account...</> : 'Try again'}
+          </button>
+        )}
       </div>
     );
   }

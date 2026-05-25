@@ -66,12 +66,12 @@ export const Navbar = () => {
                         <button
                             className="inline-flex items-center gap-1.5 text-[13px] font-bold px-5 py-2.5 rounded-full transition-all"
                             style={{
-                                backgroundColor: '#F59E0B',
-                                color: '#2563EB',
-                                boxShadow: '0 4px 16px rgba(245,158,11,0.25)',
+                                backgroundColor: '#F5A623',
+                                color: '#6B3C00',
+                                boxShadow: '0 4px 16px rgba(245,162,35,0.25)',
                             }}
                             onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#FBBF24')}
-                            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#F59E0B')}
+                            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#F5A623')}
                         >
                             Get Started
                             <ArrowRight size={13} />

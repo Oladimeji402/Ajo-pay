@@ -36,7 +36,7 @@ export const HowItWorks = () => {
         <section
             id="how-it-works"
             className="py-24 lg:py-32 relative overflow-hidden"
-            style={{ backgroundColor: '#FAFAF7' }}
+            style={{ backgroundColor: '#EEF1FB' }}
         >
             {/* Faint amber glow — top center */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full bg-brand-accent/[0.04] blur-[80px] pointer-events-none" />
@@ -50,12 +50,12 @@ export const HowItWorks = () => {
                     viewport={{ once: true }}
                     className="mb-14 lg:mb-20"
                 >
-                    <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-brand-accent mb-4">
+                    <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-[#1A35D4] mb-4">
                         How It Works
                     </p>
                     <h2
-                        className="text-brand-navy leading-[1.04] max-w-md"
-                        style={{ fontSize: 'clamp(2rem, 4vw, 2.8rem)' }}
+                        className="leading-[1.04] max-w-md"
+                        style={{ fontSize: 'clamp(2rem, 4vw, 2.8rem)', color: '#0D1A6E' }}
                     >
                         <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 400 }}>Four steps </span>
                         <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.03em' }}>to your first savings win.</span>
@@ -85,8 +85,8 @@ export const HowItWorks = () => {
                                         className="w-14 h-14 rounded-2xl flex items-center justify-center font-black text-[13px] tracking-widest flex-shrink-0 transition-all duration-300 group-hover:scale-105"
                                         style={{
                                             fontFamily: 'var(--font-display)',
-                                            backgroundColor: i === 0 ? '#F59E0B' : 'rgba(15,23,42,0.06)',
-                                            color: i === 0 ? '#2563EB' : 'rgba(15,23,42,0.35)',
+                                            backgroundColor: i === 0 ? '#F5A623' : 'rgba(15,23,42,0.06)',
+                                            color: i === 0 ? '#6B3C00' : 'rgba(15,23,42,0.35)',
                                             border: i === 0 ? 'none' : '1px solid rgba(15,23,42,0.08)',
                                         }}
                                     >
@@ -100,8 +100,8 @@ export const HowItWorks = () => {
                                 </div>
 
                                 <h3
-                                    className="font-bold text-brand-navy text-[16px] mb-2 leading-tight"
-                                    style={{ fontFamily: 'var(--font-display)' }}
+                                    className="font-bold text-[16px] mb-2 leading-tight"
+                                    style={{ fontFamily: 'var(--font-display)', color: '#0D1A6E' }}
                                 >
                                     {step.title}
                                 </h3>
