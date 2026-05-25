@@ -36,6 +36,9 @@ function normalizePhoneForMonicredit(phone: string) {
 }
 
 export async function POST() {
+  let normalizedPhone = "";
+  let phoneSource = "";
+  
   try {
     const auth = await requireUser();
     if (auth.error || !auth.user) return auth.error!;
@@ -64,7 +67,7 @@ export async function POST() {
 
     const authPhone = typeof auth.user.user_metadata?.phone === "string" ? auth.user.user_metadata.phone : "";
     const profilePhone = typeof profile.phone === "string" ? profile.phone : "";
-    const phoneSource = profilePhone || authPhone;
+    phoneSource = profilePhone || authPhone;
     
     console.log("[provision-virtual-account] Phone resolution:", {
       userId: auth.user.id,
@@ -80,7 +83,7 @@ export async function POST() {
     const emailSource = profileEmail || authEmail;
     if (!emailSource) return badRequestResponse("Email is required before provisioning a virtual account.");
 
-    const normalizedPhone = normalizePhoneForMonicredit(phoneSource);
+    normalizedPhone = normalizePhoneForMonicredit(phoneSource);
     if (!normalizedPhone) return badRequestResponse("Phone number format is invalid.");
 
     console.log("[provision-virtual-account] Normalized phone:", {

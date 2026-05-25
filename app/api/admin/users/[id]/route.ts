@@ -262,8 +262,9 @@ export async function GET(_request: Request, context: Context) {
       savingsPlans,
       recentActivity,
     });
-  } catch {
-    return serverErrorResponse();
+  } catch (error) {
+    console.error("[admin/users/[id]] GET error:", error);
+    return serverErrorResponse(error);
   }
 }
 
@@ -341,7 +342,8 @@ export async function PATCH(request: Request, context: Context) {
     });
 
     return NextResponse.json({ data });
-  } catch {
-    return serverErrorResponse();
+  } catch (error) {
+    console.error("[admin/users/[id]] PATCH error:", error);
+    return serverErrorResponse(error);
   }
 }
