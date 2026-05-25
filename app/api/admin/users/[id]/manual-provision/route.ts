@@ -7,13 +7,13 @@ import { requireAdmin, serverErrorResponse, badRequestResponse } from "@/lib/api
  */
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
 
-    const userId = params.id;
+    const { id: userId } = await context.params;
     const body = await request.json();
     
     const { accountNumber, bankName, accountName } = body;

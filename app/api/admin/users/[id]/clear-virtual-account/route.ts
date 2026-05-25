@@ -3,13 +3,13 @@ import { requireAdmin, serverErrorResponse } from "@/lib/api/auth";
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
 
-    const userId = params.id;
+    const { id: userId } = await context.params;
 
     // Clear virtual account data to allow re-provisioning
     const { error } = await auth.supabase
