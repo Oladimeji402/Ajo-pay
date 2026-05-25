@@ -105,10 +105,10 @@ async function monicreditRequest<T>(path: string, init?: RequestInit): Promise<M
     const json = (await response.json()) as MonicreditEnvelope<T>;
     
     if (!response.ok) {
-      throw new MonicreditHttpError(
-        json.message ?? `Monicredit request failed with status ${response.status}`, 
-        response.status
-      );
+      const errorMessage = json.message ?? `Monicredit request failed with status ${response.status}`;
+      console.error(`[monicredit] HTTP ${response.status} error for ${path}:`, errorMessage, json);
+      
+      throw new MonicreditHttpError(errorMessage, response.status);
     }
 
     return json;
@@ -118,6 +118,7 @@ async function monicreditRequest<T>(path: string, init?: RequestInit): Promise<M
       throw error;
     }
     
+    console.error(`[monicredit] Request failed for ${path}:`, error);
     throw error;
   }
 }
@@ -171,15 +172,20 @@ export async function createMonicreditVirtualAccount(params: {
     email: params.email,
   };
   
+  console.log(`[monicredit] Creating virtual account for phone: ${params.phone}, email: ${params.email}`);
+  
   const payload = await monicreditRequest<MonicreditVirtualAccountData>("/payment/virtual-account/create", {
     method: "POST",
     body: JSON.stringify(requestBody),
   });
 
   if (!payload.status && payload.success === false) {
-    throw new Error(payload.message ?? "Could not create Monicredit virtual account.");
+    const errorMsg = payload.message ?? "Could not create Monicredit virtual account.";
+    console.error(`[monicredit] Virtual account creation failed:`, errorMsg);
+    throw new Error(errorMsg);
   }
 
+  console.log(`[monicredit] Virtual account created successfully`);
   return payload.data ?? {};
 }
 

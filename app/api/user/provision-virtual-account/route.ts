@@ -42,6 +42,8 @@ export async function POST() {
   try {
     const auth = await requireUser();
     if (auth.error || !auth.user) return auth.error!;
+    
+    console.log(`[provision-virtual-account] Starting provisioning for user ${auth.user.id}`);
 
     const { data: profile, error: profileError } = await auth.supabase
       .from("profiles")
@@ -78,8 +80,12 @@ export async function POST() {
 
     normalizedPhone = normalizePhoneForMonicredit(phoneSource);
     if (!normalizedPhone) return badRequestResponse("Phone number format is invalid.");
+    
+    console.log(`[provision-virtual-account] Normalized phone: ${normalizedPhone} (from ${phoneSource})`);
 
     const { firstName, lastName } = splitName(profile.name ?? "");
+    
+    console.log(`[provision-virtual-account] Creating Monicredit account for ${firstName} ${lastName}, phone: ${normalizedPhone}, email: ${emailSource}`);
     
     const created = await createMonicreditVirtualAccount({
       firstName,
@@ -124,8 +130,29 @@ export async function POST() {
       },
     });
   } catch (error) {
+    console.error(`[provision-virtual-account] Error:`, error);
+    
     if (error instanceof MonicreditHttpError) {
-      // Handle Monicredit API errors (both 4xx and 5xx)
+      // Check for duplicate phone/customer errors more specifically
+      const errorMessage = error.message.toLowerCase();
+      const isDuplicateError = 
+        errorMessage.includes("phone") && (errorMessage.includes("already") || errorMessage.includes("exist")) ||
+        errorMessage.includes("duplicate") ||
+        errorMessage.includes("customer already") ||
+        (errorMessage.includes("customer cannot be created") && errorMessage.includes("already"));
+      
+      if (isDuplicateError) {
+        return NextResponse.json({ 
+          error: "This phone number is already registered with our payment provider. Please contact support or use a different phone number.", 
+          code: "DUPLICATE_PHONE_NUMBER",
+          details: {
+            phone: normalizedPhone,
+            originalError: error.message,
+          }
+        }, { status: 400 });
+      }
+      
+      // Handle other Monicredit validation errors (4xx)
       if (error.status >= 400 && error.status < 500) {
         return NextResponse.json({ 
           error: error.message, 
@@ -133,19 +160,14 @@ export async function POST() {
         }, { status: 400 });
       }
       
-      // Handle Monicredit server errors (5xx)
+      // Handle Monicredit server errors (5xx) - don't assume it's a duplicate
       if (error.status >= 500) {
-        // Check if it's a duplicate customer error
-        if (error.message.includes("Customer cannot be created")) {
-          return NextResponse.json({ 
-            error: "This phone number is already registered. Please use a different phone number.", 
-            code: "DUPLICATE_PHONE_NUMBER",
-          }, { status: 400 });
-        }
-        
         return NextResponse.json({ 
           error: "Virtual account service is temporarily unavailable. Please try again later.", 
           code: "MONICREDIT_SERVER_ERROR",
+          details: {
+            originalError: error.message,
+          }
         }, { status: 503 });
       }
     }

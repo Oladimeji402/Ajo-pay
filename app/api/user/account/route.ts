@@ -1,103 +1,57 @@
 import { NextResponse } from "next/server";
-import { requireUser, serverErrorResponse, badRequestResponse } from "@/lib/api/auth";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-
-export async function GET() {
-  try {
-    const auth = await requireUser();
-    if (auth.error || !auth.user) return auth.error;
-
-    const { data: profile, error } = await auth.supabase
-      .from("profiles")
-      .select("id, name, email, phone, virtual_account_number, virtual_account_bank, virtual_account_name")
-      .eq("id", auth.user.id)
-      .single();
-
-    if (error) {
-      return serverErrorResponse(error);
-    }
-
-    return NextResponse.json({ profile });
-  } catch (error) {
-    return serverErrorResponse(error);
-  }
-}
+import { badRequestResponse, requireUser, serverErrorResponse } from "@/lib/api/auth";
+import { formatNigeriaPhoneE164, isValidNigeriaPhoneLocal, parseNigeriaPhoneToLocal } from "@/lib/phone";
 
 export async function PATCH(request: Request) {
   try {
     const auth = await requireUser();
-    if (auth.error || !auth.user) return auth.error;
+    if (auth.error || !auth.user) return auth.error!;
 
     const body = await request.json();
-    const { phone, name } = body;
+    const { phone } = body;
 
-    // Validate phone number format if provided
-    if (phone !== undefined) {
-      if (typeof phone !== "string" || phone.trim().length === 0) {
-        return badRequestResponse("Phone number is required.");
-      }
-
-      const phoneDigits = phone.replace(/\D/g, "");
-      
-      // Validate Nigerian phone number format
-      if (phoneDigits.length === 11 && phoneDigits.startsWith("0")) {
-        // Valid: 0XXXXXXXXXX
-      } else if (phoneDigits.length === 13 && phoneDigits.startsWith("234")) {
-        // Valid: 234XXXXXXXXXX
-      } else if (phoneDigits.length === 10) {
-        // Valid: XXXXXXXXXX (will be prefixed with 0)
-      } else {
-        return badRequestResponse("Invalid phone number format. Please use a valid Nigerian phone number.");
-      }
+    if (!phone || typeof phone !== "string") {
+      return badRequestResponse("Phone number is required.");
     }
 
-    // Build update object
-    const updates: { phone?: string; name?: string } = {};
-    if (phone !== undefined) updates.phone = phone.trim();
-    if (name !== undefined && typeof name === "string" && name.trim().length > 0) {
-      updates.name = name.trim();
+    // Validate and normalize phone number
+    const localPhone = parseNigeriaPhoneToLocal(phone);
+    if (!isValidNigeriaPhoneLocal(localPhone)) {
+      return badRequestResponse("Enter a valid Nigerian mobile number (e.g. 08012345678).");
     }
+    const phoneE164 = formatNigeriaPhoneE164(localPhone);
 
-    if (Object.keys(updates).length === 0) {
-      return badRequestResponse("No valid fields to update.");
-    }
+    console.log(`[user/account] Updating phone for user ${auth.user.id}: ${phoneE164}`);
 
-    // Update profile
-    const { data, error } = await auth.supabase
+    // Update profile phone
+    const { error: updateError } = await auth.supabase
       .from("profiles")
-      .update(updates)
-      .eq("id", auth.user.id)
-      .select("id, name, email, phone")
-      .single();
+      .update({ phone: phoneE164 })
+      .eq("id", auth.user.id);
 
-    if (error) {
-      return serverErrorResponse(error);
+    if (updateError) {
+      console.error(`[user/account] Failed to update phone:`, updateError);
+      return serverErrorResponse(updateError);
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      profile: data,
-      message: "Profile updated successfully."
+    // Also update auth metadata
+    const { error: metadataError } = await auth.supabase.auth.updateUser({
+      data: { phone: phoneE164 },
+    });
+
+    if (metadataError) {
+      console.error(`[user/account] Failed to update auth metadata:`, metadataError);
+      // Don't fail the request if metadata update fails
+    }
+
+    console.log(`[user/account] Phone updated successfully for user ${auth.user.id}`);
+
+    return NextResponse.json({
+      success: true,
+      data: { phone: phoneE164 },
     });
   } catch (error) {
-    return serverErrorResponse(error);
-  }
-}
-
-export async function DELETE() {
-  try {
-    const auth = await requireUser();
-    if (auth.error || !auth.user) return auth.error;
-
-    const adminSupabase = createSupabaseAdminClient();
-    const { error } = await adminSupabase.auth.admin.deleteUser(auth.user.id);
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
+    console.error(`[user/account] Error:`, error);
     return serverErrorResponse(error);
   }
 }
