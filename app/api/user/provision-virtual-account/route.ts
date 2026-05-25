@@ -65,6 +65,14 @@ export async function POST() {
     const authPhone = typeof auth.user.user_metadata?.phone === "string" ? auth.user.user_metadata.phone : "";
     const profilePhone = typeof profile.phone === "string" ? profile.phone : "";
     const phoneSource = profilePhone || authPhone;
+    
+    console.log("[provision-virtual-account] Phone resolution:", {
+      userId: auth.user.id,
+      profilePhone,
+      authPhone,
+      phoneSource,
+    });
+    
     if (!phoneSource) return badRequestResponse("Phone number is required before provisioning a virtual account.");
 
     const profileEmail = typeof profile.email === "string" ? profile.email : "";

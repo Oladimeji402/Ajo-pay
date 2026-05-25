@@ -16,6 +16,9 @@ type UserDetail = {
     bank_name?: string | null;
     bank_account?: string | null;
     bank_account_name?: string | null;
+    virtual_account_number?: string | null;
+    virtual_account_bank?: string | null;
+    virtual_account_name?: string | null;
     role: string;
     status: string;
     kyc_level: number;
@@ -224,7 +227,7 @@ export default function AdminUserDetailPage() {
             </div>
 
             <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm space-y-3">
-                <h2 className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-navy"><Landmark size={14} className="text-indigo-600" /> Account details</h2>
+                <h2 className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-navy"><Landmark size={14} className="text-indigo-600" /> Payout Account</h2>
                 <div className="grid gap-3 sm:grid-cols-3">
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                         <p className="text-xs text-brand-gray">Bank</p>
@@ -237,6 +240,24 @@ export default function AdminUserDetailPage() {
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                         <p className="text-xs text-brand-gray">Account Name</p>
                         <p className="font-bold text-brand-navy">{user.bank_account_name || 'Not set'}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm space-y-3">
+                <h2 className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-navy"><Banknote size={14} className="text-emerald-600" /> Virtual Account (Wallet Funding)</h2>
+                <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <p className="text-xs text-brand-gray">Bank</p>
+                        <p className="font-bold text-brand-navy">{user.virtual_account_bank || 'Not provisioned'}</p>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <p className="text-xs text-brand-gray">Account Number</p>
+                        <p className="font-bold text-brand-navy">{user.virtual_account_number || 'Not provisioned'}</p>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <p className="text-xs text-brand-gray">Account Name</p>
+                        <p className="font-bold text-brand-navy">{user.virtual_account_name || 'Not provisioned'}</p>
                     </div>
                 </div>
             </div>
