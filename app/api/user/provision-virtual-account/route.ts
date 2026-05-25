@@ -17,18 +17,18 @@ function normalizePhoneForMonicredit(phone: string) {
   const digits = phone.replace(/\D/g, "");
   if (!digits) return "";
   
-  // Convert 234XXXXXXXXXX to 0XXXXXXXXXX
+  // Convert 234XXXXXXXXXX to XXXXXXXXXX (remove country code)
   if (digits.startsWith("234") && digits.length === 13) {
-    return `0${digits.slice(3)}`;
+    return digits.slice(3); // Returns 10 digits without leading 0
   }
   
-  // Ensure it starts with 0 and is 11 digits
-  if (digits.length === 10 && !digits.startsWith("0")) {
-    return `0${digits}`;
-  }
-  
-  // If it's 11 digits and starts with 0, return as-is
+  // If it starts with 0 and is 11 digits, remove the leading 0
   if (digits.length === 11 && digits.startsWith("0")) {
+    return digits.slice(1); // Returns 10 digits without leading 0
+  }
+  
+  // If it's already 10 digits, return as-is
+  if (digits.length === 10) {
     return digits;
   }
   
