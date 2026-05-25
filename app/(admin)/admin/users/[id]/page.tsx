@@ -245,7 +245,28 @@ export default function AdminUserDetailPage() {
             </div>
 
             <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm space-y-3">
-                <h2 className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-navy"><Banknote size={14} className="text-emerald-600" /> Virtual Account (Wallet Funding)</h2>
+                <div className="flex items-center justify-between gap-2">
+                    <h2 className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-navy"><Banknote size={14} className="text-emerald-600" /> Virtual Account (Wallet Funding)</h2>
+                    {user.virtual_account_number && (
+                        <button
+                            onClick={async () => {
+                                if (!confirm('Clear virtual account data? User will need to re-provision.')) return;
+                                try {
+                                    const res = await fetch(`/api/admin/users/${id}/clear-virtual-account`, { method: 'POST' });
+                                    const json = await res.json();
+                                    if (!res.ok) throw new Error(json.error || 'Failed to clear virtual account');
+                                    notifySuccess(showToast, 'Virtual account cleared successfully');
+                                    await loadUser();
+                                } catch (err) {
+                                    notifyError(showToast, err, 'Failed to clear virtual account');
+                                }
+                            }}
+                            className="text-xs font-semibold text-red-600 hover:text-red-700"
+                        >
+                            Clear Account
+                        </button>
+                    )}
+                </div>
                 <div className="grid gap-3 sm:grid-cols-3">
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                         <p className="text-xs text-brand-gray">Bank</p>

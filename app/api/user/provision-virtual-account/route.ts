@@ -83,7 +83,20 @@ export async function POST() {
     const normalizedPhone = normalizePhoneForMonicredit(phoneSource);
     if (!normalizedPhone) return badRequestResponse("Phone number format is invalid.");
 
+    console.log("[provision-virtual-account] Normalized phone:", {
+      original: phoneSource,
+      normalized: normalizedPhone,
+    });
+
     const { firstName, lastName } = splitName(profile.name ?? "");
+    
+    console.log("[provision-virtual-account] Creating virtual account with:", {
+      firstName,
+      lastName,
+      phone: normalizedPhone,
+      email: emailSource,
+    });
+    
     const created = await createMonicreditVirtualAccount({
       firstName,
       lastName,
@@ -148,10 +161,13 @@ export async function POST() {
         
         // Check if it's a duplicate customer error
         if (error.message.includes("Customer cannot be created")) {
+          // Get the phone that was attempted
+          const attemptedPhone = normalizedPhone || phoneSource || "unknown";
           return NextResponse.json({ 
-            error: "This phone number is already registered with another account. Please use a different phone number or contact support.", 
+            error: `The phone number ${attemptedPhone} is already registered in the payment system. Please use a completely different phone number.`, 
             code: "DUPLICATE_PHONE_NUMBER",
-            details: "The phone number is already associated with an existing virtual account in the payment system."
+            details: "The phone number is already associated with an existing virtual account in the payment system.",
+            attemptedPhone,
           }, { status: 400 });
         }
         
