@@ -265,25 +265,56 @@ export default function AdminUserDetailPage() {
             <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm space-y-3">
                 <div className="flex items-center justify-between gap-2">
                     <h2 className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-navy"><Banknote size={14} className="text-emerald-600" /> Virtual Account (Wallet Funding)</h2>
-                    {user.virtual_account_number && (
-                        <button
-                            onClick={async () => {
-                                if (!confirm('Clear virtual account data? User will need to re-provision.')) return;
-                                try {
-                                    const res = await fetch(`/api/admin/users/${id}/clear-virtual-account`, { method: 'POST' });
-                                    const json = await res.json();
-                                    if (!res.ok) throw new Error(json.error || 'Failed to clear virtual account');
-                                    notifySuccess(showToast, 'Virtual account cleared successfully');
-                                    await loadUser();
-                                } catch (err) {
-                                    notifyError(showToast, err, 'Failed to clear virtual account');
-                                }
-                            }}
-                            className="text-xs font-semibold text-red-600 hover:text-red-700"
-                        >
-                            Clear Account
-                        </button>
-                    )}
+                    <div className="flex items-center gap-2">
+                        {!user.virtual_account_number && (
+                            <button
+                                onClick={async () => {
+                                    const accountNumber = prompt('Enter account number:');
+                                    if (!accountNumber) return;
+                                    const bankName = prompt('Enter bank name:');
+                                    if (!bankName) return;
+                                    const accountName = prompt('Enter account name:');
+                                    if (!accountName) return;
+                                    
+                                    try {
+                                        const res = await fetch(`/api/admin/users/${id}/manual-provision`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ accountNumber, bankName, accountName }),
+                                        });
+                                        const json = await res.json();
+                                        if (!res.ok) throw new Error(json.error || 'Failed to provision');
+                                        notifySuccess(showToast, 'Virtual account provisioned successfully');
+                                        await loadUser();
+                                    } catch (err) {
+                                        notifyError(showToast, err, 'Failed to provision account');
+                                    }
+                                }}
+                                className="text-xs font-semibold text-blue-600 hover:text-blue-700"
+                            >
+                                Manual Provision
+                            </button>
+                        )}
+                        {user.virtual_account_number && (
+                            <button
+                                onClick={async () => {
+                                    if (!confirm('Clear virtual account data? User will need to re-provision.')) return;
+                                    try {
+                                        const res = await fetch(`/api/admin/users/${id}/clear-virtual-account`, { method: 'POST' });
+                                        const json = await res.json();
+                                        if (!res.ok) throw new Error(json.error || 'Failed to clear virtual account');
+                                        notifySuccess(showToast, 'Virtual account cleared successfully');
+                                        await loadUser();
+                                    } catch (err) {
+                                        notifyError(showToast, err, 'Failed to clear virtual account');
+                                    }
+                                }}
+                                className="text-xs font-semibold text-red-600 hover:text-red-700"
+                            >
+                                Clear Account
+                            </button>
+                        )}
+                    </div>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-3">
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">

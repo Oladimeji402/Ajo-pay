@@ -176,22 +176,25 @@ export async function createMonicreditVirtualAccount(params: {
 }) {
   const { privateKey } = getMonicreditConfig();
   
-  console.log("[monicredit] Creating virtual account for:", {
+  const requestBody = {
+    private_key: privateKey,
+    first_name: params.firstName,
+    last_name: params.lastName,
+    phone: params.phone,
+    email: params.email,
+  };
+  
+  console.log("[monicredit] Creating virtual account with request:", {
     firstName: params.firstName,
     lastName: params.lastName,
     phone: params.phone,
     email: params.email,
+    requestBody: { ...requestBody, private_key: "***HIDDEN***" },
   });
   
   const payload = await monicreditRequest<MonicreditVirtualAccountData>("/payment/virtual-account/create", {
     method: "POST",
-    body: JSON.stringify({
-      private_key: privateKey,
-      first_name: params.firstName,
-      last_name: params.lastName,
-      phone: params.phone,
-      email: params.email,
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!payload.status && payload.success === false) {
