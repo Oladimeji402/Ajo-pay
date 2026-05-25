@@ -18,7 +18,7 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
             <div className="flex min-h-screen">
                 {/* Left brand panel */}
                 <aside className="relative hidden w-[42%] min-w-95 overflow-hidden lg:flex lg:flex-col" aria-hidden="true">
-                    <div className="absolute inset-0 bg-[#060F20]" />
+                    <div className="absolute inset-0 bg-[#2563EB]" />
                     <div className="absolute -top-28 -left-20 h-80 w-80 rounded-full bg-brand-primary/15 blur-3xl" />
                     <div className="absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-brand-accent/20 blur-3xl" />
                     {/* Faint circle motif — abstract ajo ring */}

@@ -86,7 +86,7 @@ export const HowItWorks = () => {
                                         style={{
                                             fontFamily: 'var(--font-display)',
                                             backgroundColor: i === 0 ? '#F59E0B' : 'rgba(15,23,42,0.06)',
-                                            color: i === 0 ? '#0F172A' : 'rgba(15,23,42,0.35)',
+                                            color: i === 0 ? '#2563EB' : 'rgba(15,23,42,0.35)',
                                             border: i === 0 ? 'none' : '1px solid rgba(15,23,42,0.08)',
                                         }}
                                     >

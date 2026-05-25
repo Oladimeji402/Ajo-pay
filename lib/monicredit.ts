@@ -89,22 +89,50 @@ function getMonicreditConfig(): MonicreditConfig {
 
 async function monicreditRequest<T>(path: string, init?: RequestInit): Promise<MonicreditEnvelope<T>> {
   const { baseUrl } = getMonicreditConfig();
-  const response = await fetch(`${baseUrl}${path}`, {
-    ...init,
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
-    cache: "no-store",
-  });
+  const url = `${baseUrl}${path}`;
+  
+  try {
+    const response = await fetch(url, {
+      ...init,
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...(init?.headers ?? {}),
+      },
+      cache: "no-store",
+    });
 
-  const json = (await response.json()) as MonicreditEnvelope<T>;
-  if (!response.ok) {
-    throw new MonicreditHttpError(json.message ?? "Monicredit request failed.", response.status);
+    const json = (await response.json()) as MonicreditEnvelope<T>;
+    
+    if (!response.ok) {
+      console.error("[monicredit] API error:", {
+        url,
+        status: response.status,
+        statusText: response.statusText,
+        message: json.message,
+        response: json,
+      });
+      throw new MonicreditHttpError(
+        json.message ?? `Monicredit request failed with status ${response.status}`, 
+        response.status
+      );
+    }
+
+    return json;
+  } catch (error) {
+    // If it's already a MonicreditHttpError, rethrow it
+    if (error instanceof MonicreditHttpError) {
+      throw error;
+    }
+    
+    // Log network or parsing errors
+    console.error("[monicredit] Request failed:", {
+      url,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    
+    throw error;
   }
-
-  return json;
 }
 
 function extractToken(payload: MonicreditEnvelope<MonicreditLoginData>) {
@@ -147,6 +175,14 @@ export async function createMonicreditVirtualAccount(params: {
   email: string;
 }) {
   const { privateKey } = getMonicreditConfig();
+  
+  console.log("[monicredit] Creating virtual account for:", {
+    firstName: params.firstName,
+    lastName: params.lastName,
+    phone: params.phone,
+    email: params.email,
+  });
+  
   const payload = await monicreditRequest<MonicreditVirtualAccountData>("/payment/virtual-account/create", {
     method: "POST",
     body: JSON.stringify({
@@ -159,8 +195,15 @@ export async function createMonicreditVirtualAccount(params: {
   });
 
   if (!payload.status && payload.success === false) {
+    console.error("[monicredit] Virtual account creation failed:", payload.message);
     throw new Error(payload.message ?? "Could not create Monicredit virtual account.");
   }
+
+  console.log("[monicredit] Virtual account created successfully:", {
+    wallet_id: payload.data?.wallet_id,
+    customer_id: payload.data?.customer_id,
+    account_number: payload.data?.account_number,
+  });
 
   return payload.data ?? {};
 }

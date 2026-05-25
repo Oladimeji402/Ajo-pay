@@ -14,7 +14,7 @@ export const metadata: Metadata = {
       {
         rel: "mask-icon",
         url: "/subtech-ajo-solution-mark-mono-dark.svg",
-        color: "#0F172A",
+        color: "#2563EB",
       },
     ],
   },

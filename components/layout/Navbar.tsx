@@ -67,7 +67,7 @@ export const Navbar = () => {
                             className="inline-flex items-center gap-1.5 text-[13px] font-bold px-5 py-2.5 rounded-full transition-all"
                             style={{
                                 backgroundColor: '#F59E0B',
-                                color: '#0F172A',
+                                color: '#2563EB',
                                 boxShadow: '0 4px 16px rgba(245,158,11,0.25)',
                             }}
                             onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#FBBF24')}

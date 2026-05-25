@@ -127,7 +127,7 @@ const AjoCircle = () => {
                                     : isPaid
                                         ? 'rgba(37,99,235,0.5)'
                                         : 'rgba(255,255,255,0.10)'}`,
-                                color: isCurrent ? '#0F172A' : isPaid ? '#93C5FD' : 'rgba(255,255,255,0.35)',
+                                color: isCurrent ? '#2563EB' : isPaid ? '#93C5FD' : 'rgba(255,255,255,0.35)',
                             }}
                         >
                             {isPaid ? <CheckCircle2 size={13} /> : member.initials}
@@ -155,7 +155,7 @@ const AjoCircle = () => {
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 1.2, duration: 0.5 }}
-                className="absolute bg-brand-accent text-[#0F172A] text-[9px] font-black px-2 py-1 rounded-full whitespace-nowrap shadow-lg shadow-brand-accent/30"
+                className="absolute bg-brand-accent text-[#2563EB] text-[9px] font-black px-2 py-1 rounded-full whitespace-nowrap shadow-lg shadow-brand-accent/30"
                 style={{
                     left: positions[2].x + NODE_R + 6,
                     top: positions[2].y - 12,
@@ -170,7 +170,7 @@ const AjoCircle = () => {
 // ─── Hero ──────────────────────────────────────────────────────────────────────
 export const Hero = () => {
     return (
-        <section className="relative min-h-screen flex flex-col justify-center overflow-hidden bg-[#060F20]">
+        <section className="relative min-h-screen flex flex-col justify-center overflow-hidden bg-[#2563EB]">
 
             {/* Subtle dot grid */}
             <div
@@ -269,7 +269,7 @@ export const Hero = () => {
                                     className="w-full sm:w-auto inline-flex items-center justify-center gap-2 text-[15px] font-bold px-8 py-4 rounded-2xl group transition-all"
                                     style={{
                                         backgroundColor: '#F59E0B',
-                                        color: '#0F172A',
+                                        color: '#2563EB',
                                         boxShadow: '0 12px 32px rgba(245,158,11,0.25)',
                                     }}
                                     onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#FBBF24')}

@@ -44,7 +44,7 @@ export const CTA = () => {
                             className="leading-[1.0] mb-5"
                             style={{
                                 fontSize: 'clamp(2.4rem, 5vw, 3.8rem)',
-                                color: '#0F172A',
+                                color: '#2563EB',
                             }}
                         >
                             <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 400 }}>Ready</span>
@@ -65,12 +65,12 @@ export const CTA = () => {
                                 <button
                                     className="inline-flex items-center justify-center gap-2 text-[15px] font-bold px-8 py-4 rounded-2xl group transition-all"
                                     style={{
-                                        backgroundColor: '#0F172A',
+                                        backgroundColor: '#2563EB',
                                         color: '#F59E0B',
                                         boxShadow: '0 8px 24px rgba(15,23,42,0.20)',
                                     }}
-                                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#1E293B')}
-                                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#0F172A')}
+                                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#1D4ED8')}
+                                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#2563EB')}
                                 >
                                     Join Free
                                     <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
@@ -85,7 +85,7 @@ export const CTA = () => {
                                         backgroundColor: 'transparent',
                                     }}
                                     onMouseEnter={e => {
-                                        e.currentTarget.style.color = '#0F172A';
+                                        e.currentTarget.style.color = '#2563EB';
                                         e.currentTarget.style.borderColor = 'rgba(15,23,42,0.35)';
                                     }}
                                     onMouseLeave={e => {
@@ -115,7 +115,7 @@ export const CTA = () => {
                                     className="text-[2rem] font-black leading-none tracking-tight"
                                     style={{
                                         fontFamily: 'var(--font-display)',
-                                        color: '#0F172A',
+                                        color: '#2563EB',
                                     }}
                                 >
                                     {stat.value}

@@ -106,8 +106,30 @@ export async function POST() {
       },
     });
   } catch (error) {
-    if (error instanceof MonicreditHttpError && error.status >= 400 && error.status < 500) {
-      return NextResponse.json({ error: error.message, code: "MONICREDIT_VALIDATION_ERROR" }, { status: 400 });
+    // Log the full error for debugging
+    console.error("[provision-virtual-account] Error:", error);
+    
+    if (error instanceof MonicreditHttpError) {
+      // Handle Monicredit API errors (both 4xx and 5xx)
+      if (error.status >= 400 && error.status < 500) {
+        return NextResponse.json({ 
+          error: error.message, 
+          code: "MONICREDIT_VALIDATION_ERROR" 
+        }, { status: 400 });
+      }
+      
+      // Handle Monicredit server errors (5xx)
+      if (error.status >= 500) {
+        console.error("[provision-virtual-account] Monicredit server error:", {
+          status: error.status,
+          message: error.message,
+        });
+        return NextResponse.json({ 
+          error: "Virtual account service is temporarily unavailable. Please try again later.", 
+          code: "MONICREDIT_SERVER_ERROR",
+          details: error.message
+        }, { status: 503 });
+      }
     }
 
     return serverErrorResponse(error);

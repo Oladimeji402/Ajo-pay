@@ -199,7 +199,7 @@ const FeatureRow = ({ number, tag, title, description, visual, reverse = false, 
 // ─── Features section ─────────────────────────────────────────────────────────
 export const Features = () => {
     return (
-        <section id="features" className="bg-[#060F20] relative overflow-hidden">
+        <section id="features" className="bg-[#2563EB] relative overflow-hidden">
 
             <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-brand-primary/[0.04] rounded-full blur-[120px] -ml-40 -mt-40 pointer-events-none" />
             <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-brand-accent/[0.03] rounded-full blur-[120px] -mr-40 -mb-40 pointer-events-none" />
