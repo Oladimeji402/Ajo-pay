@@ -260,9 +260,6 @@ export default function WalletPage() {
         {provisionError && (
           <div className="rounded-xl border border-red-200 bg-red-50 p-4 space-y-3">
             <p className="text-sm text-red-800 font-medium">{provisionError}</p>
-            <p className="text-xs text-red-700">
-              Note: This phone number has been used before in the payment system. You must use a phone number that has never been registered before.
-            </p>
           </div>
         )}
 

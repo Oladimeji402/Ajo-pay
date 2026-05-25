@@ -69,13 +69,6 @@ export async function POST() {
     const profilePhone = typeof profile.phone === "string" ? profile.phone : "";
     phoneSource = profilePhone || authPhone;
     
-    console.log("[provision-virtual-account] Phone resolution:", {
-      userId: auth.user.id,
-      profilePhone,
-      authPhone,
-      phoneSource,
-    });
-    
     if (!phoneSource) return badRequestResponse("Phone number is required before provisioning a virtual account.");
 
     const profileEmail = typeof profile.email === "string" ? profile.email : "";
@@ -86,19 +79,7 @@ export async function POST() {
     normalizedPhone = normalizePhoneForMonicredit(phoneSource);
     if (!normalizedPhone) return badRequestResponse("Phone number format is invalid.");
 
-    console.log("[provision-virtual-account] Normalized phone:", {
-      original: phoneSource,
-      normalized: normalizedPhone,
-    });
-
     const { firstName, lastName } = splitName(profile.name ?? "");
-    
-    console.log("[provision-virtual-account] Creating virtual account with:", {
-      firstName,
-      lastName,
-      phone: normalizedPhone,
-      email: emailSource,
-    });
     
     const created = await createMonicreditVirtualAccount({
       firstName,
@@ -143,9 +124,6 @@ export async function POST() {
       },
     });
   } catch (error) {
-    // Log the full error for debugging
-    console.error("[provision-virtual-account] Error:", error);
-    
     if (error instanceof MonicreditHttpError) {
       // Handle Monicredit API errors (both 4xx and 5xx)
       if (error.status >= 400 && error.status < 500) {
@@ -157,27 +135,17 @@ export async function POST() {
       
       // Handle Monicredit server errors (5xx)
       if (error.status >= 500) {
-        console.error("[provision-virtual-account] Monicredit server error:", {
-          status: error.status,
-          message: error.message,
-        });
-        
         // Check if it's a duplicate customer error
         if (error.message.includes("Customer cannot be created")) {
-          // Get the phone that was attempted
-          const attemptedPhone = normalizedPhone || phoneSource || "unknown";
           return NextResponse.json({ 
-            error: `The phone number ${attemptedPhone} is already registered in the payment system. Please use a completely different phone number.`, 
+            error: "This phone number is already registered. Please use a different phone number.", 
             code: "DUPLICATE_PHONE_NUMBER",
-            details: "The phone number is already associated with an existing virtual account in the payment system.",
-            attemptedPhone,
           }, { status: 400 });
         }
         
         return NextResponse.json({ 
           error: "Virtual account service is temporarily unavailable. Please try again later.", 
           code: "MONICREDIT_SERVER_ERROR",
-          details: error.message
         }, { status: 503 });
       }
     }
