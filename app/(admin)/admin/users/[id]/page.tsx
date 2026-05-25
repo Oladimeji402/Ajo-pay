@@ -227,6 +227,24 @@ export default function AdminUserDetailPage() {
             </div>
 
             <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm space-y-3">
+                <h2 className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-navy"><UserCog size={14} className="text-blue-600" /> Contact Information</h2>
+                <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <p className="text-xs text-brand-gray">Full Name</p>
+                        <p className="font-bold text-brand-navy">{user.name || 'Not set'}</p>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <p className="text-xs text-brand-gray">Email Address</p>
+                        <p className="font-bold text-brand-navy break-all">{user.email}</p>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <p className="text-xs text-brand-gray">Phone Number</p>
+                        <p className="font-bold text-brand-navy">{user.phone || 'Not set'}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm space-y-3">
                 <h2 className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-navy"><Landmark size={14} className="text-indigo-600" /> Payout Account</h2>
                 <div className="grid gap-3 sm:grid-cols-3">
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
