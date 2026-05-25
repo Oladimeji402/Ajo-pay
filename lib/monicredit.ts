@@ -174,16 +174,12 @@ export async function createMonicreditVirtualAccount(params: {
   
   console.log(`[monicredit] Creating virtual account for phone: ${params.phone}, email: ${params.email}`);
   
+  // monicreditRequest will throw MonicreditHttpError if response is not ok
+  // We should let that error bubble up instead of catching and re-throwing
   const payload = await monicreditRequest<MonicreditVirtualAccountData>("/payment/virtual-account/create", {
     method: "POST",
     body: JSON.stringify(requestBody),
   });
-
-  if (!payload.status && payload.success === false) {
-    const errorMsg = payload.message ?? "Could not create Monicredit virtual account.";
-    console.error(`[monicredit] Virtual account creation failed:`, errorMsg);
-    throw new Error(errorMsg);
-  }
 
   console.log(`[monicredit] Virtual account created successfully`);
   return payload.data ?? {};
