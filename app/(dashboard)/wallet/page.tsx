@@ -70,6 +70,11 @@ export default function WalletPage() {
           setShowPhoneUpdate(true);
           return false;
         }
+        // Check if it's a rate limit error
+        if (payload.code === 'RATE_LIMIT_EXCEEDED') {
+          setProvisionError('Too many attempts. Please wait a moment before trying again.');
+          return false;
+        }
         throw new Error(payload.error ?? 'Could not provision virtual account.');
       }
 

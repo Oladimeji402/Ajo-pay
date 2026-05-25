@@ -152,6 +152,24 @@ export async function POST() {
         }, { status: 400 });
       }
       
+      // Check for rate limiting
+      const isRateLimitError = 
+        error.status === 429 ||
+        errorMessage.includes("rate limit") ||
+        errorMessage.includes("too many requests") ||
+        errorMessage.includes("quota exceeded");
+      
+      if (isRateLimitError) {
+        console.warn(`[provision-virtual-account] Rate limit detected for user`);
+        return NextResponse.json({ 
+          error: "Too many requests. Please wait a moment and try again.", 
+          code: "RATE_LIMIT_EXCEEDED",
+          details: {
+            originalError: error.message,
+          }
+        }, { status: 429 });
+      }
+      
       // Handle other Monicredit validation errors (4xx)
       if (error.status >= 400 && error.status < 500) {
         return NextResponse.json({ 
