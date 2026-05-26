@@ -161,10 +161,12 @@ export async function createMonicreditVirtualAccount(params: {
   lastName: string;
   phone: string;
   email: string;
+  nin?: string;
+  bvn?: string;
 }) {
   const { privateKey } = getMonicreditConfig();
   
-  const requestBody = {
+  const requestBody: Record<string, string> = {
     private_key: privateKey,
     first_name: params.firstName,
     last_name: params.lastName,
@@ -172,7 +174,15 @@ export async function createMonicreditVirtualAccount(params: {
     email: params.email,
   };
   
-  console.log(`[monicredit] Creating virtual account for phone: ${params.phone}, email: ${params.email}`);
+  // Add NIN and BVN to payload if provided
+  if (params.nin) {
+    requestBody.nin = params.nin;
+  }
+  if (params.bvn) {
+    requestBody.bvn = params.bvn;
+  }
+  
+  console.log(`[monicredit] Creating virtual account for phone: ${params.phone}, email: ${params.email}, nin: ${params.nin ? 'provided' : 'not provided'}, bvn: ${params.bvn ? 'provided' : 'not provided'}`);
   
   // monicreditRequest will throw MonicreditHttpError if response is not ok
   // We should let that error bubble up instead of catching and re-throwing

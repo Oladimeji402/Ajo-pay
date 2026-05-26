@@ -27,6 +27,7 @@ export default function WalletPage() {
   const [newPhone, setNewPhone] = useState('');
   const [updatingPhone, setUpdatingPhone] = useState(false);
   const [provisionError, setProvisionError] = useState<string | null>(null);
+  const [missingVerification, setMissingVerification] = useState<{ nin: boolean; bvn: boolean } | null>(null);
   const { showToast } = useToast();
 
   const writeCache = (next: Partial<WalletCache>) => {
@@ -60,6 +61,7 @@ export default function WalletPage() {
   const provisionVirtualAccount = async () => {
     setProvisioning(true);
     setProvisionError(null);
+    setMissingVerification(null);
     try {
       const response = await fetch('/api/user/provision-virtual-account', { method: 'POST' });
       const payload = await response.json();
@@ -73,6 +75,12 @@ export default function WalletPage() {
         // Check if it's a rate limit error
         if (payload.code === 'RATE_LIMIT_EXCEEDED') {
           setProvisionError('Too many attempts. Please wait a moment before trying again.');
+          return false;
+        }
+        // Check if it's a missing verification error
+        if (payload.code === 'MISSING_VERIFICATION') {
+          setMissingVerification(payload.missing || { nin: true, bvn: true });
+          setProvisionError('Please provide your NIN and BVN to generate your virtual account.');
           return false;
         }
         throw new Error(payload.error ?? 'Could not provision virtual account.');
@@ -265,6 +273,22 @@ export default function WalletPage() {
         {provisionError && (
           <div className="rounded-xl border border-red-200 bg-red-50 p-4 space-y-3">
             <p className="text-sm text-red-800 font-medium">{provisionError}</p>
+            
+            {missingVerification && (
+              <div className="pt-2 border-t border-red-200">
+                <p className="text-xs text-red-700 mb-2">Missing verification details:</p>
+                <ul className="text-xs text-red-700 list-disc list-inside space-y-1">
+                  {missingVerification.nin && <li>NIN (National Identification Number)</li>}
+                  {missingVerification.bvn && <li>BVN (Bank Verification Number)</li>}
+                </ul>
+                <Link
+                  href="/settings"
+                  className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 py-2.5 text-sm font-bold text-white hover:bg-brand-primary-hover transition-colors"
+                >
+                  Go to Settings to Add Details
+                </Link>
+              </div>
+            )}
           </div>
         )}
 

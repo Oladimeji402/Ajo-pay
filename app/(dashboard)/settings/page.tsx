@@ -32,12 +32,15 @@ import { notifyError, notifySuccess, notifyWarning } from '@/lib/toast';
 import { mapAuthError } from '@/lib/auth-errors';
 import { formatNigeriaPhoneE164, isValidNigeriaPhoneLocal, normalizeNigeriaPhoneLocalInput, parseNigeriaPhoneToLocal } from '@/lib/phone';
 import { ConfirmPopup } from '@/components/ui/ConfirmPopup';
+import { InfoTooltip } from '@/components/ui/Tooltip';
 
 type Profile = {
     id: string;
     name: string;
     email: string;
     phone: string | null;
+    nin: string | null;
+    bvn: string | null;
     bank_account: string | null;
     bank_name: string | null;
     bank_account_name: string | null;
@@ -72,6 +75,8 @@ export default function SettingsPage() {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
+    const [nin, setNin] = useState('');
+    const [bvn, setBvn] = useState('');
     const [bankCode, setBankCode] = useState('');
     const [bankAccount, setBankAccount] = useState('');
     const [resolvedAccountName, setResolvedAccountName] = useState('');
@@ -147,7 +152,7 @@ export default function SettingsPage() {
 
                 const { data, error: profileError } = await supabase
                     .from('profiles')
-                    .select('id, name, email, phone, bank_account, bank_name, bank_account_name')
+                    .select('id, name, email, phone, nin, bvn, bank_account, bank_name, bank_account_name')
                     .eq('id', user.id)
                     .maybeSingle();
 
@@ -181,6 +186,8 @@ export default function SettingsPage() {
                 setEmail(profile.email ?? user.email ?? '');
                 setPendingEmail(profile.email ?? user.email ?? '');
                 setPhone(parseNigeriaPhoneToLocal(profile.phone));
+                setNin(profile.nin ?? '');
+                setBvn(profile.bvn ?? '');
                 setBankAccount(profile.bank_account ?? '');
                 setResolvedAccountName(profile.bank_account_name ?? '');
                 setBanks(uniqueBanks);
@@ -338,6 +345,8 @@ export default function SettingsPage() {
                 .update({
                     name: name.trim(),
                     phone: normalizedPhone ? formatNigeriaPhoneE164(normalizedPhone) : null,
+                    nin: nin.trim() || null,
+                    bvn: bvn.trim() || null,
                     bank_account: hasAccount ? trimmedAccount : null,
                     bank_name: selectedBankName,
                     bank_account_name: hasAccount ? resolvedAccountName : null,
@@ -604,6 +613,52 @@ export default function SettingsPage() {
                                     <label className="block text-xs font-semibold text-brand-gray mb-1">Email</label>
                                     <input value={email} readOnly className="w-full rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-brand-gray" />
                                 </div>
+                                
+                                <div className="pt-2 border-t border-slate-100">
+                                    <h4 className="text-xs font-semibold text-brand-gray mb-3">Verification Details</h4>
+                                    <p className="text-xs text-slate-500 mb-3">Required for virtual account generation</p>
+                                    
+                                    <div className="space-y-3">
+                                        <div>
+                                            <div className="flex items-center gap-1.5 mb-1">
+                                                <label className="block text-xs font-semibold text-brand-gray">NIN (National Identification Number)</label>
+                                                <InfoTooltip 
+                                                    content="Your 11-digit National Identification Number issued by NIMC. Required for virtual account generation."
+                                                    position="top"
+                                                />
+                                            </div>
+                                            <input
+                                                value={nin}
+                                                onChange={(e) => setNin(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                                                inputMode="numeric"
+                                                pattern="[0-9]{11}"
+                                                maxLength={11}
+                                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+                                                placeholder="12345678901"
+                                            />
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-1.5 mb-1">
+                                                <label className="block text-xs font-semibold text-brand-gray">BVN (Bank Verification Number)</label>
+                                                <InfoTooltip 
+                                                    content="Your 11-digit Bank Verification Number. Dial *565*0# from your registered phone to get your BVN."
+                                                    position="top"
+                                                />
+                                            </div>
+                                            <input
+                                                value={bvn}
+                                                onChange={(e) => setBvn(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                                                inputMode="numeric"
+                                                pattern="[0-9]{11}"
+                                                maxLength={11}
+                                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+                                                placeholder="12345678901"
+                                            />
+                                            <p className="text-[11px] text-slate-400 mt-1">Dial *565*0# to retrieve</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
                                 <button disabled={saving || !canSave} className="w-full rounded-xl bg-brand-primary text-white px-4 py-2.5 text-sm font-semibold disabled:opacity-60 hover:bg-brand-primary-hover">{saving ? 'Saving...' : 'Save'}</button>
                             </form>
                         )}
@@ -826,6 +881,56 @@ export default function SettingsPage() {
                         className="w-full rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-brand-gray"
                     />
                     <p className="mt-1 text-[11px] text-slate-500">This is the email you use to log in. To change it, use the section below.</p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-4">
+                    <div className="inline-flex items-center gap-2">
+                        <ShieldCheck size={15} className="text-brand-gray" />
+                        <h3 className="text-sm font-semibold text-brand-navy">Verification Details</h3>
+                    </div>
+                    <p className="text-xs text-slate-500">Required for virtual account generation</p>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <div>
+                            <div className="flex items-center gap-1.5 mb-1">
+                                <label className="block text-xs font-semibold text-brand-gray">NIN (National Identification Number)</label>
+                                <InfoTooltip 
+                                    content="Your 11-digit National Identification Number issued by NIMC. Required for virtual account generation."
+                                    position="top"
+                                />
+                            </div>
+                            <input
+                                value={nin}
+                                onChange={(e) => setNin(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                                inputMode="numeric"
+                                pattern="[0-9]{11}"
+                                maxLength={11}
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
+                                placeholder="12345678901"
+                            />
+                            <p className="mt-1 text-[11px] text-slate-500">11 digits</p>
+                        </div>
+
+                        <div>
+                            <div className="flex items-center gap-1.5 mb-1">
+                                <label className="block text-xs font-semibold text-brand-gray">BVN (Bank Verification Number)</label>
+                                <InfoTooltip 
+                                    content="Your 11-digit Bank Verification Number. Dial *565*0# from your registered phone to get your BVN."
+                                    position="top"
+                                />
+                            </div>
+                            <input
+                                value={bvn}
+                                onChange={(e) => setBvn(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                                inputMode="numeric"
+                                pattern="[0-9]{11}"
+                                maxLength={11}
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
+                                placeholder="12345678901"
+                            />
+                            <p className="mt-1 text-[11px] text-slate-500">11 digits · Dial *565*0# to retrieve</p>
+                        </div>
+                    </div>
                 </div>
 
                 <div ref={bankSectionRef} className="rounded-2xl border border-slate-200 bg-linear-to-b from-slate-50 to-white p-4 space-y-4">

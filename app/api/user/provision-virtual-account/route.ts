@@ -47,12 +47,31 @@ export async function POST() {
 
     const { data: profile, error: profileError } = await auth.supabase
       .from("profiles")
-      .select("id, name, email, phone, virtual_account_number, virtual_account_bank, virtual_account_name, monicredit_wallet_id, monicredit_customer_id")
+      .select("id, name, email, phone, nin, bvn, virtual_account_number, virtual_account_bank, virtual_account_name, monicredit_wallet_id, monicredit_customer_id")
       .eq("id", auth.user.id)
       .maybeSingle();
 
     if (profileError) return serverErrorResponse(profileError);
     if (!profile) return badRequestResponse("Profile not found.");
+
+    // If NIN/BVN are not in profile but exist in user_metadata, update profile
+    const metadataNin = typeof auth.user.user_metadata?.nin === "string" ? auth.user.user_metadata.nin : null;
+    const metadataBvn = typeof auth.user.user_metadata?.bvn === "string" ? auth.user.user_metadata.bvn : null;
+    
+    if ((metadataNin && !profile.nin) || (metadataBvn && !profile.bvn)) {
+      const updates: Record<string, string> = {};
+      if (metadataNin && !profile.nin) updates.nin = metadataNin;
+      if (metadataBvn && !profile.bvn) updates.bvn = metadataBvn;
+      
+      await auth.supabase
+        .from("profiles")
+        .update(updates)
+        .eq("id", auth.user.id);
+      
+      // Update local profile object
+      if (metadataNin && !profile.nin) profile.nin = metadataNin;
+      if (metadataBvn && !profile.bvn) profile.bvn = metadataBvn;
+    }
 
     if (profile.virtual_account_number) {
       return NextResponse.json({
@@ -65,6 +84,21 @@ export async function POST() {
           alreadyProvisioned: true,
         },
       });
+    }
+
+    // Check for NIN and BVN
+    const hasNin = typeof profile.nin === "string" && profile.nin.trim().length > 0;
+    const hasBvn = typeof profile.bvn === "string" && profile.bvn.trim().length > 0;
+    
+    if (!hasNin || !hasBvn) {
+      return NextResponse.json({
+        error: "NIN and BVN are required to generate your virtual account. Please update your profile in settings.",
+        code: "MISSING_VERIFICATION",
+        missing: {
+          nin: !hasNin,
+          bvn: !hasBvn,
+        },
+      }, { status: 400 });
     }
 
     const authPhone = typeof auth.user.user_metadata?.phone === "string" ? auth.user.user_metadata.phone : "";
@@ -85,13 +119,19 @@ export async function POST() {
 
     const { firstName, lastName } = splitName(profile.name ?? "");
     
-    console.log(`[provision-virtual-account] Creating Monicredit account for ${firstName} ${lastName}, phone: ${normalizedPhone}, email: ${emailSource}`);
+    // Extract NIN and BVN from profile
+    const nin = typeof profile.nin === "string" ? profile.nin : undefined;
+    const bvn = typeof profile.bvn === "string" ? profile.bvn : undefined;
+    
+    console.log(`[provision-virtual-account] Creating Monicredit account for ${firstName} ${lastName}, phone: ${normalizedPhone}, email: ${emailSource}, nin: ${nin ? 'provided' : 'not provided'}, bvn: ${bvn ? 'provided' : 'not provided'}`);
     
     const created = await createMonicreditVirtualAccount({
       firstName,
       lastName,
       phone: normalizedPhone,
       email: emailSource,
+      nin,
+      bvn,
     });
 
     const accountNumber = created.account_number ?? created.virtual_accounts?.[0]?.account_number ?? null;
