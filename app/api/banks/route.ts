@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { badRequestResponse, requireUser, serverErrorResponse } from "@/lib/api/auth";
-import { listPaystackBanks, resolvePaystackAccount } from "@/lib/paystack";
+import { listMonicreditBanks, resolveMonicreditAccount } from "@/lib/monicredit";
 
 export async function GET() {
   try {
     const auth = await requireUser();
     if (auth.error || !auth.user) return auth.error;
 
-    const banks = await listPaystackBanks();
+    const banks = await listMonicreditBanks();
 
     return NextResponse.json({
       data: banks.map((bank) => ({
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       return badRequestResponse("Account number must be 10 digits.");
     }
 
-    const resolved = await resolvePaystackAccount({ accountNumber, bankCode });
+    const resolved = await resolveMonicreditAccount({ accountNumber, bankCode });
 
     return NextResponse.json({
       data: {
