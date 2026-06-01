@@ -3,13 +3,13 @@ import { z } from "zod";
 import { badRequestResponse, requireAdmin, serverErrorResponse } from "@/lib/api/auth";
 import { logAdminAction } from "@/lib/admin-audit";
 import {
-  mapPaystackTransactionStatus,
+  mapMonicreditTransactionStatus,
   markBulkPaymentSuccess,
   markContributionPaymentTerminalStatus,
   markIndividualSavingsPaymentSuccess,
   markWalletFundingSuccess,
 } from "@/lib/payments";
-import { verifyPaystackTransaction } from "@/lib/paystack";
+import { verifyMonicreditTransaction } from "@/lib/monicredit";
 
 const schema = z.object({
   reference: z.string().min(1, "reference is required"),
@@ -103,8 +103,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ data: { reference, status: terminalStatus } });
     }
 
-    const verifyData = await verifyPaystackTransaction(reference);
-    const mapped = mapPaystackTransactionStatus(verifyData.status);
+    const verifyData = await verifyMonicreditTransaction({ transactionId: reference });
+    const mapped = mapMonicreditTransactionStatus(verifyData.status);
     if (mapped.resolvedStatus === "success") {
       if (payment.type === "wallet_funding") {
         await markWalletFundingSuccess({ reference, providerPayload: verifyData as unknown as Record<string, unknown> });

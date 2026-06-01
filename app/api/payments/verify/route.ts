@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { badRequestResponse, requireUser, serverErrorResponse } from "@/lib/api/auth";
 import {
-  mapPaystackTransactionStatus,
+  mapMonicreditTransactionStatus,
   markBulkPaymentSuccess,
   markContributionPaymentSuccess,
   markContributionPaymentTerminalStatus,
@@ -9,7 +9,7 @@ import {
   markPassbookActivated,
   markWalletFundingSuccess,
 } from "@/lib/payments";
-import { verifyPaystackTransaction } from "@/lib/paystack";
+import { verifyMonicreditTransaction } from "@/lib/monicredit";
 
 type PaymentType =
   | "contribution"
@@ -86,8 +86,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ data: { status: "success", reference } });
     }
 
-    const verifyData = await verifyPaystackTransaction(reference);
-    const mappedStatus = mapPaystackTransactionStatus(verifyData.status);
+    const verifyData = await verifyMonicreditTransaction({ transactionId: reference });
+    const mappedStatus = mapMonicreditTransactionStatus(verifyData.status);
 
     if (mappedStatus.resolvedStatus !== "success") {
       if (mappedStatus.terminal) {

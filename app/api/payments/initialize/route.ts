@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { badRequestResponse, requireUser, serverErrorResponse } from "@/lib/api/auth";
 import { getPendingPaymentExpiryDate } from "@/lib/payments";
-import { initializePaystackTransaction } from "@/lib/paystack";
+import { getMonicreditPublicKey, getMonicreditRevenueHeadCode } from "@/lib/monicredit";
 
 const initPaymentSchema = z.object({
   groupId: z.string().min(1, "groupId is required"),
@@ -18,6 +18,17 @@ function generateReference() {
 function generateRequestId() {
   const randomPart = Math.random().toString(36).slice(2, 8).toUpperCase();
   return `REQ-CONTRIB-${Date.now()}-${randomPart}`;
+}
+
+function splitName(fullName: string) {
+  const normalized = fullName.trim().replace(/\s+/g, " ");
+  const parts = normalized.split(" ").filter(Boolean);
+  if (parts.length === 0) return { firstName: "Customer", lastName: "User" };
+  if (parts.length === 1) return { firstName: parts[0], lastName: parts[0] };
+  return {
+    firstName: parts[0],
+    lastName: parts.slice(1).join(" "),
+  };
 }
 
 export async function POST(request: Request) {
@@ -87,25 +98,15 @@ export async function POST(request: Request) {
     const reference = generateReference();
     const requestId = generateRequestId();
 
-    const appUrl = process.env.APP_URL;
-    if (!appUrl && process.env.NODE_ENV === "production") {
-      throw new Error("APP_URL environment variable is required in production.");
-    }
+    // Get user profile for customer details
+    const { data: profile } = await auth.supabase
+      .from("profiles")
+      .select("name, phone")
+      .eq("id", auth.user.id)
+      .maybeSingle();
 
-    const callbackUrlBase = appUrl ?? "http://localhost:3000";
-    const callbackUrl = `${callbackUrlBase}/dashboard`;
-
-    const paystackData = await initializePaystackTransaction({
-      email: auth.user.email ?? "no-reply@example.local",
-      amountKobo: requestedAmount * 100,
-      reference,
-      callbackUrl,
-      metadata: {
-        userId: auth.user.id,
-        groupId,
-        cycleNumber,
-      },
-    });
+    const { firstName, lastName } = splitName(profile?.name || "Customer User");
+    const phone = profile?.phone || "0000000000";
 
     let contributionId = existingContribution?.id ?? null;
     const expiresAtIso = getPendingPaymentExpiryDate().toISOString();
@@ -116,7 +117,7 @@ export async function POST(request: Request) {
         .update({
           amount: requestedAmount,
           status: "pending",
-          paystack_reference: reference,
+          paystack_reference: reference, // Keep column name for now
           paid_at: null,
         })
         .eq("id", contributionId);
@@ -133,7 +134,7 @@ export async function POST(request: Request) {
           cycle_number: cycleNumber,
           amount: requestedAmount,
           status: "pending",
-          paystack_reference: reference,
+          paystack_reference: reference, // Keep column name for now
         })
         .select("id")
         .single();
@@ -149,7 +150,7 @@ export async function POST(request: Request) {
       contribution_id: contributionId,
       user_id: auth.user.id,
       group_id: groupId,
-      provider: "paystack",
+      provider: "monicredit",
       type: "contribution",
       amount: requestedAmount,
       currency: "NGN",
@@ -168,14 +169,32 @@ export async function POST(request: Request) {
       return badRequestResponse(paymentRecordError.message);
     }
 
+    // Return MonieCredit payment configuration for frontend
     return NextResponse.json({
       data: {
         groupName: group.name,
         amount: requestedAmount,
         reference,
         requestId,
-        authorizationUrl: paystackData.authorization_url,
-        accessCode: paystackData.access_code,
+        // MonieCredit inline payment config
+        paymentConfig: {
+          public_key: getMonicreditPublicKey(),
+          order_id: reference,
+          customer: {
+            first_name: firstName,
+            last_name: lastName,
+            email: auth.user.email || "no-reply@example.local",
+            phone: phone,
+          },
+          fee_bearer: "client" as const,
+          items: [
+            {
+              item: `${group.name} - Cycle ${cycleNumber} Contribution`,
+              unit_cost: requestedAmount.toString(),
+              revenue_head_code: getMonicreditRevenueHeadCode(),
+            },
+          ],
+        },
       },
     });
   } catch (error) {

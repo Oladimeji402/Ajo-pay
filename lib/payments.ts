@@ -1,7 +1,10 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { verifyPaystackTransaction } from "@/lib/paystack";
+import { verifyMonicreditTransaction, mapMonicreditTransactionStatus } from "@/lib/monicredit";
 import { isWhatsappConfigured, sendGroupReceipt } from "@/lib/whatsapp";
 import { generatePassbookSlots } from "@/lib/ajo-schedule";
+
+// Re-export for backwards compatibility
+export { mapMonicreditTransactionStatus };
 import { upsertSavingsPaymentToGoogleSheet } from "@/lib/google-sheets-sync";
 
 type PaymentSuccessResult = {
@@ -51,54 +54,6 @@ export function getPendingPaymentTimeoutMinutes() {
 
 export function getPendingPaymentExpiryDate(baseDate = new Date()) {
   return new Date(baseDate.getTime() + getPendingPaymentTimeoutMinutes() * 60 * 1000);
-}
-
-export function mapPaystackTransactionStatus(status: string | null | undefined) {
-  const normalized = String(status ?? "").trim().toLowerCase();
-
-  if (normalized === "success") {
-    return {
-      providerStatus: normalized,
-      resolvedStatus: "success" as const,
-      terminal: true as const,
-    };
-  }
-
-  if (normalized === "abandoned") {
-    return {
-      providerStatus: normalized,
-      resolvedStatus: "abandoned" as const,
-      terminal: true as const,
-    };
-  }
-
-  if (normalized === "failed" || normalized === "reversed") {
-    return {
-      providerStatus: normalized,
-      resolvedStatus: "failed" as const,
-      terminal: true as const,
-    };
-  }
-
-  if (
-    normalized === "ongoing"
-    || normalized === "pending"
-    || normalized === "processing"
-    || normalized === "queued"
-    || normalized === ""
-  ) {
-    return {
-      providerStatus: normalized || "pending",
-      resolvedStatus: "pending" as const,
-      terminal: false as const,
-    };
-  }
-
-  return {
-    providerStatus: normalized,
-    resolvedStatus: "pending" as const,
-    terminal: false as const,
-  };
 }
 
 export async function markContributionPaymentSuccess(params: MarkPaymentSuccessParams): Promise<PaymentSuccessResult> {
@@ -310,8 +265,8 @@ export async function markContributionPaymentTerminalStatus(params: MarkPaymentT
 }
 
 export async function reconcilePendingContributionPayment(reference: string) {
-  const verifyData = await verifyPaystackTransaction(reference);
-  const mappedStatus = mapPaystackTransactionStatus(verifyData.status);
+  const verifyData = await verifyMonicreditTransaction({ transactionId: reference });
+  const mappedStatus = mapMonicreditTransactionStatus(verifyData.status);
 
   if (mappedStatus.resolvedStatus === "success") {
     const result = await markContributionPaymentSuccess({
@@ -816,8 +771,8 @@ export async function reconcileStalePendingPayments(params: ReconcilePendingPaym
     if (!reference) continue;
 
     try {
-      const verifyData = await verifyPaystackTransaction(reference);
-      const mappedStatus = mapPaystackTransactionStatus(verifyData.status);
+      const verifyData = await verifyMonicreditTransaction({ transactionId: reference });
+      const mappedStatus = mapMonicreditTransactionStatus(verifyData.status);
 
       if (mappedStatus.resolvedStatus === "success") {
         if (type === "wallet_funding") {
