@@ -33,7 +33,7 @@ Database
 - Supabase (PostgreSQL)
 
 Payments
-- Paystack
+- MonieCredit (payment gateway, virtual accounts, bank verification)
 
 Notifications
 - WhatsApp receipt notifications after successful payments
@@ -103,10 +103,10 @@ Payments must follow this exact flow.
 
 User initiates payment  
 → frontend calls API  
-→ payment initialized with Paystack  
-→ user completes payment  
-→ Paystack webhook fires  
-→ backend verifies transaction  
+→ payment initialized with MonieCredit  
+→ user completes payment via MonieCredit inline modal  
+→ frontend callback fires on success  
+→ backend verifies transaction with MonieCredit API  
 → payment stored in database  
 → contribution marked complete  
 → receipt generated  
@@ -114,7 +114,34 @@ User initiates payment
 
 Never trust payment status from frontend.
 
-Always verify with Paystack API.
+Always verify with MonieCredit API.
+
+## Wallet-Based Payments (Primary Flow)
+
+Most payments are deducted directly from the user's MonieCredit wallet balance:
+
+- Individual savings contributions
+- Bulk savings payments
+- General savings scheme payments
+- Passbook activation fee
+
+## Virtual Account Funding
+
+Users fund their wallet by transferring to their permanent virtual account:
+
+- Each user gets a unique WEMA Bank virtual account
+- Transfers are detected via MonieCredit wallet sync
+- Balance is updated automatically
+
+## MonieCredit Integration
+
+Key environment variables:
+
+MONICREDIT_PRIVATE_KEY  
+MONICREDIT_BASE_URL  
+MONICREDIT_MERCHANT_EMAIL  
+MONICREDIT_MERCHANT_PASSWORD  
+MONICREDIT_REVENUE_HEAD_CODE
 
 ---
 
@@ -168,7 +195,8 @@ Never expose secrets.
 
 Sensitive variables include:
 
-PAYSTACK_SECRET_KEY  
+MONICREDIT_PRIVATE_KEY  
+MONICREDIT_MERCHANT_PASSWORD  
 SUPABASE_SERVICE_ROLE_KEY  
 JWT_SECRET  
 
@@ -193,8 +221,14 @@ User endpoints
 
 Payment endpoints
 
-/api/paystack/initialize  
-/api/paystack/webhook  
+/api/payments/initialize  
+/api/payments/verify  
+/api/payments/individual-savings  
+/api/payments/bulk  
+/api/payments/general-savings  
+/api/payments/passbook-activation  
+/api/wallet/check-deposits  
+/api/user/provision-virtual-account
 
 Contribution endpoints
 
@@ -245,7 +279,7 @@ After a successful payment, an automatic receipt is sent to the group's linked W
 
 Flow:
 
-1. Payment succeeds (verified via Paystack webhook)
+1. Payment succeeds (verified via MonieCredit API)
 2. System generates a formatted receipt
 3. Receipt is sent to the WhatsApp group linked to the savings group
 4. Individual WhatsApp notification also sent to the paying member
