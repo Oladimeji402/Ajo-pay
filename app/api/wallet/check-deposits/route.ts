@@ -62,6 +62,7 @@ export async function POST() {
     }> = [];
     try {
       transactions = await getMonicreditWalletTransactions({
+        walletId: profile.monicredit_wallet_id,
         bearerToken: token,
         fromDate,
         type: "credit",
