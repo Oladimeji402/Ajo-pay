@@ -96,6 +96,8 @@ type MonicreditWalletTransaction = {
   amount_paid?: number | string;
   [key: string]: unknown;
 };
+
+type MonicreditTransactionData = {
   amount: number;
   orderid: string;
   transid: string;
