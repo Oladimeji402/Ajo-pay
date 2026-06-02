@@ -86,17 +86,17 @@ export async function POST() {
       });
     }
 
-    // Check for NIN and BVN
+    // Check for NIN or BVN (either one is sufficient)
     const hasNin = typeof profile.nin === "string" && profile.nin.trim().length > 0;
     const hasBvn = typeof profile.bvn === "string" && profile.bvn.trim().length > 0;
     
-    if (!hasNin || !hasBvn) {
+    if (!hasNin && !hasBvn) {
       return NextResponse.json({
-        error: "NIN and BVN are required to generate your virtual account. Please update your profile in settings.",
+        error: "Either your NIN or BVN is required to generate your virtual account. Please update your profile in settings.",
         code: "MISSING_VERIFICATION",
         missing: {
-          nin: !hasNin,
-          bvn: !hasBvn,
+          nin: true,
+          bvn: true,
         },
       }, { status: 400 });
     }

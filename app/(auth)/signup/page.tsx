@@ -5,14 +5,13 @@ import Link from 'next/link';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { motion } from 'motion/react';
-import { AlertCircle, Check, CheckCircle2, Eye, EyeOff, Loader2, ShieldCheck, X } from 'lucide-react';
+import { AlertCircle, Check, CheckCircle2, Eye, EyeOff, Loader2, X } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { notifySuccess } from '@/lib/toast';
 import { isDuplicateSignupWithoutError, mapAuthError } from '@/lib/auth-errors';
 import { formatNigeriaPhoneE164, isValidNigeriaPhoneLocal, parseNigeriaPhoneToLocal } from '@/lib/phone';
-import { normalizeVerificationNumber, validateNIN, validateBVN } from '@/lib/nin-bvn-validation';
-import { InfoTooltip } from '@/components/ui/Tooltip';
+
 
 
 export default function SignUpPage() {
@@ -26,11 +25,8 @@ export default function SignUpPage() {
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
-    const [nin, setNin] = useState('');
-    const [bvn, setBvn] = useState('');
     const [otp, setOtp] = useState('');
     const [pendingEmail, setPendingEmail] = useState('');
-    const [pendingPhoneE164, setPendingPhoneE164] = useState('');
     const [verificationMode, setVerificationMode] = useState(false);
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
@@ -50,28 +46,6 @@ export default function SignUpPage() {
         }
         const phoneE164 = formatNigeriaPhoneE164(localPhone);
 
-        // Validate NIN if provided
-        if (nin.trim()) {
-            const ninValidation = validateNIN(nin);
-            if (!ninValidation.valid) {
-                const message = ninValidation.error || 'Invalid NIN';
-                setError(message);
-                showToast(message, { type: 'error' });
-                return;
-            }
-        }
-
-        // Validate BVN if provided
-        if (bvn.trim()) {
-            const bvnValidation = validateBVN(bvn);
-            if (!bvnValidation.valid) {
-                const message = bvnValidation.error || 'Invalid BVN';
-                setError(message);
-                showToast(message, { type: 'error' });
-                return;
-            }
-        }
-
         setIsLoading(true);
 
         const supabase = createSupabaseBrowserClient();
@@ -84,8 +58,6 @@ export default function SignUpPage() {
                 data: {
                     name: fullName.trim(),
                     phone: phoneE164,
-                    nin: nin.trim() || null,
-                    bvn: bvn.trim() || null,
                 },
             },
         });
@@ -108,7 +80,6 @@ export default function SignUpPage() {
 
         await supabase.auth.signOut();
         setPendingEmail(normalizedEmail);
-        setPendingPhoneE164(phoneE164);
         setIsVerified(false);
         setVerificationMode(true);
         const otpNotice = 'A 6-digit OTP has been sent to your email. Enter it below to verify your account.';
@@ -322,64 +293,6 @@ export default function SignUpPage() {
                         />
                     </div>
                     <p className="text-[11px] text-slate-400">Your permanent account number will be linked to this.</p>
-                </div>
-
-                <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 space-y-3">
-                    <div className="flex items-center gap-2">
-                        <ShieldCheck size={16} className="text-blue-600 shrink-0" />
-                        <h3 className="text-sm font-semibold text-blue-900">Verification Details (Optional)</h3>
-                    </div>
-                    <p className="text-xs text-blue-700">
-                        Provide your NIN and BVN now to enable instant virtual account generation. You can also add these later in settings.
-                    </p>
-
-                    <div className="space-y-3">
-                        <div className="space-y-1 w-full">
-                            <div className="flex items-center gap-1.5">
-                                <label htmlFor="signup-nin" className="block text-sm font-semibold text-brand-navy">
-                                    NIN (National ID Number)
-                                </label>
-                                <InfoTooltip 
-                                    content="Your 11-digit National Identification Number issued by NIMC. Required for virtual account generation."
-                                    position="top"
-                                />
-                            </div>
-                            <input
-                                id="signup-nin"
-                                type="text"
-                                inputMode="numeric"
-                                placeholder="12345678901"
-                                value={nin}
-                                onChange={(e) => setNin(normalizeVerificationNumber(e.target.value))}
-                                maxLength={11}
-                                className="block w-full px-4 py-3 rounded-lg border border-brand-border text-brand-navy placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all duration-200"
-                            />
-                            <p className="text-[11px] text-slate-400">11 digits</p>
-                        </div>
-
-                        <div className="space-y-1 w-full">
-                            <div className="flex items-center gap-1.5">
-                                <label htmlFor="signup-bvn" className="block text-sm font-semibold text-brand-navy">
-                                    BVN (Bank Verification Number)
-                                </label>
-                                <InfoTooltip 
-                                    content="Your 11-digit Bank Verification Number. Dial *565*0# from your registered phone to get your BVN."
-                                    position="top"
-                                />
-                            </div>
-                            <input
-                                id="signup-bvn"
-                                type="text"
-                                inputMode="numeric"
-                                placeholder="12345678901"
-                                value={bvn}
-                                onChange={(e) => setBvn(normalizeVerificationNumber(e.target.value))}
-                                maxLength={11}
-                                className="block w-full px-4 py-3 rounded-lg border border-brand-border text-brand-navy placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all duration-200"
-                            />
-                            <p className="text-[11px] text-slate-400">11 digits · Dial *565*0# to retrieve</p>
-                        </div>
-                    </div>
                 </div>
 
                 <div>

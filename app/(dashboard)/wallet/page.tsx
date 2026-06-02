@@ -18,6 +18,8 @@ type WalletCache = {
 export default function WalletPage() {
   const [checking, setChecking] = useState(false);
   const [provisioning, setProvisioning] = useState(false);
+  // Prevents flashing "no account" UI while the initial server check is in flight
+  const [initialLoading, setInitialLoading] = useState(true);
   const [accountNumber, setAccountNumber] = useState<string | null>(null);
   const [bankName, setBankName] = useState<string | null>(null);
   const [accountName, setAccountName] = useState<string | null>(null);
@@ -30,9 +32,10 @@ export default function WalletPage() {
   const [missingVerification, setMissingVerification] = useState<{ nin: boolean; bvn: boolean } | null>(null);
   const { showToast } = useToast();
 
+  // Use localStorage so account details persist across logout/login cycles
   const writeCache = (next: Partial<WalletCache>) => {
     try {
-      const currentRaw = sessionStorage.getItem(WALLET_CACHE_KEY);
+      const currentRaw = localStorage.getItem(WALLET_CACHE_KEY);
       const current: WalletCache = currentRaw
         ? JSON.parse(currentRaw) as WalletCache
         : { accountNumber: null, bankName: null, accountName: null, lastCheckedAt: null };
@@ -42,7 +45,7 @@ export default function WalletPage() {
         accountName: next.accountName ?? current.accountName,
         lastCheckedAt: next.lastCheckedAt ?? current.lastCheckedAt,
       };
-      sessionStorage.setItem(WALLET_CACHE_KEY, JSON.stringify(merged));
+      localStorage.setItem(WALLET_CACHE_KEY, JSON.stringify(merged));
     } catch {
       // Ignore cache failures; network-backed flow still works.
     }
@@ -80,7 +83,7 @@ export default function WalletPage() {
         // Check if it's a missing verification error
         if (payload.code === 'MISSING_VERIFICATION') {
           setMissingVerification(payload.missing || { nin: true, bvn: true });
-          setProvisionError('Please provide your NIN and BVN to generate your virtual account.');
+          setProvisionError('Please provide your NIN or BVN to generate your virtual account.');
           return false;
         }
         throw new Error(payload.error ?? 'Could not provision virtual account.');
@@ -174,11 +177,14 @@ export default function WalletPage() {
     }
   };
 
+  // On mount: load cache first, then silently verify with the server.
+  // Never auto-provision — the user must explicitly request account generation.
   useEffect(() => {
     let active = true;
     void (async () => {
+      // 1. Hydrate from localStorage immediately so returning users see their account right away
       try {
-        const cachedRaw = sessionStorage.getItem(WALLET_CACHE_KEY);
+        const cachedRaw = localStorage.getItem(WALLET_CACHE_KEY);
         if (cachedRaw) {
           const cached = JSON.parse(cachedRaw) as WalletCache;
           if (cached.accountNumber && cached.bankName && cached.accountName) {
@@ -192,36 +198,17 @@ export default function WalletPage() {
         // Ignore cache parse failures.
       }
 
-      const hasAccountFromCheck = await checkDeposits(true);
-      if (!active) return;
-      if (!hasAccountFromCheck) {
-        const provisioned = await provisionVirtualAccount();
-        if (!active || !provisioned) return;
-        await checkDeposits(true);
-      }
+      // 2. Silently confirm with the server (no spinner, no auto-provision)
+      await checkDeposits(true);
+      if (active) setInitialLoading(false);
     })();
 
-    return () => {
-      active = false;
-    };
-  // Intentionally one-time mount behavior.
+    return () => { active = false; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleManualRefresh = async () => {
-    if (!accountNumber) {
-      const provisioned = await provisionVirtualAccount();
-      if (!provisioned) {
-        return;
-      }
-    }
-
-    setChecking(true);
-    try {
-      await checkDeposits();
-    } finally {
-      setChecking(false);
-    }
+    await checkDeposits();
   };
 
   const formatDate = (iso: string | null) => {
@@ -233,7 +220,8 @@ export default function WalletPage() {
 
   const accountReady = Boolean(accountNumber && bankName && accountName);
 
-  if (provisioning && !accountReady) {
+  // Only show a loader during the first check when there's nothing cached to show yet
+  if (initialLoading && !accountReady) {
     return (
       <div className="max-w-lg mx-auto space-y-5">
         <Link href="/dashboard" className="inline-flex items-center gap-2 text-xs font-semibold text-brand-gray hover:text-brand-navy">
@@ -241,7 +229,7 @@ export default function WalletPage() {
         </Link>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-brand-gray inline-flex items-center gap-2">
           <Loader2 size={16} className="animate-spin" />
-          Setting up your permanent account details...
+          Loading your account details...
         </div>
       </div>
     );
@@ -266,20 +254,21 @@ export default function WalletPage() {
             Fund Wallet
           </h1>
           <p className="text-xs text-brand-gray mt-0.5">
-            We could not load your permanent account details yet.
+            Generate your permanent account number to start funding your wallet.
           </p>
         </div>
 
+        {/* Show errors only after a provisioning attempt */}
         {provisionError && (
           <div className="rounded-xl border border-red-200 bg-red-50 p-4 space-y-3">
             <p className="text-sm text-red-800 font-medium">{provisionError}</p>
-            
+
             {missingVerification && (
               <div className="pt-2 border-t border-red-200">
-                <p className="text-xs text-red-700 mb-2">Missing verification details:</p>
+                <p className="text-xs text-red-700 mb-2">Add either your NIN or BVN in settings to continue:</p>
                 <ul className="text-xs text-red-700 list-disc list-inside space-y-1">
-                  {missingVerification.nin && <li>NIN (National Identification Number)</li>}
-                  {missingVerification.bvn && <li>BVN (Bank Verification Number)</li>}
+                  <li>NIN (National Identification Number)</li>
+                  <li>BVN (Bank Verification Number)</li>
                 </ul>
                 <Link
                   href="/settings"
@@ -289,9 +278,36 @@ export default function WalletPage() {
                 </Link>
               </div>
             )}
+
+            {!missingVerification && !showPhoneUpdate && (
+              <button
+                onClick={provisionVirtualAccount}
+                disabled={provisioning}
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 py-3 text-sm font-bold text-white hover:bg-brand-primary-hover disabled:opacity-60 transition-colors"
+              >
+                {provisioning ? <><Loader2 size={15} className="animate-spin" /> Creating account...</> : 'Try again'}
+              </button>
+            )}
           </div>
         )}
 
+        {/* Primary CTA — shown when no error and no phone update form */}
+        {!provisionError && !showPhoneUpdate && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4">
+            <p className="text-sm text-slate-600">
+              Your permanent account number lets you receive money directly into your AjoPay wallet from any bank in Nigeria.
+            </p>
+            <button
+              onClick={provisionVirtualAccount}
+              disabled={provisioning}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 py-3 text-sm font-bold text-white hover:bg-brand-primary-hover disabled:opacity-60 transition-colors"
+            >
+              {provisioning ? <><Loader2 size={15} className="animate-spin" /> Setting up your account...</> : 'Generate Account Number'}
+            </button>
+          </div>
+        )}
+
+        {/* Phone update form — shown when provisioning fails due to duplicate phone */}
         {showPhoneUpdate && (
           <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4">
             <div>
@@ -300,7 +316,7 @@ export default function WalletPage() {
                 Enter a different phone number to create your virtual account.
               </p>
             </div>
-            
+
             <div className="space-y-2">
               <label htmlFor="phone" className="text-xs font-semibold text-brand-navy">
                 New Phone Number
@@ -335,16 +351,6 @@ export default function WalletPage() {
               </button>
             </div>
           </div>
-        )}
-
-        {!showPhoneUpdate && (
-          <button
-            onClick={provisionVirtualAccount}
-            disabled={provisioning}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 py-3 text-sm font-bold text-white hover:bg-brand-primary-hover disabled:opacity-60 transition-colors"
-          >
-            {provisioning ? <><Loader2 size={15} className="animate-spin" /> Creating account...</> : 'Try again'}
-          </button>
         )}
       </div>
     );

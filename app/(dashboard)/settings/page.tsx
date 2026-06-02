@@ -77,6 +77,7 @@ export default function SettingsPage() {
     const [phone, setPhone] = useState('');
     const [nin, setNin] = useState('');
     const [bvn, setBvn] = useState('');
+    const [verificationIdType, setVerificationIdType] = useState<'nin' | 'bvn'>('nin');
     const [bankCode, setBankCode] = useState('');
     const [bankAccount, setBankAccount] = useState('');
     const [resolvedAccountName, setResolvedAccountName] = useState('');
@@ -188,6 +189,7 @@ export default function SettingsPage() {
                 setPhone(parseNigeriaPhoneToLocal(profile.phone));
                 setNin(profile.nin ?? '');
                 setBvn(profile.bvn ?? '');
+                if (profile.bvn && !profile.nin) setVerificationIdType('bvn');
                 setBankAccount(profile.bank_account ?? '');
                 setResolvedAccountName(profile.bank_account_name ?? '');
                 setBanks(uniqueBanks);
@@ -345,8 +347,8 @@ export default function SettingsPage() {
                 .update({
                     name: name.trim(),
                     phone: normalizedPhone ? formatNigeriaPhoneE164(normalizedPhone) : null,
-                    nin: nin.trim() || null,
-                    bvn: bvn.trim() || null,
+                    nin: verificationIdType === 'nin' ? (nin.trim() || null) : null,
+                    bvn: verificationIdType === 'bvn' ? (bvn.trim() || null) : null,
                     bank_account: hasAccount ? trimmedAccount : null,
                     bank_name: selectedBankName,
                     bank_account_name: hasAccount ? resolvedAccountName : null,
@@ -592,7 +594,7 @@ export default function SettingsPage() {
                                 <h3 className="font-semibold text-brand-navy">Identity and Contact</h3>
                                 <div>
                                     <label className="block text-xs font-semibold text-brand-gray mb-1">Full Name</label>
-                                    <input value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm" required />
+                                    <input value={name} readOnly className="w-full rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-brand-gray" />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-semibold text-brand-gray mb-1">Phone</label>
@@ -616,46 +618,55 @@ export default function SettingsPage() {
                                 
                                 <div className="pt-2 border-t border-slate-100">
                                     <h4 className="text-xs font-semibold text-brand-gray mb-3">Verification Details</h4>
-                                    <p className="text-xs text-slate-500 mb-3">Required for virtual account generation</p>
-                                    
+                                    <p className="text-xs text-slate-500 mb-3">Required for virtual account generation. Provide either your NIN or BVN.</p>
+
                                     <div className="space-y-3">
-                                        <div>
-                                            <div className="flex items-center gap-1.5 mb-1">
-                                                <label className="block text-xs font-semibold text-brand-gray">NIN (National Identification Number)</label>
-                                                <InfoTooltip 
-                                                    content="Your 11-digit National Identification Number issued by NIMC. Required for virtual account generation."
-                                                    position="top"
-                                                />
-                                            </div>
-                                            <input
-                                                value={nin}
-                                                onChange={(e) => setNin(e.target.value.replace(/\D/g, '').slice(0, 11))}
-                                                inputMode="numeric"
-                                                pattern="[0-9]{11}"
-                                                maxLength={11}
-                                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
-                                                placeholder="12345678901"
-                                            />
+                                        <div className="flex rounded-xl border border-slate-200 overflow-hidden text-xs font-semibold">
+                                            <button
+                                                type="button"
+                                                onClick={() => setVerificationIdType('nin')}
+                                                className={`flex-1 py-2 transition-colors ${verificationIdType === 'nin' ? 'bg-brand-primary text-white' : 'bg-slate-50 text-brand-gray hover:bg-slate-100'}`}
+                                            >
+                                                NIN
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setVerificationIdType('bvn')}
+                                                className={`flex-1 py-2 transition-colors ${verificationIdType === 'bvn' ? 'bg-brand-primary text-white' : 'bg-slate-50 text-brand-gray hover:bg-slate-100'}`}
+                                            >
+                                                BVN
+                                            </button>
                                         </div>
-                                        <div>
-                                            <div className="flex items-center gap-1.5 mb-1">
-                                                <label className="block text-xs font-semibold text-brand-gray">BVN (Bank Verification Number)</label>
-                                                <InfoTooltip 
-                                                    content="Your 11-digit Bank Verification Number. Dial *565*0# from your registered phone to get your BVN."
-                                                    position="top"
+
+                                        {verificationIdType === 'nin' ? (
+                                            <div>
+                                                <label className="block text-xs font-semibold text-brand-gray mb-1">NIN (National Identification Number)</label>
+                                                <input
+                                                    value={nin}
+                                                    onChange={(e) => setNin(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                                                    inputMode="numeric"
+                                                    pattern="[0-9]{11}"
+                                                    maxLength={11}
+                                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+                                                    placeholder="12345678901"
                                                 />
+                                                <p className="text-[11px] text-slate-400 mt-1">11-digit number issued by NIMC</p>
                                             </div>
-                                            <input
-                                                value={bvn}
-                                                onChange={(e) => setBvn(e.target.value.replace(/\D/g, '').slice(0, 11))}
-                                                inputMode="numeric"
-                                                pattern="[0-9]{11}"
-                                                maxLength={11}
-                                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
-                                                placeholder="12345678901"
-                                            />
-                                            <p className="text-[11px] text-slate-400 mt-1">Dial *565*0# to retrieve</p>
-                                        </div>
+                                        ) : (
+                                            <div>
+                                                <label className="block text-xs font-semibold text-brand-gray mb-1">BVN (Bank Verification Number)</label>
+                                                <input
+                                                    value={bvn}
+                                                    onChange={(e) => setBvn(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                                                    inputMode="numeric"
+                                                    pattern="[0-9]{11}"
+                                                    maxLength={11}
+                                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+                                                    placeholder="12345678901"
+                                                />
+                                                <p className="text-[11px] text-slate-400 mt-1">11 digits · Dial *565*0# to retrieve</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                                 
@@ -850,9 +861,8 @@ export default function SettingsPage() {
                         <label className="block text-xs font-semibold text-brand-gray mb-1">Full Name</label>
                         <input
                             value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
-                            required
+                            readOnly
+                            className="w-full rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-brand-gray"
                         />
                     </div>
 
@@ -888,14 +898,31 @@ export default function SettingsPage() {
                         <ShieldCheck size={15} className="text-brand-gray" />
                         <h3 className="text-sm font-semibold text-brand-navy">Verification Details</h3>
                     </div>
-                    <p className="text-xs text-slate-500">Required for virtual account generation</p>
+                    <p className="text-xs text-slate-500">Required for virtual account generation. Provide either your NIN or BVN.</p>
 
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="flex rounded-xl border border-slate-200 overflow-hidden text-xs font-semibold w-48">
+                        <button
+                            type="button"
+                            onClick={() => setVerificationIdType('nin')}
+                            className={`flex-1 py-2 transition-colors ${verificationIdType === 'nin' ? 'bg-brand-primary text-white' : 'bg-white text-brand-gray hover:bg-slate-50'}`}
+                        >
+                            NIN
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setVerificationIdType('bvn')}
+                            className={`flex-1 py-2 transition-colors ${verificationIdType === 'bvn' ? 'bg-brand-primary text-white' : 'bg-white text-brand-gray hover:bg-slate-50'}`}
+                        >
+                            BVN
+                        </button>
+                    </div>
+
+                    {verificationIdType === 'nin' ? (
                         <div>
                             <div className="flex items-center gap-1.5 mb-1">
                                 <label className="block text-xs font-semibold text-brand-gray">NIN (National Identification Number)</label>
-                                <InfoTooltip 
-                                    content="Your 11-digit National Identification Number issued by NIMC. Required for virtual account generation."
+                                <InfoTooltip
+                                    content="Your 11-digit National Identification Number issued by NIMC."
                                     position="top"
                                 />
                             </div>
@@ -908,13 +935,13 @@ export default function SettingsPage() {
                                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
                                 placeholder="12345678901"
                             />
-                            <p className="mt-1 text-[11px] text-slate-500">11 digits</p>
+                            <p className="mt-1 text-[11px] text-slate-500">11-digit number issued by NIMC</p>
                         </div>
-
+                    ) : (
                         <div>
                             <div className="flex items-center gap-1.5 mb-1">
                                 <label className="block text-xs font-semibold text-brand-gray">BVN (Bank Verification Number)</label>
-                                <InfoTooltip 
+                                <InfoTooltip
                                     content="Your 11-digit Bank Verification Number. Dial *565*0# from your registered phone to get your BVN."
                                     position="top"
                                 />
@@ -930,7 +957,7 @@ export default function SettingsPage() {
                             />
                             <p className="mt-1 text-[11px] text-slate-500">11 digits · Dial *565*0# to retrieve</p>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 <div ref={bankSectionRef} className="rounded-2xl border border-slate-200 bg-linear-to-b from-slate-50 to-white p-4 space-y-4">
