@@ -87,12 +87,17 @@ export default function DashboardPage() {
     const [activityFilter, setActivityFilter] = useState<'all' | 'contribution' | 'payout'>('all');
     const [savedVisible, setSavedVisible] = useState(true);
     const [refreshingBalance, setRefreshingBalance] = useState(false);
+    // Local wallet balance state — updated independently without re-fetching everything
+    const [localWalletBalance, setLocalWalletBalance] = useState<number | null>(null);
 
     const { data, loading, error, mutate } = useData<DashboardData>('dashboard', fetchDashboard, { ttl: 30_000 });
 
     const profile = data?.profile ?? null;
     const transactions = data?.transactions ?? [];
     const individualSavingsTotal = data?.individualSavingsTotal ?? 0;
+
+    // Use the locally-refreshed balance if available, otherwise fall back to profile data
+    const walletBalance = localWalletBalance ?? profile?.wallet_balance ?? 0;
 
     const filteredActivity = useMemo(() => {
         if (activityFilter === 'all') return transactions;
@@ -104,10 +109,35 @@ export default function DashboardPage() {
     const refreshWalletBalance = async () => {
         setRefreshingBalance(true);
         try {
-            // Trigger Monicredit sync first so new transfers are reflected before refetching profile.
-            await fetch('/api/wallet/check-deposits', { method: 'POST' });
-        } finally {
+            // 1. Trigger MonieCredit sync to detect new deposits
+            const syncRes = await fetch('/api/wallet/check-deposits', { method: 'POST' });
+            if (syncRes.ok) {
+                const syncJson = await syncRes.json();
+                // 2. Update ONLY the wallet balance locally — no full page reload
+                if (typeof syncJson.data?.balance === 'number') {
+                    setLocalWalletBalance(syncJson.data.balance);
+                } else {
+                    // Fallback: fetch only profile balance from Supabase
+                    const supabase = createSupabaseBrowserClient();
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user) {
+                        const { data: profileData } = await supabase
+                            .from('profiles')
+                            .select('wallet_balance')
+                            .eq('id', user.id)
+                            .maybeSingle();
+                        if (profileData && typeof profileData.wallet_balance === 'number') {
+                            setLocalWalletBalance(profileData.wallet_balance);
+                        }
+                    }
+                }
+                // 3. Silently update dashboard cache in background (no loading state)
+                mutate();
+            }
+        } catch {
+            // On error, still try a silent background refresh
             mutate();
+        } finally {
             setRefreshingBalance(false);
         }
     };
@@ -204,7 +234,7 @@ export default function DashboardPage() {
                         {savedVisible ? (
                             <>
                                 <span className="font-normal">₦</span>
-                                {formatCurrency(profile?.wallet_balance ?? 0)}
+                                {formatCurrency(walletBalance)}
                             </>
                         ) : '••••••'}
                     </p>
@@ -245,7 +275,7 @@ export default function DashboardPage() {
             {(() => {
                 const items = [
                     {
-                        done: Number(profile?.wallet_balance ?? 0) > 0,
+                        done: walletBalance > 0,
                         icon: Wallet,
                         label: 'Fund your wallet first',
                         sub: 'Use your permanent account details to make your first deposit',

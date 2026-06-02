@@ -12,9 +12,11 @@ function toAmountNaira(value: number | string | undefined) {
   return Math.round(parsed);
 }
 
-function buildReference(transaction: { tracking_reference?: string; id?: number }) {
+function buildReference(transaction: { tracking_reference?: string; id?: number | string; transaction_id?: string; order_id?: string }) {
   if (transaction.tracking_reference) return String(transaction.tracking_reference);
-  if (typeof transaction.id === "number") return `MONI-TXN-${transaction.id}`;
+  if (transaction.transaction_id) return String(transaction.transaction_id);
+  if (transaction.order_id) return String(transaction.order_id);
+  if (transaction.id !== undefined && transaction.id !== null) return `MONI-TXN-${transaction.id}`;
   return null;
 }
 
@@ -88,12 +90,15 @@ export async function POST() {
     const supabaseAdmin = createSupabaseAdminClient();
     let credited = 0;
     for (const transaction of transactions) {
-      if (String(transaction.wallet_id ?? "") !== String(profile.monicredit_wallet_id)) {
+      // The virtual-account endpoint returns transactions for the account.
+      // Match by wallet_id if present, otherwise trust the endpoint filtered correctly.
+      const txWalletId = String(transaction.wallet_id ?? transaction.vbank_data ?? "");
+      if (txWalletId && txWalletId !== String(profile.monicredit_wallet_id)) {
         continue;
       }
 
       const reference = buildReference(transaction);
-      const amount = toAmountNaira(transaction.amount);
+      const amount = toAmountNaira(transaction.amount ?? transaction.amount_paid);
       if (!reference || !amount) continue;
 
       const { data: existing } = await supabaseAdmin

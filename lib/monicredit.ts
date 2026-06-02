@@ -368,8 +368,9 @@ export async function getMonicreditBearerToken(): Promise<string> {
 }
 
 /**
- * Get wallet transactions for a specific wallet
- * Endpoint: GET /banking/wallet/transactions
+ * Get incoming transactions for a user's virtual account (wallet deposits)
+ * Endpoint: GET /payment/transactions/virtual-account
+ * Documentation: https://monicredit.gitbook.io/mc-api/transactions/transaction-virtual-account
  */
 export async function getMonicreditWalletTransactions(params: {
   walletId: string;
@@ -380,33 +381,35 @@ export async function getMonicreditWalletTransactions(params: {
   status?: string;
 }): Promise<Array<{
   id: number;
-  wallet_id: string;
-  amount: number;
-  type: string;
-  status: string;
-  description: string;
-  reference: string;
+  wallet_id?: string;
+  amount?: number | string;
+  type?: string;
+  status?: string;
+  description?: string;
+  reference?: string;
   tracking_reference?: string;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
   [key: string]: unknown;
 }>> {
   const { baseUrl } = getMonicreditConfig();
-  
-  let url = `${baseUrl}/banking/wallet/transactions?wallet_id=${encodeURIComponent(params.walletId)}`;
-  
+
+  // Use the virtual-account transactions endpoint which returns
+  // incoming bank transfers for a specific virtual account wallet
+  let url = `${baseUrl}/payment/transactions/virtual-account?wallet_id=${encodeURIComponent(params.walletId)}`;
+
   if (params.fromDate) {
     url += `&from_date=${encodeURIComponent(params.fromDate)}`;
   }
-  
+
   if (params.toDate) {
     url += `&to_date=${encodeURIComponent(params.toDate)}`;
   }
-  
+
   if (params.type) {
     url += `&type=${encodeURIComponent(params.type)}`;
   }
-  
+
   if (params.status) {
     url += `&status=${encodeURIComponent(params.status)}`;
   }
@@ -421,29 +424,23 @@ export async function getMonicreditWalletTransactions(params: {
     cache: "no-store",
   });
 
-  const json = (await response.json()) as MonicreditResponse<Array<{
-    id: number;
-    wallet_id: string;
-    amount: number;
-    type: string;
-    status: string;
-    description: string;
-    reference: string;
-    tracking_reference?: string;
-    created_at: string;
-    updated_at: string;
-    [key: string]: unknown;
-  }>>;
+  const json = await response.json() as Record<string, unknown>;
 
-  if (!response.ok || !json.status) {
+  // API may return { data: [...] } or just an array or { status: false }
+  if (!response.ok) {
     throw new MonicreditHttpError(
       response.status,
-      json.message || "Failed to fetch wallet transactions.",
+      (json.message as string) || "Failed to fetch wallet transactions.",
       json
     );
   }
 
-  return json.data || [];
+  // Handle both array response and { data: [...] } response
+  if (Array.isArray(json)) return json;
+  if (Array.isArray(json.data)) return json.data as Array<Record<string, unknown>>;
+
+  // If status false with no data, return empty (don't throw — wallet may just have no transactions)
+  return [];
 }
 
 /**

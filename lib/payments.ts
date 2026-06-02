@@ -402,7 +402,7 @@ export async function markWalletFundingSuccess(params: {
   const { data: finalizeStatus, error: finalizeError } = await supabase.rpc("finalize_wallet_funding", {
     p_reference: params.reference,
     p_provider_reference: String((params.providerPayload?.reference as string | undefined) ?? params.reference),
-    p_channel: String((params.providerPayload?.channel as string | undefined) ?? "paystack"),
+    p_channel: String((params.providerPayload?.channel as string | undefined) ?? "transfer"),
     p_payload: params.providerPayload ?? {},
     p_request_id: null,
   });

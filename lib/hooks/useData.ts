@@ -106,10 +106,12 @@ export function useData<T>(
     };
   }, [skip, run]);
 
-  /** Force a fresh fetch and invalidate the cache entry. */
-  const mutate = useCallback(() => {
+  /** Force a fresh fetch and invalidate the cache entry.
+   *  Pass `background = true` to revalidate silently without showing the loading state.
+   */
+  const mutate = useCallback((background = true) => {
     clientCache.invalidate(cacheKey);
-    void run(false);
+    void run(background);
   }, [cacheKey, run]);
 
   return {
