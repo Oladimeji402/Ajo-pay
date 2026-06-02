@@ -6,7 +6,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const MIN_SYNC_INTERVAL_MS = 30_000;
 
-function toAmountNaira(value: number | string | undefined) {
+function toAmountNaira(value: number | string | unknown) {
   const parsed = Number(value ?? 0);
   if (!Number.isFinite(parsed) || parsed <= 0) return null;
   return Math.round(parsed);
