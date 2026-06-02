@@ -1,5 +1,5 @@
 /**
- * MonieCredit Inline Payment Integration
+ * monicredit Inline Payment Integration
  * Documentation: https://monicredit.gitbook.io/mc-api/collection/accept-payment-inline
  */
 
@@ -59,7 +59,7 @@ declare global {
 const MONICREDIT_SCRIPT_URL = "https://live.monicredit.com/js/live.js";
 
 /**
- * Ensure MonieCredit inline script is loaded
+ * Ensure monicredit inline script is loaded
  */
 export async function ensureMonicreditInlineScript() {
   if (typeof window === "undefined") return;
@@ -74,7 +74,7 @@ export async function ensureMonicreditInlineScript() {
       existing.addEventListener("load", () => resolve(), { once: true });
       existing.addEventListener(
         "error",
-        () => reject(new Error("Failed to load MonieCredit script.")),
+        () => reject(new Error("Failed to load monicredit script.")),
         { once: true }
       );
       return;
@@ -84,19 +84,19 @@ export async function ensureMonicreditInlineScript() {
     script.src = MONICREDIT_SCRIPT_URL;
     script.async = true;
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Failed to load MonieCredit script."));
+    script.onerror = () => reject(new Error("Failed to load monicredit script."));
     document.body.appendChild(script);
   });
 }
 
 /**
- * Open MonieCredit inline payment modal
+ * Open monicredit inline payment modal
  */
 export async function openMonicreditInline(options: MonicreditPaymentOptions) {
   await ensureMonicreditInlineScript();
 
   if (!window.PayDirect) {
-    throw new Error("MonieCredit PayDirect is unavailable.");
+    throw new Error("monicredit PayDirect is unavailable.");
   }
 
   const handler = window.PayDirect.invoice(options);

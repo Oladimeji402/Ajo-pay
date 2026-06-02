@@ -109,7 +109,7 @@ export default function DashboardPage() {
     const refreshWalletBalance = async () => {
         setRefreshingBalance(true);
         try {
-            // 1. Trigger MonieCredit sync to detect new deposits
+            // 1. Trigger monicredit sync to detect new deposits
             const syncRes = await fetch('/api/wallet/check-deposits', { method: 'POST' });
             if (syncRes.ok) {
                 const syncJson = await syncRes.json();

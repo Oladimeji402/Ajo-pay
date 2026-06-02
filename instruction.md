@@ -33,7 +33,7 @@ Database
 - Supabase (PostgreSQL)
 
 Payments
-- MonieCredit (payment gateway, virtual accounts, bank verification)
+- monicredit (payment gateway, virtual accounts, bank verification)
 
 Notifications
 - WhatsApp receipt notifications after successful payments
@@ -103,10 +103,10 @@ Payments must follow this exact flow.
 
 User initiates payment  
 → frontend calls API  
-→ payment initialized with MonieCredit  
-→ user completes payment via MonieCredit inline modal  
+→ payment initialized with monicredit  
+→ user completes payment via monicredit inline modal  
 → frontend callback fires on success  
-→ backend verifies transaction with MonieCredit API  
+→ backend verifies transaction with monicredit API  
 → payment stored in database  
 → contribution marked complete  
 → receipt generated  
@@ -114,11 +114,11 @@ User initiates payment
 
 Never trust payment status from frontend.
 
-Always verify with MonieCredit API.
+Always verify with monicredit API.
 
 ## Wallet-Based Payments (Primary Flow)
 
-Most payments are deducted directly from the user's MonieCredit wallet balance:
+Most payments are deducted directly from the user's monicredit wallet balance:
 
 - Individual savings contributions
 - Bulk savings payments
@@ -130,10 +130,10 @@ Most payments are deducted directly from the user's MonieCredit wallet balance:
 Users fund their wallet by transferring to their permanent virtual account:
 
 - Each user gets a unique WEMA Bank virtual account
-- Transfers are detected via MonieCredit wallet sync
+- Transfers are detected via monicredit wallet sync
 - Balance is updated automatically
 
-## MonieCredit Integration
+## monicredit Integration
 
 Key environment variables:
 
@@ -279,7 +279,7 @@ After a successful payment, an automatic receipt is sent to the group's linked W
 
 Flow:
 
-1. Payment succeeds (verified via MonieCredit API)
+1. Payment succeeds (verified via monicredit API)
 2. System generates a formatted receipt
 3. Receipt is sent to the WhatsApp group linked to the savings group
 4. Individual WhatsApp notification also sent to the paying member

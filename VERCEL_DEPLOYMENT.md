@@ -3,7 +3,7 @@
 ## ✅ Pre-Deployment Verification
 
 ### Code Changes:
-- [x] MonieCredit library created (`lib/monicredit.ts`)
+- [x] monicredit library created (`lib/monicredit.ts`)
 - [x] Bank API routes updated (`app/api/banks/route.ts`)
 - [x] No console.log statements in production code
 - [x] TypeScript errors resolved
@@ -11,7 +11,7 @@
 
 ### Environment Variables:
 - [x] `.env` file NOT committed (in .gitignore)
-- [x] `.env.example` updated with MonieCredit config
+- [x] `.env.example` updated with monicredit config
 - [x] Paystack keys removed from local `.env`
 
 ## 🔧 Vercel Environment Variables Setup
@@ -31,7 +31,7 @@ You mentioned you already deleted these:
 
 ### Verify on Vercel:
 1. Go to: https://vercel.com/your-project/settings/environment-variables
-2. Confirm these MonieCredit variables exist:
+2. Confirm these monicredit variables exist:
    - `MONICREDIT_PRIVATE_KEY` = `PRI_LIVE_AC6A0C575442729`
    - `MONICREDIT_BASE_URL` = `https://live.backend.monicredit.com/api/v1`
    - `MONICREDIT_MERCHANT_EMAIL` = `subtechmanagement@gmail.com`
@@ -42,7 +42,7 @@ You mentioned you already deleted these:
 ### 1. Push to GitHub
 ```bash
 git add .
-git commit -m "feat: migrate bank verification from Paystack to MonieCredit"
+git commit -m "feat: migrate bank verification from Paystack to monicredit"
 git push origin main
 ```
 
@@ -100,14 +100,14 @@ git push origin main
 
 ## 🔍 Troubleshooting
 
-### Issue: "Missing MonieCredit environment variables"
+### Issue: "Missing monicredit environment variables"
 **Solution**: 
 - Check Vercel environment variables are set
 - Redeploy after adding variables
 
 ### Issue: "Authentication failed"
 **Solution**:
-- Verify MonieCredit credentials are correct
+- Verify monicredit credentials are correct
 - Check for extra spaces in environment variables
 - Ensure using LIVE credentials, not test
 
@@ -126,7 +126,7 @@ git push origin main
 ## 📊 What Changed
 
 ### Files Added:
-- `lib/monicredit.ts` - MonieCredit integration
+- `lib/monicredit.ts` - monicredit integration
 - `scripts/test-monicredit-banks.ts` - Test script
 - `scripts/load-env-and-test.js` - Environment loader
 - `docs/MONICREDIT_MIGRATION.md` - Migration guide
@@ -136,7 +136,7 @@ git push origin main
 - `VERCEL_DEPLOYMENT.md` - This file
 
 ### Files Modified:
-- `app/api/banks/route.ts` - Uses MonieCredit instead of Paystack
+- `app/api/banks/route.ts` - Uses monicredit instead of Paystack
 
 ### Files Unchanged:
 - `lib/paystack.ts` - Still exists (for payments if needed)
@@ -178,7 +178,7 @@ If something goes wrong:
    - Redeploy
 
 3. **Contact Support**
-   - MonieCredit: Check their documentation
+   - monicredit: Check their documentation
    - Vercel: Check deployment logs
 
 ## ✅ Final Checklist
@@ -209,10 +209,10 @@ Everything is production-ready. You can safely push to GitHub.
 **Command to push:**
 ```bash
 git add .
-git commit -m "feat: migrate bank verification from Paystack to MonieCredit
+git commit -m "feat: migrate bank verification from Paystack to monicredit
 
-- Add MonieCredit integration library
-- Update bank API routes to use MonieCredit
+- Add monicredit integration library
+- Update bank API routes to use monicredit
 - Add comprehensive documentation
 - Remove Paystack dependency for bank verification
 - Support 179 Nigerian banks
@@ -221,4 +221,4 @@ git commit -m "feat: migrate bank verification from Paystack to MonieCredit
 git push origin main
 ```
 
-Vercel will automatically deploy the changes. No manual configuration needed since you already have the MonieCredit environment variables set! 🚀
+Vercel will automatically deploy the changes. No manual configuration needed since you already have the monicredit environment variables set! 🚀

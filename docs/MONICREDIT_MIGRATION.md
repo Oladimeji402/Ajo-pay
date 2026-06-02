@@ -1,24 +1,24 @@
-# MonieCredit Migration Guide
+# monicredit Migration Guide
 
 ## Overview
 
-This project has been migrated from **Paystack** to **MonieCredit** for bank account verification and bank list retrieval. This document outlines the changes made and how to use the new integration.
+This project has been migrated from **Paystack** to **monicredit** for bank account verification and bank list retrieval. This document outlines the changes made and how to use the new integration.
 
 ## What Changed
 
 ### 1. Bank Verification System
 - **Before**: Used Paystack API for bank list and account verification
-- **After**: Uses MonieCredit API for bank list and account verification
+- **After**: Uses monicredit API for bank list and account verification
 
 ### 2. Files Modified
 
 #### New Files Created:
-- `lib/monicredit.ts` - MonieCredit API integration library
-- `scripts/test-monicredit-banks.ts` - Test script for MonieCredit APIs
+- `lib/monicredit.ts` - monicredit API integration library
+- `scripts/test-monicredit-banks.ts` - Test script for monicredit APIs
 - `docs/MONICREDIT_MIGRATION.md` - This migration guide
 
 #### Files Updated:
-- `app/api/banks/route.ts` - Updated to use MonieCredit instead of Paystack
+- `app/api/banks/route.ts` - Updated to use monicredit instead of Paystack
 - `.env` - Commented out Paystack keys (no longer needed for bank verification)
 
 #### Files Unchanged (Still using Paystack):
@@ -27,7 +27,7 @@ This project has been migrated from **Paystack** to **MonieCredit** for bank acc
 
 ### 3. Environment Variables
 
-#### Required MonieCredit Variables:
+#### Required monicredit Variables:
 ```env
 MONICREDIT_PRIVATE_KEY="your_private_key"
 MONICREDIT_BASE_URL="https://live.backend.monicredit.com/api/v1"
@@ -43,7 +43,7 @@ MONICREDIT_MERCHANT_PASSWORD="your_password"
 # PAYSTACK_SECRET_KEY
 ```
 
-## MonieCredit API Features
+## monicredit API Features
 
 ### 1. Bank List API
 **Endpoint**: `GET /banking/bank-list`
@@ -121,7 +121,7 @@ Verifies bank account details.
 
 ## Authentication
 
-MonieCredit uses Bearer token authentication:
+monicredit uses Bearer token authentication:
 
 1. **Login**: Automatically handled by the library
 2. **Token Caching**: Tokens are cached and reused until expiration
@@ -150,19 +150,19 @@ This will:
 
 ## Error Handling
 
-The MonieCredit integration includes comprehensive error handling:
+The monicredit integration includes comprehensive error handling:
 
 ### Common Errors:
 
 1. **Missing Environment Variables**
    ```
-   Error: Missing MonieCredit environment variables
+   Error: Missing monicredit environment variables
    ```
    **Solution**: Ensure all required env vars are set
 
 2. **Authentication Failed**
    ```
-   Error: MonieCredit authentication failed
+   Error: monicredit authentication failed
    ```
    **Solution**: Verify email and password are correct
 
@@ -178,10 +178,10 @@ The MonieCredit integration includes comprehensive error handling:
    ```
    **Solution**: Ensure account number is exactly 10 digits
 
-## Benefits of MonieCredit
+## Benefits of monicredit
 
 1. **Unified Platform**: All financial operations in one place
-2. **Better Integration**: Already using MonieCredit for virtual accounts
+2. **Better Integration**: Already using monicredit for virtual accounts
 3. **Cost Effective**: Consolidated pricing and billing
 4. **Reliable**: Direct integration with Nigerian banking infrastructure
 5. **Feature Rich**: Access to additional financial services
@@ -196,13 +196,13 @@ If you need to rollback to Paystack:
 
 ## Support
 
-For MonieCredit API issues:
+For monicredit API issues:
 - Documentation: https://monicredit.gitbook.io/mc-api
-- Support: Contact MonieCredit support team
+- Support: Contact monicredit support team
 
 ## Migration Checklist
 
-- [x] Create MonieCredit library (`lib/monicredit.ts`)
+- [x] Create monicredit library (`lib/monicredit.ts`)
 - [x] Update bank API routes
 - [x] Update environment variables
 - [x] Create test script

@@ -1,8 +1,8 @@
-# 🎉 Paystack to MonieCredit Migration - COMPLETE
+# 🎉 Paystack to monicredit Migration - COMPLETE
 
 ## ✅ Migration Status: Backend Complete
 
-All Paystack code has been successfully removed and replaced with MonieCredit. Your backend is now 100% MonieCredit.
+All Paystack code has been successfully removed and replaced with monicredit. Your backend is now 100% monicredit.
 
 ---
 
@@ -16,7 +16,7 @@ All Paystack code has been successfully removed and replaced with MonieCredit. Y
 ### Phase 2: Payment Processing ✅
 - ✅ Payment initialization API updated
 - ✅ Payment verification API updated
-- ✅ MonieCredit inline payment library created
+- ✅ monicredit inline payment library created
 - ✅ Status mapping updated
 - ✅ Admin reconciliation updated
 - ✅ Wallet transaction queries added
@@ -75,7 +75,7 @@ const data = await response.json();
 window.location.href = data.data.authorizationUrl;
 ```
 
-**After (MonieCredit):**
+**After (monicredit):**
 ```typescript
 import { openMonicreditInline } from "@/lib/monicredit-inline";
 
@@ -88,7 +88,7 @@ const response = await fetch('/api/payments/initialize', {
 
 const data = await response.json();
 
-// Open MonieCredit inline modal
+// Open monicredit inline modal
 await openMonicreditInline({
   ...data.data.paymentConfig,
   callback: async (paymentResponse) => {
@@ -121,7 +121,7 @@ await openMonicreditInline({
 ## 🧪 Testing Checklist
 
 ### Backend (Complete ✅):
-- [x] MonieCredit library with all functions
+- [x] monicredit library with all functions
 - [x] Payment initialization returns config
 - [x] Payment verification works
 - [x] Status mapping correct
@@ -133,7 +133,7 @@ await openMonicreditInline({
 
 ### Frontend (TODO ⏳):
 - [ ] Find all payment components
-- [ ] Update to use MonieCredit inline
+- [ ] Update to use monicredit inline
 - [ ] Test payment modal opens
 - [ ] Test successful payment flow
 - [ ] Test failed payment flow
@@ -155,7 +155,7 @@ await openMonicreditInline({
 
 ### 1. Update Vercel Environment Variables
 ```bash
-# Add MonieCredit variables
+# Add monicredit variables
 MONICREDIT_PRIVATE_KEY=PRI_LIVE_AC6A0C575442729
 MONICREDIT_BASE_URL=https://live.backend.monicredit.com/api/v1
 MONICREDIT_MERCHANT_EMAIL=subtechmanagement@gmail.com
@@ -170,7 +170,7 @@ MONICREDIT_REVENUE_HEAD_CODE=REV6A0C4B1892F1B
 The code is already pushed to GitHub. Vercel will auto-deploy.
 
 ### 3. Update Frontend
-After Vercel deploys, update your frontend components to use MonieCredit inline payment.
+After Vercel deploys, update your frontend components to use monicredit inline payment.
 
 ### 4. Test Everything
 Test all payment flows thoroughly before announcing to users.
@@ -195,7 +195,7 @@ Test all payment flows thoroughly before announcing to users.
 - Bank verification
 - Virtual accounts
 - Payment collection
-- All with MonieCredit
+- All with monicredit
 
 ### ✅ Better User Experience
 - Inline payment modal (no redirect)
@@ -223,7 +223,7 @@ Test all payment flows thoroughly before announcing to users.
 
 ### Database Columns
 We kept the existing column names to avoid breaking changes:
-- `paystack_reference` → Now stores MonieCredit references
+- `paystack_reference` → Now stores monicredit references
 - No database migration needed
 - Existing data still works
 
@@ -231,10 +231,10 @@ We kept the existing column names to avoid breaking changes:
 The `provider` column in `payment_records` now stores "monicredit" instead of "paystack".
 
 ### Webhooks
-MonieCredit doesn't use webhooks like Paystack. Instead:
+monicredit doesn't use webhooks like Paystack. Instead:
 - Frontend gets callback when payment completes
 - Frontend calls `/api/payments/verify` to confirm
-- Backend verifies with MonieCredit API
+- Backend verifies with monicredit API
 - More reliable than webhooks
 
 ---
@@ -258,14 +258,14 @@ git push origin main
 
 ## 📞 Support
 
-### MonieCredit:
+### monicredit:
 - Dashboard: https://live.monicredit.com
 - Documentation: https://monicredit.gitbook.io/mc-api
 - Revenue Head Code: REV6A0C4B1892F1B
 
 ### Issues:
 - Check `COMPLETE_PAYSTACK_REMOVAL.md` for troubleshooting
-- Check MonieCredit dashboard for transaction status
+- Check monicredit dashboard for transaction status
 - Verify environment variables are set correctly
 
 ---
@@ -280,7 +280,7 @@ git push origin main
 
 ### After Frontend Update:
 1. Test all payment types
-2. Monitor MonieCredit dashboard
+2. Monitor monicredit dashboard
 3. Check payment success rates
 4. Gather user feedback
 5. Update documentation
@@ -292,7 +292,7 @@ git push origin main
 ### Backend:
 - ✅ 0 TypeScript errors
 - ✅ 0 Paystack imports
-- ✅ 100% MonieCredit integration
+- ✅ 100% monicredit integration
 - ✅ All APIs updated
 - ✅ All tests passing
 
@@ -307,7 +307,7 @@ git push origin main
 
 ## 🎊 Congratulations!
 
-You've successfully migrated from Paystack to MonieCredit! 
+You've successfully migrated from Paystack to monicredit! 
 
 **Backend**: 100% Complete ✅  
 **Frontend**: Needs Updates ⏳  

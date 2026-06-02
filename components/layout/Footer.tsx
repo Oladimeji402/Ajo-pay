@@ -99,7 +99,7 @@ export const Footer = () => {
                                 <path d="M6 16c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10S6 21.523 6 16z" stroke="white" strokeWidth="2" fill="none"/>
                                 <path d="M11 16h10M16 11v10" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
                             </svg>
-                            <span className="text-[11px] font-medium text-slate-400">MonieCredit</span>
+                            <span className="text-[11px] font-medium text-slate-400">monicredit</span>
                         </div>
                         <span className="text-[11px] text-slate-600">· 256-bit SSL secured</span>
                     </div>

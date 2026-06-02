@@ -2,9 +2,9 @@
 
 ## Current Status: **PARTIALLY USING PAYSTACK**
 
-### ✅ What We Migrated to MonieCredit:
-1. **Bank List API** - Now using MonieCredit (179 banks)
-2. **Bank Account Verification** - Now using MonieCredit Name Enquiry API
+### ✅ What We Migrated to monicredit:
+1. **Bank List API** - Now using monicredit (179 banks)
+2. **Bank Account Verification** - Now using monicredit Name Enquiry API
 
 ### ❌ What's Still Using Paystack:
 
@@ -50,8 +50,8 @@
 - **Receiving payment confirmations** via webhooks
 
 ### ❌ NO, if you want to:
-- **Only verify bank accounts** (now using MonieCredit ✅)
-- **Only get bank lists** (now using MonieCredit ✅)
+- **Only verify bank accounts** (now using monicredit ✅)
+- **Only get bank lists** (now using monicredit ✅)
 
 ---
 
@@ -59,7 +59,7 @@
 
 If you want to **completely remove Paystack**, you would need to:
 
-### Option 1: Migrate Payments to MonieCredit
+### Option 1: Migrate Payments to monicredit
 
 **What needs to be done:**
 1. ✅ Bank verification (DONE)
@@ -68,7 +68,7 @@ If you want to **completely remove Paystack**, you would need to:
 4. ❌ Webhook handling (TODO)
 5. ❌ Database schema updates (TODO)
 
-**MonieCredit Payment APIs Available:**
+**monicredit Payment APIs Available:**
 - Collection API - Accept payments
 - Verify Payment API - Confirm transactions
 - Webhook support - Receive payment notifications
@@ -79,7 +79,7 @@ If you want to **completely remove Paystack**, you would need to:
 ### Option 2: Keep Paystack for Payments
 
 **Current Setup:**
-- ✅ Bank verification via MonieCredit
+- ✅ Bank verification via monicredit
 - ✅ Payment processing via Paystack
 - ✅ Both working independently
 
@@ -104,12 +104,12 @@ If you want to **completely remove Paystack**, you would need to:
 1. **Bank verification is migrated** - Main goal achieved ✅
 2. **Payments are working** - Don't break what works
 3. **Lower risk** - Payment processing is critical
-4. **Can migrate later** - If MonieCredit payments prove better
+4. **Can migrate later** - If monicredit payments prove better
 
 ### When to Migrate Payments:
 
-Consider migrating payments to MonieCredit if:
-- ✅ MonieCredit offers better rates
+Consider migrating payments to monicredit if:
+- ✅ monicredit offers better rates
 - ✅ You want unified platform for all financial operations
 - ✅ You have time to thoroughly test payment flows
 - ✅ You can handle the migration complexity
@@ -120,7 +120,7 @@ Consider migrating payments to MonieCredit if:
 
 ### Current Setup (Recommended):
 
-**MonieCredit Variables (Required):**
+**monicredit Variables (Required):**
 ```
 MONICREDIT_PRIVATE_KEY=PRI_LIVE_AC6A0C575442729
 MONICREDIT_BASE_URL=https://live.backend.monicredit.com/api/v1
@@ -149,7 +149,7 @@ NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_live_xxxxx (your live key)
 
 ## Testing Checklist
 
-### ✅ Bank Verification (MonieCredit):
+### ✅ Bank Verification (monicredit):
 - [ ] Settings page shows 179 banks
 - [ ] Can select a bank
 - [ ] Account verification works
@@ -168,8 +168,8 @@ NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_live_xxxxx (your live key)
 ## Summary
 
 ### What Changed:
-- ✅ Bank verification: Paystack → MonieCredit
-- ✅ Bank list: Paystack → MonieCredit
+- ✅ Bank verification: Paystack → monicredit
+- ✅ Bank list: Paystack → monicredit
 
 ### What Didn't Change:
 - ❌ Payment processing: Still Paystack
@@ -177,7 +177,7 @@ NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_live_xxxxx (your live key)
 - ❌ Webhooks: Still Paystack
 
 ### Environment Variables Needed:
-- ✅ MonieCredit: 4 variables (for bank verification)
+- ✅ monicredit: 4 variables (for bank verification)
 - ⚠️ Paystack: 2 variables (for payment processing)
 
 ### Action Required:
@@ -194,15 +194,15 @@ NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_live_xxxxx (your live key)
 **Answer: NO, you still need Paystack for payment processing.**
 
 **What you DON'T need Paystack for anymore:**
-- ✅ Bank verification (now MonieCredit)
-- ✅ Bank list (now MonieCredit)
+- ✅ Bank verification (now monicredit)
+- ✅ Bank list (now monicredit)
 
 **What you STILL need Paystack for:**
 - ❌ Accepting payments from users
 - ❌ Processing transactions
 - ❌ Payment webhooks
 
-**To completely remove Paystack**, you would need to migrate payment processing to MonieCredit, which is a separate (and larger) migration project.
+**To completely remove Paystack**, you would need to migrate payment processing to monicredit, which is a separate (and larger) migration project.
 
 ---
 
@@ -215,7 +215,7 @@ NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_live_xxxxx (your live key)
 4. ✅ Consider payment migration later
 
 ### Option B: Migrate Payments Too
-1. ❌ Research MonieCredit Collection API
+1. ❌ Research monicredit Collection API
 2. ❌ Update payment initialization
 3. ❌ Update payment verification
 4. ❌ Update webhooks
@@ -227,4 +227,4 @@ NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_live_xxxxx (your live key)
 
 ---
 
-**Current Status:** ✅ Production ready with MonieCredit bank verification + Paystack payments
+**Current Status:** ✅ Production ready with monicredit bank verification + Paystack payments

@@ -68,14 +68,14 @@ If you see this, the API is working! ✅
 - Solution: Restart dev server
 
 ❌ **"401 Unauthorized"**
-- Solution: Check MonieCredit credentials in `.env`
+- Solution: Check monicredit credentials in `.env`
 
 ❌ **"Network error"**
 - Solution: Check if dev server is running
 
 ### Step 5: Verify Environment Variables
 
-Run this command to test MonieCredit API:
+Run this command to test monicredit API:
 ```bash
 node scripts/load-env-and-test.js
 ```
@@ -83,7 +83,7 @@ node scripts/load-env-and-test.js
 **Expected output:**
 ```
 ✅ Environment variables loaded from .env
-🔍 Testing MonieCredit Bank APIs...
+🔍 Testing monicredit Bank APIs...
 1️⃣ Testing Bank List API...
 ✅ Successfully fetched 179 banks
 Sample banks:
@@ -116,7 +116,7 @@ Sample banks:
 
 **If response is empty or error:**
 - Check server logs in terminal
-- Verify `.env` file has MonieCredit credentials
+- Verify `.env` file has monicredit credentials
 
 ## Quick Verification Checklist
 
@@ -124,7 +124,7 @@ Sample banks:
 - [ ] Browser cache cleared
 - [ ] `/api/banks` returns data
 - [ ] No errors in browser console
-- [ ] MonieCredit credentials in `.env`
+- [ ] monicredit credentials in `.env`
 - [ ] Test script passes: `node scripts/load-env-and-test.js`
 
 ## Need More Help?

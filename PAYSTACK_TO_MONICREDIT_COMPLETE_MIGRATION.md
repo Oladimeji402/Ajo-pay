@@ -1,4 +1,4 @@
-# 🔄 Complete Paystack to MonieCredit Migration Plan
+# 🔄 Complete Paystack to monicredit Migration Plan
 
 ## Current Status
 
@@ -9,15 +9,15 @@
 - Production tested
 
 ### 🚧 Phase 2: Payment Processing (IN PROGRESS)
-This document outlines the complete migration of payment processing from Paystack to MonieCredit.
+This document outlines the complete migration of payment processing from Paystack to monicredit.
 
 ---
 
-## MonieCredit Payment Architecture
+## monicredit Payment Architecture
 
 ### Payment Flow Options
 
-MonieCredit offers two payment collection methods:
+monicredit offers two payment collection methods:
 
 #### 1. **Inline Payment (Recommended)**
 - JavaScript popup modal
@@ -26,7 +26,7 @@ MonieCredit offers two payment collection methods:
 - Better UX
 
 #### 2. **Standard Payment**
-- Redirect to MonieCredit hosted page
+- Redirect to monicredit hosted page
 - User leaves your site temporarily
 - Returns via callback URL
 
@@ -41,25 +41,25 @@ MonieCredit offers two payment collection methods:
 1. **Payment Initialization**
    - `app/api/payments/initialize/route.ts`
    - Currently: Creates Paystack transaction
-   - New: Use MonieCredit inline payment
+   - New: Use monicredit inline payment
 
 2. **Payment Verification**
    - `app/api/payments/verify/route.ts`
    - Currently: Verifies with Paystack API
-   - New: Verify with MonieCredit API
+   - New: Verify with monicredit API
 
-3. **Webhooks** (OPTIONAL - MonieCredit may not have webhooks)
+3. **Webhooks** (OPTIONAL - monicredit may not have webhooks)
    - `app/api/webhooks/paystack/route.ts`
    - May need to remove or adapt
 
 4. **Frontend Payment UI**
    - `lib/paystack-inline.ts`
    - Currently: Loads Paystack JS
-   - New: Load MonieCredit JS
+   - New: Load monicredit JS
 
 5. **Payment Library**
    - `lib/payments.ts`
-   - Update to use MonieCredit functions
+   - Update to use monicredit functions
 
 6. **Database References**
    - `paystack_reference` columns
@@ -72,11 +72,11 @@ MonieCredit offers two payment collection methods:
 
 ---
 
-## MonieCredit Payment Integration
+## monicredit Payment Integration
 
 ### 1. Frontend Integration (Inline JS)
 
-**MonieCredit Inline Payment Script:**
+**monicredit Inline Payment Script:**
 ```html
 <!-- Demo -->
 <script src="https://demo.monicredit.com/js/demo.js"></script>
@@ -146,9 +146,9 @@ const result = await verifyMonicreditTransaction({
 
 ### Step 1: Setup Revenue Head (One-time)
 
-MonieCredit requires a "Revenue Head" for payment collection:
+monicredit requires a "Revenue Head" for payment collection:
 
-1. Login to MonieCredit dashboard
+1. Login to monicredit dashboard
 2. Create a Revenue Head (e.g., "Ajo Contributions")
 3. Get the `revenue_head_code` (e.g., `Rev_xxxxx`)
 4. Add to environment variables
@@ -159,7 +159,7 @@ MONICREDIT_REVENUE_HEAD_CODE=Rev_xxxxx
 MONICREDIT_SUB_ACCOUNT_CODE=SB_xxxxx (optional for split payments)
 ```
 
-### Step 2: Update MonieCredit Library
+### Step 2: Update monicredit Library
 
 ✅ Already done! Added:
 - `createMonicreditVirtualAccount()`
@@ -168,7 +168,7 @@ MONICREDIT_SUB_ACCOUNT_CODE=SB_xxxxx (optional for split payments)
 - `getMonicreditPublicKey()`
 - `MonicreditHttpError` class
 
-### Step 3: Create MonieCredit Inline Library
+### Step 3: Create monicredit Inline Library
 
 Create `lib/monicredit-inline.ts` (similar to paystack-inline.ts)
 
@@ -176,7 +176,7 @@ Create `lib/monicredit-inline.ts` (similar to paystack-inline.ts)
 
 Modify `app/api/payments/initialize/route.ts`:
 - Remove Paystack initialization
-- Return MonieCredit payment config
+- Return monicredit payment config
 - Frontend will handle inline payment
 
 ### Step 5: Update Payment Verification API
@@ -188,13 +188,13 @@ Modify `app/api/payments/verify/route.ts`:
 ### Step 6: Update Payment Processing Logic
 
 Modify `lib/payments.ts`:
-- Replace Paystack functions with MonieCredit
+- Replace Paystack functions with monicredit
 - Update status mapping
 
 ### Step 7: Handle Webhooks
 
 **Option A:** Remove webhooks (rely on frontend callback + verification)
-**Option B:** Check if MonieCredit supports webhooks
+**Option B:** Check if monicredit supports webhooks
 
 ### Step 8: Database Migration
 
@@ -206,8 +206,8 @@ ALTER TABLE individual_savings_contributions RENAME COLUMN paystack_reference TO
 ```
 
 **Option B:** Keep column names (less disruptive)
-- Just use `paystack_reference` for MonieCredit references
-- Add comment that it's now used for MonieCredit
+- Just use `paystack_reference` for monicredit references
+- Add comment that it's now used for monicredit
 
 ### Step 9: Update Frontend Components
 
@@ -260,15 +260,15 @@ curl -X POST http://localhost:3001/api/user/provision-virtual-account \
 ### Common Issues:
 
 1. **Missing NIN/BVN**
-   - MonieCredit may require NIN and BVN
+   - monicredit may require NIN and BVN
    - Check if users have these in their profile
 
 2. **Duplicate Phone Number**
-   - MonieCredit doesn't allow duplicate phone numbers
+   - monicredit doesn't allow duplicate phone numbers
    - Each phone can only have one virtual account
 
 3. **API Errors**
-   - Check MonieCredit dashboard for account status
+   - Check monicredit dashboard for account status
    - Verify API credentials are correct
 
 ---
@@ -284,7 +284,7 @@ curl -X POST http://localhost:3001/api/user/provision-virtual-account \
 - ⚠️ Payment verification (different response format)
 
 ### High Risk:
-- 🔴 Webhook handling (may not exist in MonieCredit)
+- 🔴 Webhook handling (may not exist in monicredit)
 - 🔴 Database migration (could affect existing records)
 
 ---
@@ -320,10 +320,10 @@ If something goes wrong:
 ### Immediate:
 1. ✅ Fix virtual account creation (Done!)
 2. ⏳ Test virtual account provisioning
-3. ⏳ Get Revenue Head code from MonieCredit dashboard
+3. ⏳ Get Revenue Head code from monicredit dashboard
 
 ### Then:
-4. Create MonieCredit inline library
+4. Create monicredit inline library
 5. Update payment initialization
 6. Update payment verification
 7. Test end-to-end payment flow
@@ -335,11 +335,11 @@ If something goes wrong:
 Before proceeding, we need to know:
 
 1. **Do you have a Revenue Head code?**
-   - Check MonieCredit dashboard
+   - Check monicredit dashboard
    - Or create one
 
 2. **Do you want to keep webhooks?**
-   - Does MonieCredit support webhooks?
+   - Does monicredit support webhooks?
    - Or rely on frontend callback?
 
 3. **Database migration approach?**
@@ -355,7 +355,7 @@ Before proceeding, we need to know:
 ## Ready to Proceed?
 
 Once you answer the questions above, I'll:
-1. Create the MonieCredit inline library
+1. Create the monicredit inline library
 2. Update all payment APIs
 3. Update frontend components
 4. Test the complete flow

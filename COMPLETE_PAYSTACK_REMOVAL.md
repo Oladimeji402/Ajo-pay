@@ -1,15 +1,15 @@
-# ✅ Complete Paystack to MonieCredit Migration
+# ✅ Complete Paystack to monicredit Migration
 
 ## Migration Complete!
 
-All Paystack code has been removed and replaced with MonieCredit. Your application now uses MonieCredit exclusively for all payment and banking operations.
+All Paystack code has been removed and replaced with monicredit. Your application now uses monicredit exclusively for all payment and banking operations.
 
 ---
 
 ## What Changed
 
 ### ✅ Files Created:
-1. **`lib/monicredit.ts`** - Complete MonieCredit API integration
+1. **`lib/monicredit.ts`** - Complete monicredit API integration
    - Bank verification (179 banks)
    - Account verification
    - Virtual account creation
@@ -17,7 +17,7 @@ All Paystack code has been removed and replaced with MonieCredit. Your applicati
    - Status mapping
    - Error handling
 
-2. **`lib/monicredit-inline.ts`** - MonieCredit inline payment UI
+2. **`lib/monicredit-inline.ts`** - monicredit inline payment UI
    - Payment modal integration
    - Script loading
    - Payment callbacks
@@ -25,7 +25,7 @@ All Paystack code has been removed and replaced with MonieCredit. Your applicati
 ### ✅ Files Modified:
 1. **`app/api/payments/initialize/route.ts`**
    - Removed: Paystack transaction initialization
-   - Added: MonieCredit payment config generation
+   - Added: monicredit payment config generation
    - Returns payment config for frontend inline payment
 
 2. **`app/api/payments/verify/route.ts`**
@@ -36,15 +36,15 @@ All Paystack code has been removed and replaced with MonieCredit. Your applicati
 3. **`lib/payments.ts`**
    - Removed: `mapPaystackTransactionStatus()`
    - Removed: `verifyPaystackTransaction()` import
-   - Added: MonieCredit imports
+   - Added: monicredit imports
    - Updated all payment verification calls
 
 4. **`app/api/admin/transactions/reconcile/route.ts`**
-   - Updated to use MonieCredit verification
+   - Updated to use monicredit verification
    - Updated status mapping
 
 5. **`app/api/banks/route.ts`**
-   - Already using MonieCredit (from Phase 1)
+   - Already using monicredit (from Phase 1)
 
 6. **`.env`**
    - Added: `MONICREDIT_REVENUE_HEAD_CODE`
@@ -61,12 +61,12 @@ All Paystack code has been removed and replaced with MonieCredit. Your applicati
 
 ---
 
-## MonieCredit Configuration
+## monicredit Configuration
 
 ### Environment Variables Required:
 
 ```env
-# MonieCredit API
+# monicredit API
 MONICREDIT_PRIVATE_KEY="PRI_LIVE_AC6A0C575442729"
 MONICREDIT_BASE_URL="https://live.backend.monicredit.com/api/v1"
 MONICREDIT_MERCHANT_EMAIL="subtechmanagement@gmail.com"
@@ -77,7 +77,7 @@ MONICREDIT_REVENUE_HEAD_CODE="REV6A0C4B1892F1B"
 ### Vercel Deployment:
 Make sure these environment variables are set on Vercel:
 1. Go to Vercel → Settings → Environment Variables
-2. Add all 5 MonieCredit variables above
+2. Add all 5 monicredit variables above
 3. Remove old Paystack variables (if any)
 4. Redeploy
 
@@ -153,7 +153,7 @@ POST /api/payments/verify
 ```
 
 **Backend:**
-- Calls MonieCredit API to verify transaction
+- Calls monicredit API to verify transaction
 - Updates database with payment status
 - Returns success/failure to frontend
 
@@ -161,7 +161,7 @@ POST /api/payments/verify
 
 ## Payment Status Mapping
 
-| MonieCredit Status | Our Status | Terminal | Description |
+| monicredit Status | Our Status | Terminal | Description |
 |-------------------|------------|----------|-------------|
 | APPROVED | success | Yes | Payment successful |
 | PENDING | pending | No | Payment processing |
@@ -174,7 +174,7 @@ POST /api/payments/verify
 
 ### No Changes Required!
 We kept the existing column names to avoid breaking changes:
-- `paystack_reference` → Now stores MonieCredit references
+- `paystack_reference` → Now stores monicredit references
 - `provider` column → Changed from "paystack" to "monicredit"
 
 ### If You Want to Rename (Optional):
@@ -199,12 +199,12 @@ Look for code that:
 - Redirects to Paystack
 - Uses `authorizationUrl` or `accessCode`
 
-#### 2. Replace with MonieCredit Inline
+#### 2. Replace with monicredit Inline
 ```typescript
 // OLD (Paystack redirect)
 window.location.href = response.data.authorizationUrl;
 
-// NEW (MonieCredit inline)
+// NEW (monicredit inline)
 import { openMonicreditInline } from "@/lib/monicredit-inline";
 
 await openMonicreditInline({
@@ -234,7 +234,7 @@ await openMonicreditInline({
 ## Testing Checklist
 
 ### Backend Testing:
-- [x] MonieCredit library created
+- [x] monicredit library created
 - [x] Payment initialization updated
 - [x] Payment verification updated
 - [x] Status mapping updated
@@ -261,27 +261,27 @@ await openMonicreditInline({
 
 ---
 
-## MonieCredit vs Paystack Differences
+## monicredit vs Paystack Differences
 
 ### 1. Payment Flow
 - **Paystack**: Redirect to hosted page
-- **MonieCredit**: Inline modal (better UX)
+- **monicredit**: Inline modal (better UX)
 
 ### 2. Webhooks
 - **Paystack**: Has webhooks
-- **MonieCredit**: Uses frontend callbacks (simpler)
+- **monicredit**: Uses frontend callbacks (simpler)
 
 ### 3. Status Values
 - **Paystack**: success, failed, abandoned, pending
-- **MonieCredit**: APPROVED, FAILED, DECLINED, PENDING
+- **monicredit**: APPROVED, FAILED, DECLINED, PENDING
 
 ### 4. Amount Format
 - **Paystack**: Kobo (multiply by 100)
-- **MonieCredit**: Naira (use as-is)
+- **monicredit**: Naira (use as-is)
 
 ### 5. Revenue Head
 - **Paystack**: Not required
-- **MonieCredit**: Required for payment collection
+- **monicredit**: Required for payment collection
 
 ---
 
@@ -293,23 +293,23 @@ await openMonicreditInline({
 MONICREDIT_REVENUE_HEAD_CODE="REV6A0C4B1892F1B"
 ```
 
-### Issue: "MonieCredit PayDirect is unavailable"
-**Solution**: The MonieCredit script failed to load. Check:
+### Issue: "monicredit PayDirect is unavailable"
+**Solution**: The monicredit script failed to load. Check:
 1. Internet connection
-2. MonieCredit service status
+2. monicredit service status
 3. Browser console for errors
 
 ### Issue: "Payment verification failed"
 **Solution**: 
 1. Check if transaction ID is correct
-2. Verify MonieCredit credentials
-3. Check MonieCredit dashboard for transaction status
+2. Verify monicredit credentials
+3. Check monicredit dashboard for transaction status
 
 ### Issue: "Virtual account not created"
 **Solution**:
 1. Ensure user has NIN and BVN
 2. Check for duplicate phone numbers
-3. Verify MonieCredit API credentials
+3. Verify monicredit API credentials
 
 ---
 
@@ -336,7 +336,7 @@ git push origin main
 
 ---
 
-## Benefits of MonieCredit
+## Benefits of monicredit
 
 ### ✅ Unified Platform
 - Bank verification ✓
@@ -371,7 +371,7 @@ git push origin main
 
 ### After Deployment:
 1. Monitor payment success rates
-2. Check MonieCredit dashboard for transactions
+2. Check monicredit dashboard for transactions
 3. Verify webhook alternatives working
 4. Update documentation
 5. Train support team
@@ -380,10 +380,10 @@ git push origin main
 
 ## Support
 
-### MonieCredit:
+### monicredit:
 - Dashboard: https://live.monicredit.com
 - Documentation: https://monicredit.gitbook.io/mc-api
-- Support: Contact MonieCredit support team
+- Support: Contact monicredit support team
 
 ### Internal:
 - Migration docs: This file
@@ -406,7 +406,7 @@ git push origin main
 ### What Needs Frontend Work:
 ⏳ Payment modal integration
 ⏳ Payment callback handling
-⏳ UI updates for MonieCredit
+⏳ UI updates for monicredit
 
 ### Estimated Time to Complete:
 - Frontend updates: 2-3 hours
@@ -417,4 +417,4 @@ git push origin main
 
 **Status**: 🟡 Backend Complete - Frontend Updates Needed
 **Last Updated**: June 1, 2026
-**Migration**: Paystack → MonieCredit (100% backend, 0% frontend)
+**Migration**: Paystack → monicredit (100% backend, 0% frontend)

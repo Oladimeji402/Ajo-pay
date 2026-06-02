@@ -1,14 +1,14 @@
-# ✅ MonieCredit Migration Complete
+# ✅ monicredit Migration Complete
 
 ## Summary
 
-Successfully migrated bank account verification from **Paystack** to **MonieCredit**. The system now uses MonieCredit for:
+Successfully migrated bank account verification from **Paystack** to **monicredit**. The system now uses monicredit for:
 - Fetching list of Nigerian banks (179 banks)
 - Verifying bank account details (Name Enquiry)
 
 ## What Was Done
 
-### 1. Created MonieCredit Integration Library
+### 1. Created monicredit Integration Library
 **File**: `lib/monicredit.ts`
 
 Features:
@@ -22,7 +22,7 @@ Features:
 **File**: `app/api/banks/route.ts`
 
 Changes:
-- ✅ Replaced Paystack imports with MonieCredit
+- ✅ Replaced Paystack imports with monicredit
 - ✅ GET `/api/banks` - Returns list of banks
 - ✅ POST `/api/banks` - Verifies account details
 
@@ -30,7 +30,7 @@ Changes:
 **File**: `.env`
 
 - ✅ Commented out Paystack keys (no longer needed)
-- ✅ Using existing MonieCredit credentials:
+- ✅ Using existing monicredit credentials:
   - `MONICREDIT_PRIVATE_KEY`
   - `MONICREDIT_BASE_URL`
   - `MONICREDIT_MERCHANT_EMAIL`
@@ -57,11 +57,11 @@ Created:
 ### User Flow in Settings Page:
 
 1. **User opens Settings → Bank Account tab**
-2. **System fetches bank list** from MonieCredit API
+2. **System fetches bank list** from monicredit API
    - Endpoint: `GET /api/banks`
    - Returns 179 Nigerian banks
 3. **User selects bank and enters account number**
-4. **System verifies account** via MonieCredit
+4. **System verifies account** via monicredit
    - Endpoint: `POST /api/banks`
    - Returns account holder name
 5. **User saves bank details** to profile
@@ -75,7 +75,7 @@ GET /api/banks
     ↓
 lib/monicredit.ts → listMonicreditBanks()
     ↓
-MonieCredit API: /banking/bank-list
+monicredit API: /banking/bank-list
     ↓
 Returns 179 banks
     ↓
@@ -89,14 +89,14 @@ POST /api/banks
     ↓
 lib/monicredit.ts → resolveMonicreditAccount()
     ↓
-MonieCredit API: /banking/wallet/name-enquiry
+monicredit API: /banking/wallet/name-enquiry
     ↓
 Returns account name
     ↓
 Display for confirmation
 ```
 
-## MonieCredit API Details
+## monicredit API Details
 
 ### Authentication
 - **Method**: Email/Password login
@@ -139,7 +139,7 @@ Display for confirmation
 1. Restart your dev server: `npm run dev` or `yarn dev`
 2. Clear browser cache and reload
 3. Check browser console for errors
-4. Verify MonieCredit credentials in `.env`
+4. Verify monicredit credentials in `.env`
 
 ### Issue: "Account verification fails"
 **Solution**:
@@ -150,10 +150,10 @@ Display for confirmation
 
 ### Issue: "Authentication failed"
 **Solution**:
-1. Verify MonieCredit credentials in `.env`
+1. Verify monicredit credentials in `.env`
 2. Check if credentials are correct
 3. Ensure no extra spaces in credentials
-4. Contact MonieCredit support if needed
+4. Contact monicredit support if needed
 
 ## Files Modified
 
@@ -177,15 +177,15 @@ Display for confirmation
 
 ## Benefits
 
-1. ✅ **Unified Platform**: All financial operations with MonieCredit
+1. ✅ **Unified Platform**: All financial operations with monicredit
 2. ✅ **More Banks**: 179 banks vs Paystack's limited list
-3. ✅ **Better Integration**: Already using MonieCredit for virtual accounts
+3. ✅ **Better Integration**: Already using monicredit for virtual accounts
 4. ✅ **Cost Effective**: Consolidated billing
 5. ✅ **Production Ready**: Using live credentials
 
 ## Support
 
-- **MonieCredit Docs**: https://monicredit.gitbook.io/mc-api
+- **monicredit Docs**: https://monicredit.gitbook.io/mc-api
 - **Migration Guide**: `docs/MONICREDIT_MIGRATION.md`
 - **API Reference**: `docs/MONICREDIT_API_REFERENCE.md`
 
@@ -199,14 +199,14 @@ Display for confirmation
 ## Quick Test Command
 
 ```bash
-# Test MonieCredit API
+# Test monicredit API
 node scripts/load-env-and-test.js
 ```
 
 Expected output:
 ```
 ✅ Environment variables loaded from .env
-🔍 Testing MonieCredit Bank APIs...
+🔍 Testing monicredit Bank APIs...
 1️⃣ Testing Bank List API...
 ✅ Successfully fetched 179 banks
 ✨ All tests completed successfully!

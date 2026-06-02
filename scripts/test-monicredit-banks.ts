@@ -1,5 +1,5 @@
 /**
- * Test script for MonieCredit Bank APIs
+ * Test script for monicredit Bank APIs
  * Run with: node --env-file=.env -r tsx/cjs scripts/test-monicredit-banks.ts
  * Or: Load .env manually and run: npx tsx scripts/test-monicredit-banks.ts
  */
@@ -7,13 +7,13 @@
 import { listMonicreditBanks, resolveMonicreditAccount } from "../lib/monicredit";
 
 async function testMonicreditBankAPIs() {
-  console.log("🔍 Testing MonieCredit Bank APIs...\n");
+  console.log("🔍 Testing monicredit Bank APIs...\n");
 
   // Check if environment variables are loaded
   if (!process.env.MONICREDIT_PRIVATE_KEY) {
     console.error("❌ Error: Environment variables not loaded!");
     console.log("\n📝 To run this test:");
-    console.log("   1. Make sure .env file exists with MonieCredit credentials");
+    console.log("   1. Make sure .env file exists with monicredit credentials");
     console.log("   2. Run: node --env-file=.env -r tsx/cjs scripts/test-monicredit-banks.ts");
     console.log("   Or manually export the variables before running this script\n");
     process.exit(1);

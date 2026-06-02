@@ -1,5 +1,5 @@
 /**
- * MonieCredit API Integration
+ * monicredit API Integration
  * Documentation: https://monicredit.gitbook.io/mc-api
  */
 
@@ -139,7 +139,7 @@ function getMonicreditConfig() {
 
   if (!privateKey || !baseUrl || !email || !password) {
     throw new Error(
-      "Missing MonieCredit environment variables. Required: MONICREDIT_PRIVATE_KEY, MONICREDIT_BASE_URL, MONICREDIT_MERCHANT_EMAIL, MONICREDIT_MERCHANT_PASSWORD"
+      "Missing monicredit environment variables. Required: MONICREDIT_PRIVATE_KEY, MONICREDIT_BASE_URL, MONICREDIT_MERCHANT_EMAIL, MONICREDIT_MERCHANT_PASSWORD"
     );
   }
 
@@ -157,7 +157,7 @@ function getMonicreditConfig() {
 // ============================================================================
 
 /**
- * Authenticate with MonieCredit and get Bearer token
+ * Authenticate with monicredit and get Bearer token
  */
 async function getMonicreditToken(): Promise<string> {
   // Return cached token if still valid (with 5 minute buffer)
@@ -184,14 +184,14 @@ async function getMonicreditToken(): Promise<string> {
     const errorText = await response.text();
     throw new MonicreditHttpError(
       response.status,
-      `MonieCredit authentication failed: ${errorText}`
+      `monicredit authentication failed: ${errorText}`
     );
   }
 
   const json = (await response.json()) as MonicreditAuthResponse;
 
   if (!json.success || !json.accessToken) {
-    throw new Error("MonieCredit authentication failed - invalid response.");
+    throw new Error("monicredit authentication failed - invalid response.");
   }
 
   cachedToken = json.accessToken;
@@ -206,7 +206,7 @@ async function getMonicreditToken(): Promise<string> {
 // ============================================================================
 
 /**
- * Make authenticated request to MonieCredit API
+ * Make authenticated request to monicredit API
  */
 async function monicreditRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const { baseUrl } = getMonicreditConfig();
@@ -228,13 +228,13 @@ async function monicreditRequest<T>(path: string, init?: RequestInit): Promise<T
   if (!response.ok || !json.status) {
     throw new MonicreditHttpError(
       response.status,
-      json.message || "MonieCredit request failed.",
+      json.message || "monicredit request failed.",
       json
     );
   }
 
   if (!json.data) {
-    throw new Error("MonieCredit response missing data.");
+    throw new Error("monicredit response missing data.");
   }
 
   return json.data;
@@ -265,13 +265,13 @@ async function monicreditPrivateKeyRequest<T>(path: string, body: Record<string,
   if (!response.ok || !json.status) {
     throw new MonicreditHttpError(
       response.status,
-      json.message || "MonieCredit request failed.",
+      json.message || "monicredit request failed.",
       json
     );
   }
 
   if (!json.data) {
-    throw new Error("MonieCredit response missing data.");
+    throw new Error("monicredit response missing data.");
   }
 
   return json.data;
@@ -357,7 +357,7 @@ export async function createMonicreditVirtualAccount(params: {
 // ============================================================================
 
 /**
- * Get MonieCredit public key for inline payment
+ * Get monicredit public key for inline payment
  */
 export function getMonicreditPublicKey(): string {
   const { privateKey } = getMonicreditConfig();
@@ -366,7 +366,7 @@ export function getMonicreditPublicKey(): string {
 }
 
 /**
- * Get MonieCredit Revenue Head code
+ * Get monicredit Revenue Head code
  */
 export function getMonicreditRevenueHeadCode(): string {
   const { revenueHeadCode } = getMonicreditConfig();
@@ -377,7 +377,7 @@ export function getMonicreditRevenueHeadCode(): string {
 }
 
 /**
- * Get MonieCredit Bearer token (alias for getMonicreditToken)
+ * Get monicredit Bearer token (alias for getMonicreditToken)
  * Used for wallet transaction queries
  */
 export async function getMonicreditBearerToken(): Promise<string> {
@@ -475,7 +475,7 @@ export async function verifyMonicreditTransaction(params: {
 }
 
 /**
- * Map MonieCredit transaction status to our internal status
+ * Map monicredit transaction status to our internal status
  */
 export function mapMonicreditTransactionStatus(status: string | null | undefined) {
   const normalized = String(status ?? "").trim().toUpperCase();

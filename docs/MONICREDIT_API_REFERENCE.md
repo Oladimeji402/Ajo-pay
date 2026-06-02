@@ -1,6 +1,6 @@
-# MonieCredit API Reference
+# monicredit API Reference
 
-Quick reference for MonieCredit API endpoints used in this project.
+Quick reference for monicredit API endpoints used in this project.
 
 ## Base Configuration
 
@@ -226,7 +226,7 @@ try {
 
 ## Rate Limiting
 
-MonieCredit may implement rate limiting. Best practices:
+monicredit may implement rate limiting. Best practices:
 
 1. **Cache Results**: Cache bank list to avoid repeated calls
 2. **Debounce Requests**: Debounce account verification requests
@@ -277,7 +277,7 @@ Base URL: https://live.backend.monicredit.com/api/v1
 ## Additional Resources
 
 - **Official Documentation**: https://monicredit.gitbook.io/mc-api
-- **Support**: Contact MonieCredit support team
+- **Support**: Contact monicredit support team
 - **Migration Guide**: See `MONICREDIT_MIGRATION.md`
 
 ---

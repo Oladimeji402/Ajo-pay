@@ -169,14 +169,14 @@ export async function POST(request: Request) {
       return badRequestResponse(paymentRecordError.message);
     }
 
-    // Return MonieCredit payment configuration for frontend
+    // Return monicredit payment configuration for frontend
     return NextResponse.json({
       data: {
         groupName: group.name,
         amount: requestedAmount,
         reference,
         requestId,
-        // MonieCredit inline payment config
+        // monicredit inline payment config
         paymentConfig: {
           public_key: getMonicreditPublicKey(),
           order_id: reference,

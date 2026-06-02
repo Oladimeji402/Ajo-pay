@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Load .env file and run MonieCredit test
+ * Load .env file and run monicredit test
  * This script properly handles complex .env values
  */
 

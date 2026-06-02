@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Test MonieCredit Bank APIs
+# Test monicredit Bank APIs
 # This script loads environment variables and runs the test
 
 set -e
@@ -15,5 +15,5 @@ else
   exit 1
 fi
 
-echo "Running MonieCredit API tests..."
+echo "Running monicredit API tests..."
 npx tsx scripts/test-monicredit-banks.ts

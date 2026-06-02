@@ -151,7 +151,7 @@ export const SocialProof = () => {
               <path d="M6 16c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10S6 21.523 6 16z" stroke="white" strokeWidth="2" fill="none"/>
               <path d="M11 16h10M16 11v10" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
             </svg>
-            <span className="text-[15px] font-black text-slate-800 tracking-tight">MonieCredit</span>
+            <span className="text-[15px] font-black text-slate-800 tracking-tight">monicredit</span>
           </div>
 
           <div className="flex items-center justify-center px-5 py-3 rounded-2xl border border-slate-200 bg-white shadow-sm">
