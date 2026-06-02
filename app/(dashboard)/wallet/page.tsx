@@ -396,6 +396,14 @@ export default function WalletPage() {
           <p className="text-[11px] uppercase tracking-wide text-brand-gray">Account Name</p>
           <div className="text-sm font-semibold text-brand-navy">{accountName}</div>
         </div>
+
+        {/* Minimum deposit notice */}
+        <div className="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2.5 flex items-start gap-2">
+          <span className="text-amber-500 mt-0.5 text-base leading-none">⚠</span>
+          <p className="text-xs text-amber-800">
+            <span className="font-semibold">Minimum deposit: NGN 500.</span> Transfers below this amount will not be credited to your wallet.
+          </p>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">

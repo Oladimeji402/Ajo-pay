@@ -128,13 +128,14 @@ export const Security = () => {
                 className="mt-4 flex items-center gap-3 flex-wrap"
               >
                 <span className="text-[10px] text-slate-500 uppercase tracking-widest">Payments by</span>
-                {/* Paystack badge */}
+                {/* MonieCredit badge */}
                 <div className="flex items-center gap-1.5 bg-white/[0.06] border border-white/[0.08] rounded-lg px-3 py-2">
                   <svg width="18" height="18" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect width="32" height="32" rx="6" fill="#00C3F7" />
-                    <path d="M7 11.5h18M7 16h14M7 20.5h10" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+                    <rect width="32" height="32" rx="6" fill="#1a56db" />
+                    <path d="M6 16c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10S6 21.523 6 16z" stroke="white" strokeWidth="2" fill="none"/>
+                    <path d="M11 16h10M16 11v10" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
                   </svg>
-                  <span className="text-[12px] font-bold text-white tracking-tight">Paystack</span>
+                  <span className="text-[12px] font-bold text-white tracking-tight">MonieCredit</span>
                 </div>
                 {/* Visa badge */}
                 <div className="flex items-center justify-center bg-white rounded-lg px-3 py-2 h-9">

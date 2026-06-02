@@ -5,10 +5,11 @@ import { getPendingPaymentExpiryDate, markWalletFundingSuccess } from "@/lib/pay
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const MIN_SYNC_INTERVAL_MS = 30_000;
+const MIN_DEPOSIT_NAIRA = 500;
 
 function toAmountNaira(value: number | string | unknown) {
   const parsed = Number(value ?? 0);
-  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  if (!Number.isFinite(parsed) || parsed < MIN_DEPOSIT_NAIRA) return null;
   return Math.round(parsed);
 }
 
