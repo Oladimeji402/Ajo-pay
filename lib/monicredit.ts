@@ -80,7 +80,22 @@ type MonicreditVirtualAccountData = {
   reference: string;
 };
 
-type MonicreditTransactionData = {
+type MonicreditWalletTransaction = {
+  id?: number;
+  wallet_id?: string;
+  amount?: number | string;
+  type?: string;
+  status?: string;
+  description?: string;
+  reference?: string;
+  tracking_reference?: string;
+  transaction_id?: string;
+  order_id?: string;
+  created_at?: string;
+  updated_at?: string;
+  amount_paid?: number | string;
+  [key: string]: unknown;
+};
   amount: number;
   orderid: string;
   transid: string;
@@ -379,19 +394,7 @@ export async function getMonicreditWalletTransactions(params: {
   toDate?: string;
   type?: string;
   status?: string;
-}): Promise<Array<{
-  id: number;
-  wallet_id?: string;
-  amount?: number | string;
-  type?: string;
-  status?: string;
-  description?: string;
-  reference?: string;
-  tracking_reference?: string;
-  created_at?: string;
-  updated_at?: string;
-  [key: string]: unknown;
-}>> {
+}): Promise<MonicreditWalletTransaction[]> {
   const { baseUrl } = getMonicreditConfig();
 
   // Use the virtual-account transactions endpoint which returns
@@ -436,8 +439,8 @@ export async function getMonicreditWalletTransactions(params: {
   }
 
   // Handle both array response and { data: [...] } response
-  if (Array.isArray(json)) return json;
-  if (Array.isArray(json.data)) return json.data as Array<Record<string, unknown>>;
+  if (Array.isArray(json)) return json as MonicreditWalletTransaction[];
+  if (Array.isArray(json.data)) return json.data as MonicreditWalletTransaction[];
 
   // If status false with no data, return empty (don't throw — wallet may just have no transactions)
   return [];
