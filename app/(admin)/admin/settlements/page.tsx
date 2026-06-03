@@ -378,108 +378,80 @@ export default function SettlementsPage() {
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Settlement Reference *
-                  </label>
-                  <Input
-                    value={formData.settlement_reference}
-                    onChange={(e) =>
-                      setFormData({ ...formData, settlement_reference: e.target.value })
-                    }
-                    required
-                    placeholder="MONI-SETTLE-20260603-001"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Amount (NGN) *
-                  </label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.amount}
-                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                    required
-                    placeholder="50000.00"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Settlement Date *
-                  </label>
-                  <Input
-                    type="date"
-                    value={formData.settlement_date}
-                    onChange={(e) =>
-                      setFormData({ ...formData, settlement_date: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    MoniCredit Batch ID
-                  </label>
-                  <Input
-                    value={formData.monicredit_batch_id}
-                    onChange={(e) =>
-                      setFormData({ ...formData, monicredit_batch_id: e.target.value })
-                    }
-                    placeholder="Optional"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Bank Name
-                  </label>
-                  <Input
-                    value={formData.bank_name}
-                    onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
-                    placeholder="Optional"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Account Number
-                  </label>
-                  <Input
-                    value={formData.bank_account_number}
-                    onChange={(e) =>
-                      setFormData({ ...formData, bank_account_number: e.target.value })
-                    }
-                    placeholder="Optional"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Account Name
-                </label>
                 <Input
-                  value={formData.bank_account_name}
+                  label="Settlement Reference *"
+                  value={formData.settlement_reference}
                   onChange={(e) =>
-                    setFormData({ ...formData, bank_account_name: e.target.value })
+                    setFormData({ ...formData, settlement_reference: e.target.value })
+                  }
+                  required
+                  placeholder="MONI-SETTLE-20260603-001"
+                />
+
+                <Input
+                  label="Amount (NGN) *"
+                  type="number"
+                  step="0.01"
+                  value={formData.amount}
+                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                  required
+                  placeholder="50000.00"
+                />
+
+                <Input
+                  label="Settlement Date *"
+                  type="date"
+                  value={formData.settlement_date}
+                  onChange={(e) =>
+                    setFormData({ ...formData, settlement_date: e.target.value })
+                  }
+                  required
+                />
+
+                <Input
+                  label="MoniCredit Batch ID"
+                  value={formData.monicredit_batch_id}
+                  onChange={(e) =>
+                    setFormData({ ...formData, monicredit_batch_id: e.target.value })
+                  }
+                  placeholder="Optional"
+                />
+
+                <Input
+                  label="Bank Name"
+                  value={formData.bank_name}
+                  onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
+                  placeholder="Optional"
+                />
+
+                <Input
+                  label="Account Number"
+                  value={formData.bank_account_number}
+                  onChange={(e) =>
+                    setFormData({ ...formData, bank_account_number: e.target.value })
                   }
                   placeholder="Optional"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <Input
+                label="Account Name"
+                value={formData.bank_account_name}
+                onChange={(e) =>
+                  setFormData({ ...formData, bank_account_name: e.target.value })
+                }
+                placeholder="Optional"
+              />
+
+              <div className="space-y-1">
+                <label className="block text-sm font-semibold text-brand-navy">
                   Notes
                 </label>
                 <textarea
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   rows={3}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy/20"
+                  className="block w-full px-4 py-3 rounded-lg border border-brand-border bg-white text-brand-navy placeholder-slate-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] focus:outline-none focus:ring-2 focus:ring-brand-accent/20 focus:border-brand-accent transition-all duration-200"
                   placeholder="Optional additional information"
                 />
               </div>
