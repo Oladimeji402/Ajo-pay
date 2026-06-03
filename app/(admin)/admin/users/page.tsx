@@ -23,6 +23,10 @@ type UserRow = {
   wallet_balance: number;
   total_contributed: number;
   created_at: string;
+  virtual_account_number?: string | null;
+  virtual_account_bank?: string | null;
+  virtual_account_name?: string | null;
+  monicredit_wallet_id?: string | null;
 };
 
 type GrowthPoint = {
@@ -253,6 +257,27 @@ export default function AdminUsersPage() {
             <span className="rounded-lg bg-indigo-50 px-2 py-1 font-semibold text-indigo-700">
               NGN {Number(user.total_contributed || 0).toLocaleString('en-NG')} saved
             </span>
+          </div>
+        ),
+      },
+      {
+        key: 'virtualAccount',
+        header: 'Virtual Account',
+        render: (user) => (
+          <div className="text-xs">
+            {user.virtual_account_number ? (
+              <>
+                <p className="font-mono font-semibold text-brand-navy">{user.virtual_account_number}</p>
+                <p className="text-slate-500">{user.virtual_account_bank}</p>
+                {user.monicredit_wallet_id && (
+                  <p className="mt-1 font-mono text-[10px] text-slate-400">
+                    ID: {user.monicredit_wallet_id.slice(0, 12)}...
+                  </p>
+                )}
+              </>
+            ) : (
+              <span className="text-slate-400">Not created</span>
+            )}
           </div>
         ),
       },
