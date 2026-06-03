@@ -207,6 +207,22 @@ export default function WalletPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Define accountReady before using it in useEffect
+  const accountReady = Boolean(accountNumber && bankName && accountName);
+
+  // Auto-check for deposits periodically when account is ready
+  useEffect(() => {
+    if (!accountReady) return;
+
+    // Check every 30 seconds while user is on the page
+    const interval = setInterval(() => {
+      void checkDeposits(true); // Silent check
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountReady]);
+
   const handleManualRefresh = async () => {
     await checkDeposits();
   };
@@ -217,8 +233,6 @@ export default function WalletPage() {
     if (Number.isNaN(date.getTime())) return 'Not checked yet';
     return date.toLocaleString('en-NG');
   };
-
-  const accountReady = Boolean(accountNumber && bankName && accountName);
 
   // Only show a loader during the first check when there's nothing cached to show yet
   if (initialLoading && !accountReady) {
@@ -411,13 +425,16 @@ export default function WalletPage() {
           {statusIcon}
           {statusText}
         </div>
-        <p className="text-[11px] text-slate-500">Last checked: {formatDate(lastCheckedAt)}</p>
+        <p className="text-[11px] text-slate-500">
+          Last checked: {formatDate(lastCheckedAt)}
+          <span className="ml-2 text-emerald-600 font-medium">• Auto-checking every 30s</span>
+        </p>
         <button
           onClick={handleManualRefresh}
           disabled={checking}
           className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 py-3 text-sm font-bold text-white hover:bg-brand-primary-hover disabled:opacity-60 transition-colors"
         >
-          {checking ? <><Loader2 size={15} className="animate-spin" /> Checking...</> : <><RefreshCw size={15} /> Check for new deposit</>}
+          {checking ? <><Loader2 size={15} className="animate-spin" /> Checking...</> : <><RefreshCw size={15} /> Check now</>}
         </button>
       </div>
     </div>
