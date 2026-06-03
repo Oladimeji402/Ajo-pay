@@ -32,5 +32,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
+  // Fire-and-forget: sync registration and provision MonieCredit virtual account
+  // after email verification link is clicked. Uses absolute URL for server-side fetch.
+  const appUrl = request.nextUrl.origin;
+  void Promise.all([
+    fetch(`${appUrl}/api/users/sync-registration`, { method: "POST" }).catch(() => {}),
+    fetch(`${appUrl}/api/user/provision-virtual-account`, { method: "POST" }).catch(() => {}),
+  ]);
+
   return NextResponse.redirect(redirectUrl);
 }
