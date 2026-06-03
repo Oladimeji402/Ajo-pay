@@ -6,7 +6,7 @@ import { ArrowLeft, CheckCircle2, Copy, Loader2, RefreshCw, Wallet } from 'lucid
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
 
-const WALLET_CACHE_KEY = 'ajopay_wallet_account_cache_v1';
+const WALLET_CACHE_KEY = 'AjoFlow_wallet_account_cache_v1';
 
 type WalletCache = {
   accountNumber: string | null;
@@ -309,7 +309,7 @@ export default function WalletPage() {
         {!provisionError && !showPhoneUpdate && (
           <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4">
             <p className="text-sm text-slate-600">
-              Your permanent account number lets you receive money directly into your AjoPay wallet from any bank in Nigeria.
+              Your permanent account number lets you receive money directly into your AjoFlow wallet from any bank in Nigeria.
             </p>
             <button
               onClick={provisionVirtualAccount}
@@ -382,7 +382,7 @@ export default function WalletPage() {
           Fund Wallet
         </h1>
         <p className="text-xs text-brand-gray mt-0.5">
-          Transfer to your permanent account details below. You can fund anytime, even outside AjoPay.
+          Transfer to your permanent account details below. You can fund anytime, even outside AjoFlow.
         </p>
       </div>
 
@@ -415,7 +415,7 @@ export default function WalletPage() {
         <div className="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2.5 flex items-start gap-2">
           <span className="text-amber-500 mt-0.5 text-base leading-none">⚠</span>
           <p className="text-xs text-amber-800">
-            <span className="font-semibold">Minimum deposit: NGN 500.</span> Transfers below this amount will not be credited to your wallet.
+            <span className="font-semibold">Minimum deposit: NGN 500.</span> Bank transfer charges may apply.
           </p>
         </div>
       </div>

@@ -40,7 +40,7 @@ const testimonials = [
   {
     name: 'Bola T.',
     role: 'Nurse, Ibadan',
-    content: 'Got my ₦500,000 payout within minutes of schedule. I trust AjoPay completely.',
+    content: 'Got my ₦500,000 payout within minutes of schedule. I trust AjoFlow completely.',
     rating: 5,
     color: '#1E3A6E',
     initials: 'BT',
@@ -48,7 +48,7 @@ const testimonials = [
   {
     name: 'Emeka D.',
     role: 'Entrepreneur, Enugu',
-    content: 'AjoPay handles reminders, deductions, and payouts automatically. Game changer.',
+    content: 'AjoFlow handles reminders, deductions, and payouts automatically. Game changer.',
     rating: 5,
     color: '#2563EB',
     initials: 'ED',
@@ -102,7 +102,7 @@ export const SocialProof = () => {
             style={{ fontSize: 'clamp(2rem, 4vw, 2.8rem)' }}
           >
             <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 400 }}>People </span>
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.03em' }}>trust AjoPay.</span>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.03em' }}>trust AjoFlow.</span>
           </h2>
         </motion.div>
       </Container>

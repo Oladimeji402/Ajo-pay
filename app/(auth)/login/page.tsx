@@ -146,7 +146,7 @@ function LoginContent() {
 
             <div className="border-t border-slate-100 pt-5">
                 <p className="text-center text-sm text-slate-500">
-                    New to AjoPay?{' '}
+                    New to AjoFlow?{' '}
                     <Link
                         href="/signup"
                         className="font-semibold text-brand-navy hover:text-brand-primary transition-colors"

@@ -108,7 +108,7 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
                         </motion.div>
 
                         <p className="mt-6 text-center text-[11px] text-slate-400">
-                            &copy; 2026 AjoPay &middot; All rights reserved
+                            &copy; 2026 AjoFlow &middot; All rights reserved
                         </p>
                     </div>
                 </main>

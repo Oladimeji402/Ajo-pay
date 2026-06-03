@@ -150,7 +150,7 @@ export default function SignUpPage() {
 
                 <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 space-y-3">
                     {[
-                        { step: '1', text: 'Open the email from AjoPay' },
+                        { step: '1', text: 'Open the email from AjoFlow' },
                         { step: '2', text: 'Click the "Verify my email" button' },
                         { step: '3', text: "You'll be redirected to your dashboard automatically" },
                     ].map(({ step, text }) => (
@@ -335,7 +335,7 @@ export default function SignUpPage() {
                         </div>
                     </label>
                     <span className="text-sm text-slate-600 leading-relaxed">
-                        I agree to AjoPay&apos;s{' '}
+                        I agree to AjoFlow&apos;s{' '}
                         <Link href="/terms" className="font-semibold text-brand-navy underline decoration-dotted underline-offset-4 hover:text-brand-primary transition-colors">Terms of Service</Link>
                         {' '}and{' '}
                         <Link href="/privacy" className="font-semibold text-brand-navy underline decoration-dotted underline-offset-4 hover:text-brand-primary transition-colors">Privacy Policy</Link>
