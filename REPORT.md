@@ -5,32 +5,43 @@
 
 ---
 
+## Architecture Overview
+
+**Rendering:** ~70% client-side ('use client'), ~30% server-side  
+**Data Fetching:** 100% client-side (fetch in useEffect) - **NOT optimal**  
+**API Routes:** All server-side (Next.js API routes)  
+**Authentication:** Server-side (Supabase + middleware)
+
+---
+
 ## Scalability Assessment ⚠️
 
-### Can Handle 1,000 Users: **YES, with conditions**
+### Can Handle 1,000 Users: **YES, but inefficient architecture**
 
 **Infrastructure:**
 - ✅ Vercel: Auto-scales to 30,000 concurrent functions (Pro plan)
 - ✅ Supabase: Built-in connection pooling handles thousands of connections
 - ✅ Next.js 16: Modern serverless architecture
+- ✅ All sensitive logic is server-side (API routes protected)
 
 **Current Issues:**
+- ❌ **Client-side data fetching** - all pages use `fetch` in `useEffect` (bad for performance & SEO)
 - ❌ **No rate limiting** on API routes (payment, auth, wallet endpoints)
 - ❌ **No caching strategy** for heavy queries (only token caching exists)
 - ⚠️ Multiple database queries per request without optimization
-- ⚠️ No request deduplication or CDN caching configured
+- ⚠️ Waterfall requests (client fetches after page load, not in parallel)
 
 **Will it slow down?**
-- Under 500 users: Should perform well
-- 500-1000 users: May experience slowdowns on payment verification and wallet sync endpoints
+- Under 500 users: Functional but slow page loads (client-side fetching = loading spinners)
+- 500-1000 users: API slowdowns on payment verification and wallet sync endpoints
 - Above 1000 users: Will need rate limiting and query optimization
 
-**Recommendations:**
-1. Add rate limiting to all API routes (especially payments)
-2. Implement caching for admin stats and user dashboards
-3. Add database indexes on frequently queried columns
-4. Enable Vercel CDN for static assets
-5. Monitor Supabase connection pool usage
+**Critical Recommendations:**
+1. **Move to Server Components** - fetch data server-side for better performance
+2. Add rate limiting to all API routes (especially payments)
+3. Implement React Server Components for dashboards (Next.js 16 feature)
+4. Add caching for admin stats (ISR or Vercel Data Cache)
+5. Add database indexes on frequently queried columns
 
 ---
 
@@ -40,11 +51,13 @@
 
 **Strong Points:**
 - ✅ Supabase authentication with secure session management
+- ✅ **All business logic is server-side** (API routes, not exposed to client)
 - ✅ Input validation using Zod schemas
 - ✅ Admin role-based access control
 - ✅ Open redirect protection in auth callback
 - ✅ MIME type validation for file uploads
 - ✅ Parameterized database queries (SQL injection protected)
+- ✅ Middleware protects routes server-side
 
 **Critical Gaps:**
 - ❌ **No security headers** (CSP, X-Frame-Options, HSTS)
@@ -77,13 +90,13 @@
 
 ## Bottom Line
 
-**Can handle 1,000 users?** Yes, but will struggle without rate limiting and caching.
+**Can handle 1,000 users?** Yes. All critical logic is server-side, which is good. But client-side data fetching will make pages slow (users see loading spinners).
 
-**Secure against hackers?** Moderately secure. Good foundation, but missing critical defenses like rate limiting, security headers, and CSRF protection. **You could be hacked** through API abuse or brute force attacks.
+**Secure against hackers?** **Moderately secure**. Server-side architecture is solid - business logic isn't exposed to the client. But missing critical defenses like rate limiting, security headers, and CSRF protection make API endpoints vulnerable to abuse.
 
 **Priority Actions:**
-1. Add rate limiting (CRITICAL)
-2. Add security headers (CRITICAL)  
-3. Implement API caching (HIGH)
-4. Set up error monitoring (HIGH)
+1. Add rate limiting (CRITICAL) - prevent API abuse
+2. Add security headers (CRITICAL) - prevent XSS, clickjacking
+3. Move to Server Components (HIGH) - better performance & SEO
+4. Implement API response caching (HIGH)
 5. Add CSRF protection (MEDIUM)
