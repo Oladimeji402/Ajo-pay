@@ -26,10 +26,11 @@ export const Navbar = () => {
 
     return (
         <nav
-            className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled
+            className={`fixed top-0 left-0 right-0 transition-all duration-500 ${isScrolled
                 ? 'bg-white/80 backdrop-blur-2xl border-b border-slate-100/80 py-3 shadow-sm shadow-slate-900/5'
                 : 'bg-transparent py-5'
                 }`}
+            style={{ zIndex: 1000 }}
         >
             <Container className="flex items-center justify-between">
 
@@ -79,8 +80,10 @@ export const Navbar = () => {
                     </Link>
 
                     <button
-                        className={`md:hidden p-2 relative z-[60] transition-colors ${isScrolled ? 'text-brand-navy' : 'text-white'}`}
+                        className={`md:hidden p-2 relative transition-colors ${isScrolled ? 'text-brand-navy' : 'text-white'} ${isMobileMenuOpen ? 'text-brand-navy' : ''}`}
                         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                        aria-label="Toggle menu"
+                        style={{ zIndex: 100000 }}
                     >
                         {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
                     </button>
@@ -88,23 +91,34 @@ export const Navbar = () => {
 
             </Container>
 
-            {/* Mobile Menu */}
+            {/* Mobile Menu - Rendered as portal-like overlay */}
             <AnimatePresence>
                 {isMobileMenuOpen && (
-                    <>
+                    <div className="md:hidden" style={{ position: 'fixed', inset: 0, zIndex: 2147483640, isolation: 'isolate' }}>
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
                             onClick={() => setIsMobileMenuOpen(false)}
-                            className="fixed inset-0 bg-brand-navy/30 backdrop-blur-sm z-40 md:hidden"
+                            className="absolute inset-0 bg-black/40"
+                            style={{ 
+                                backdropFilter: 'blur(8px)',
+                                WebkitBackdropFilter: 'blur(8px)',
+                                WebkitBackfaceVisibility: 'hidden' 
+                            }}
                         />
                         <motion.div
-                            initial={{ x: '100%', opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            exit={{ x: '100%', opacity: 0 }}
-                            transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-                            className="fixed top-0 right-0 bottom-0 w-[80%] max-w-sm bg-white z-50 md:hidden shadow-2xl flex flex-col"
+                            initial={{ x: '100%' }}
+                            animate={{ x: 0 }}
+                            exit={{ x: '100%' }}
+                            transition={{ type: 'spring', damping: 30, stiffness: 300, mass: 0.8 }}
+                            className="absolute top-0 right-0 bottom-0 w-[85%] max-w-sm bg-white shadow-2xl flex flex-col overflow-hidden"
+                            style={{ 
+                                willChange: 'transform',
+                                WebkitBackfaceVisibility: 'hidden',
+                                transform: 'translate3d(0, 0, 0)'
+                            }}
                         >
                             {/* Mobile Header */}
                             <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
@@ -141,7 +155,7 @@ export const Navbar = () => {
                                 </Link>
                             </div>
                         </motion.div>
-                    </>
+                    </div>
                 )}
             </AnimatePresence>
         </nav>
