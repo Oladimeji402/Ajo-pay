@@ -4,6 +4,7 @@ import { badRequestResponse, requireAdmin, serverErrorResponse } from "@/lib/api
 import { logAdminAction } from "@/lib/admin-audit";
 import { formatNigeriaPhoneE164, isValidNigeriaPhoneLocal, parseNigeriaPhoneToLocal } from "@/lib/phone";
 import { generatePassbookSlots } from "@/lib/ajo-schedule";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const updateUserSchema = z.object({
   name: z.string().min(1).optional(),
@@ -77,7 +78,10 @@ export async function GET(_request: Request, context: Context) {
     if (auth.error) return auth.error;
     const { id } = await context.params;
 
-    const { data: profile, error: profileError } = await auth.supabase
+    // Use admin client to bypass RLS for reading user data
+    const adminSupabase = createSupabaseAdminClient();
+
+    const { data: profile, error: profileError } = await adminSupabase
       .from("profiles")
       .select("*")
       .eq("id", id)
@@ -88,34 +92,28 @@ export async function GET(_request: Request, context: Context) {
 
     const [
       targetGoalsResult,
-      targetContributionsResult,
+      savingsPaymentsResult,
       generalSchemesResult,
-      generalDepositsResult,
       passbookPayoutsResult,
     ] = await Promise.all([
-      auth.supabase
+      adminSupabase
         .from("individual_savings_goals")
         .select("id, name, frequency, status, target_amount, total_saved, target_date, savings_start_date, created_at")
         .eq("user_id", id)
         .order("created_at", { ascending: false }),
-      auth.supabase
-        .from("individual_savings_contributions")
-        .select("id, goal_id, status, amount, paid_at, created_at, period_index")
+      adminSupabase
+        .from("payment_records")
+        .select("id, type, status, amount, metadata, created_at")
         .eq("user_id", id)
+        .in("type", ["individual_savings", "bulk_contribution"])
         .order("created_at", { ascending: false })
         .limit(500),
-      auth.supabase
+      adminSupabase
         .from("savings_schemes")
-        .select("id, name, frequency, status, minimum_amount, created_at")
+        .select("id, name, frequency, status, minimum_amount, created_at, user_id")
         .eq("user_id", id)
         .order("created_at", { ascending: false }),
-      auth.supabase
-        .from("savings_deposits")
-        .select("id, scheme_id, status, amount, paid_at, created_at")
-        .eq("user_id", id)
-        .order("created_at", { ascending: false })
-        .limit(500),
-      auth.supabase
+      adminSupabase
         .from("passbook_payouts")
         .select("id, scheme_id, amount, period_label, paid_at, created_at")
         .eq("user_id", id)
@@ -124,19 +122,74 @@ export async function GET(_request: Request, context: Context) {
     ]);
 
     if (targetGoalsResult.error) return badRequestResponse(targetGoalsResult.error.message);
-    if (targetContributionsResult.error) return badRequestResponse(targetContributionsResult.error.message);
+    if (savingsPaymentsResult.error) return badRequestResponse(savingsPaymentsResult.error.message);
     if (generalSchemesResult.error) return badRequestResponse(generalSchemesResult.error.message);
-    if (generalDepositsResult.error) return badRequestResponse(generalDepositsResult.error.message);
     if (passbookPayoutsResult.error) return badRequestResponse(passbookPayoutsResult.error.message);
 
     const targetGoals = targetGoalsResult.data ?? [];
-    const targetContributions = targetContributionsResult.data ?? [];
+    const savingsPayments = savingsPaymentsResult.data ?? [];
     const generalSchemes = generalSchemesResult.data ?? [];
-    const generalDeposits = generalDepositsResult.data ?? [];
     const passbookPayouts = passbookPayoutsResult.data ?? [];
+
+    // Try to fetch schemes directly by IDs from payment metadata (in case of missing schemes)
+    if (savingsPayments.length > 0) {
+      const schemeIds = savingsPayments
+        .map(p => (p.metadata as { schemeId?: string } | null)?.schemeId)
+        .filter((id): id is string => Boolean(id));
+      
+      if (schemeIds.length > 0) {
+        const { data: schemesFromPayments } = await adminSupabase
+          .from("savings_schemes")
+          .select("id, name, frequency, status, minimum_amount, created_at, user_id")
+          .in("id", schemeIds);
+        
+        // Add any found schemes to the list
+        for (const scheme of schemesFromPayments ?? []) {
+          if (!generalSchemes.find(s => s.id === scheme.id)) {
+            generalSchemes.push(scheme);
+          }
+        }
+      }
+    }
 
     const targetGoalById = new Map(targetGoals.map((goal) => [goal.id, goal]));
     const generalSchemeById = new Map(generalSchemes.map((scheme) => [scheme.id, scheme]));
+
+    // Parse payment records to extract goalId and schemeId from metadata
+    const targetContributions = savingsPayments
+      .filter(payment => {
+        const metadata = payment.metadata as { goalId?: string; schemeId?: string } | null;
+        return Boolean(metadata?.goalId);
+      })
+      .map(payment => {
+        const metadata = payment.metadata as { goalId?: string; periodIndex?: number } | null;
+        return {
+          id: payment.id,
+          goal_id: metadata?.goalId || '',
+          status: payment.status,
+          amount: payment.amount,
+          paid_at: payment.created_at,
+          created_at: payment.created_at,
+          period_index: metadata?.periodIndex,
+        };
+      });
+
+    const generalDeposits = savingsPayments
+      .filter(payment => {
+        const metadata = payment.metadata as { goalId?: string; schemeId?: string } | null;
+        return Boolean(metadata?.schemeId);
+      })
+      .map(payment => {
+        const metadata = payment.metadata as { schemeId?: string } | null;
+        return {
+          id: payment.id,
+          scheme_id: metadata?.schemeId || '',
+          status: payment.status,
+          amount: payment.amount,
+          paid_at: payment.created_at,
+          created_at: payment.created_at,
+        };
+      });
 
     const savingsPlans = [
       ...targetGoals.map((goal) => {
@@ -161,7 +214,7 @@ export async function GET(_request: Request, context: Context) {
 
         return {
           id: goal.id,
-          planType: "target",
+          planType: "target" as const,
           name: goal.name,
           frequency: goal.frequency,
           status: goal.status,
@@ -195,7 +248,7 @@ export async function GET(_request: Request, context: Context) {
 
         return {
           id: scheme.id,
-          planType: "general",
+          planType: "general" as const,
           name: scheme.name,
           frequency: scheme.frequency,
           status: scheme.status,
@@ -213,43 +266,196 @@ export async function GET(_request: Request, context: Context) {
       }),
     ];
 
-    const recentActivity = [
-      ...targetContributions.map((contribution) => ({
+    // Add orphaned payments (payments without matching goals/schemes) as virtual plans
+    const orphanedGoalPayments = targetContributions.filter(tc => !targetGoalById.has(tc.goal_id));
+    const orphanedSchemePayments = generalDeposits.filter(gd => !generalSchemeById.has(gd.scheme_id));
+
+    // Group orphaned payments by goal_id/scheme_id
+    const orphanedGoalGroups = new Map<string, typeof targetContributions>();
+    for (const payment of orphanedGoalPayments) {
+      const existing = orphanedGoalGroups.get(payment.goal_id) || [];
+      existing.push(payment);
+      orphanedGoalGroups.set(payment.goal_id, existing);
+    }
+
+    const orphanedSchemeGroups = new Map<string, typeof generalDeposits>();
+    for (const payment of orphanedSchemePayments) {
+      const existing = orphanedSchemeGroups.get(payment.scheme_id) || [];
+      existing.push(payment);
+      orphanedSchemeGroups.set(payment.scheme_id, existing);
+    }
+
+    // Add virtual plans for orphaned goal payments
+    for (const [goalId, payments] of orphanedGoalGroups.entries()) {
+      const successfulPayments = payments.filter(p => p.status === "success");
+      const totalSaved = successfulPayments.reduce((sum, p) => sum + Number(p.amount ?? 0), 0);
+      
+      savingsPlans.push({
+        id: goalId,
+        planType: "target" as const,
+        name: `Individual Savings (${goalId.slice(0, 8)})`,
+        frequency: "unknown",
+        status: "orphaned",
+        targetAmount: 0,
+        totalSaved,
+        successfulCount: successfulPayments.length,
+        missedCount: 0,
+        skippedCount: 0,
+        pendingCount: payments.filter(p => p.status === "pending").length,
+        startDate: null,
+        targetDate: null,
+        createdAt: payments[0]?.created_at,
+        lastPaidAt: successfulPayments[0]?.paid_at ?? null,
+      });
+    }
+
+    // Add virtual plans for orphaned scheme payments
+    for (const [schemeId, payments] of orphanedSchemeGroups.entries()) {
+      const successfulPayments = payments.filter(p => p.status === "success");
+      const totalSaved = successfulPayments.reduce((sum, p) => sum + Number(p.amount ?? 0), 0);
+      
+      savingsPlans.push({
+        id: schemeId,
+        planType: "general" as const,
+        name: `Passbook Savings (${schemeId.slice(0, 8)})`,
+        frequency: "unknown",
+        status: "orphaned",
+        minimumAmount: 0,
+        totalSaved,
+        successfulCount: successfulPayments.length,
+        missedCount: 0,
+        skippedCount: 0,
+        pendingCount: payments.filter(p => p.status === "pending").length,
+        startDate: null,
+        targetDate: null,
+        createdAt: payments[0]?.created_at,
+        lastPaidAt: successfulPayments[0]?.paid_at ?? null,
+      });
+    }
+
+    // Build comprehensive recent activity from multiple sources
+    const recentActivity = [];
+
+    // 1. Savings contributions (target goals)
+    for (const contribution of targetContributions) {
+      const goal = targetGoalById.get(contribution.goal_id);
+      recentActivity.push({
         id: `target_contribution:${contribution.id}`,
-        type: "target_contribution",
+        type: "target_contribution" as const,
         status: contribution.status,
-        title: `Target savings payment for ${targetGoalById.get(contribution.goal_id)?.name ?? "Unnamed target"}`,
-        description: `Period #${Number(contribution.period_index ?? 0) + 1}`,
+        title: goal?.name ? `Target savings: ${goal.name}` : "Individual Savings Goal",
+        description: goal 
+          ? `${goal.frequency} plan · Period #${Number(contribution.period_index ?? 0) + 1}` 
+          : `Target savings · Goal ID: ${contribution.goal_id.slice(0, 8)}`,
         amount: contribution.amount,
         occurredAt: contribution.paid_at ?? contribution.created_at,
-      })),
-      ...generalDeposits.map((deposit) => ({
+      });
+    }
+
+    // 2. General savings deposits (schemes)
+    for (const deposit of generalDeposits) {
+      const scheme = generalSchemeById.get(deposit.scheme_id);
+      recentActivity.push({
         id: `general_deposit:${deposit.id}`,
-        type: "general_deposit",
+        type: "general_deposit" as const,
         status: deposit.status,
-        title: `General savings payment for ${generalSchemeById.get(deposit.scheme_id)?.name ?? "Unnamed scheme"}`,
-        description: `${generalSchemeById.get(deposit.scheme_id)?.frequency ?? "general"} plan`,
+        title: scheme?.name ? `Passbook savings: ${scheme.name}` : "Passbook Savings Contribution",
+        description: scheme 
+          ? `${scheme.frequency} savings plan` 
+          : `General savings · Scheme ID: ${deposit.scheme_id.slice(0, 8)}`,
         amount: deposit.amount,
         occurredAt: deposit.paid_at ?? deposit.created_at,
-      })),
-      ...passbookPayouts.map((payout) => ({
+      });
+    }
+
+    // 3. Passbook payouts
+    for (const payout of passbookPayouts) {
+      const scheme = generalSchemeById.get(payout.scheme_id);
+      recentActivity.push({
         id: `general_payout:${payout.id}`,
-        type: "general_payout",
+        type: "general_payout" as const,
         status: "done",
-        title: `Savings payout for ${generalSchemeById.get(payout.scheme_id)?.name ?? "Unnamed scheme"}`,
-        description: payout.period_label || "Recorded payout",
+        title: scheme?.name ? `Payout: ${scheme.name}` : "Savings Payout",
+        description: payout.period_label || (scheme ? `${scheme.frequency} plan payout` : `Scheme ID: ${payout.scheme_id.slice(0, 8)}`),
         amount: payout.amount,
         occurredAt: payout.paid_at ?? payout.created_at,
-      })),
-    ].sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime()).slice(0, 20);
+      });
+    }
 
-    const targetSavedTotal = targetContributions
+    // 4. ALL other payment records (wallet funding, passbook activation, etc.)
+    const { data: allPayments } = await adminSupabase
+      .from("payment_records")
+      .select("id, type, status, amount, reference, created_at")
+      .eq("user_id", id)
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    for (const payment of allPayments ?? []) {
+      // Skip savings payments (already added above)
+      if (payment.type === "individual_savings" || payment.type === "bulk_contribution") {
+        continue;
+      }
+
+      let title = "Transaction";
+      let description = payment.type;
+
+      if (payment.type === "wallet_funding") {
+        title = "Wallet Funding";
+        description = `Bank transfer to wallet`;
+      } else if (payment.type === "passbook_activation") {
+        title = "Passbook Activation";
+        description = "One-time ₦500 activation fee";
+      } else if (payment.type === "payout") {
+        title = "Withdrawal";
+        description = "Money sent to bank account";
+      } else if (payment.type === "contribution") {
+        title = "Group Contribution";
+        description = "Legacy group payment";
+      }
+
+      recentActivity.push({
+        id: `payment:${payment.id}`,
+        type: payment.type as const,
+        status: payment.status,
+        title,
+        description: `${description} · Ref: ${payment.reference.slice(0, 20)}`,
+        amount: payment.amount,
+        occurredAt: payment.created_at,
+      });
+    }
+
+    // 5. Profile changes (from audit log if available)
+    const { data: profileChanges } = await adminSupabase
+      .from("admin_audit_log")
+      .select("id, action, created_at, metadata")
+      .eq("target_type", "user")
+      .eq("target_id", id)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    for (const change of profileChanges ?? []) {
+      if (change.action === "user_updated") {
+        recentActivity.push({
+          id: `audit:${change.id}`,
+          type: "profile_change" as const,
+          status: "done",
+          title: "Profile Updated",
+          description: "Admin modified user profile",
+          amount: null,
+          occurredAt: change.created_at,
+        });
+      }
+    }
+
+    // Sort all activities by date (most recent first)
+    recentActivity.sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
+
+    // Take top 50 activities
+    const finalActivities = recentActivity.slice(0, 50);
+
+    const totalSaved = savingsPayments
       .filter((row) => row.status === "success")
       .reduce((sum, row) => sum + Number(row.amount ?? 0), 0);
-    const generalSavedTotal = generalDeposits
-      .filter((row) => row.status === "success")
-      .reduce((sum, row) => sum + Number(row.amount ?? 0), 0);
-    const totalSaved = targetSavedTotal + generalSavedTotal;
 
     const profileWithTotals = {
       ...profile,
@@ -260,7 +466,7 @@ export async function GET(_request: Request, context: Context) {
     return NextResponse.json({
       data: profileWithTotals,
       savingsPlans,
-      recentActivity,
+      recentActivity: finalActivities,
     });
   } catch (error) {
     return serverErrorResponse(error);

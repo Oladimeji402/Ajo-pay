@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { badRequestResponse, requireAdmin, serverErrorResponse } from "@/lib/api/auth";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export async function GET(request: Request) {
   try {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
+
+    const adminSupabase = createSupabaseAdminClient();
 
     const url = new URL(request.url);
     const search = url.searchParams.get("search");
@@ -12,7 +15,7 @@ export async function GET(request: Request) {
     const page = Math.max(Number(url.searchParams.get("page") ?? 1), 1);
     const pageSize = Math.min(Math.max(Number(url.searchParams.get("pageSize") ?? 20), 1), 100);
 
-    let query = auth.supabase
+    let query = adminSupabase
       .from("profiles")
       .select("*", { count: "exact" })
       .order("created_at", { ascending: false })
@@ -29,28 +32,16 @@ export async function GET(request: Request) {
     const savedByUser = new Map<string, number>();
 
     if (userIds.length > 0) {
-      const [targetContributionsRes, generalDepositsRes] = await Promise.all([
-        auth.supabase
-          .from("individual_savings_contributions")
-          .select("user_id, amount, status")
-          .in("user_id", userIds)
-          .eq("status", "success"),
-        auth.supabase
-          .from("savings_deposits")
-          .select("user_id, amount, status")
-          .in("user_id", userIds)
-          .eq("status", "success"),
-      ]);
+      const savingsPaymentsRes = await adminSupabase
+        .from("payment_records")
+        .select("user_id, amount, status")
+        .in("user_id", userIds)
+        .in("type", ["individual_savings", "bulk_contribution"])
+        .eq("status", "success");
 
-      if (targetContributionsRes.error) return badRequestResponse(targetContributionsRes.error.message);
-      if (generalDepositsRes.error) return badRequestResponse(generalDepositsRes.error.message);
+      if (savingsPaymentsRes.error) return badRequestResponse(savingsPaymentsRes.error.message);
 
-      for (const row of targetContributionsRes.data ?? []) {
-        const current = savedByUser.get(row.user_id) ?? 0;
-        savedByUser.set(row.user_id, current + Number(row.amount ?? 0));
-      }
-
-      for (const row of generalDepositsRes.data ?? []) {
+      for (const row of savingsPaymentsRes.data ?? []) {
         const current = savedByUser.get(row.user_id) ?? 0;
         savedByUser.set(row.user_id, current + Number(row.amount ?? 0));
       }

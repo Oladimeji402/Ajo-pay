@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin, serverErrorResponse } from "@/lib/api/auth";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export const revalidate = 60;
 
@@ -25,35 +26,43 @@ export async function GET() {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
 
-    const [targetGoalsResult, targetContributionsResult, generalSchemesResult, generalDepositsResult, usersResult] = await Promise.all([
-      auth.supabase.from("individual_savings_goals").select("id, name"),
-      auth.supabase.from("individual_savings_contributions").select("status, amount, goal_id"),
-      auth.supabase.from("savings_schemes").select("id, name"),
-      auth.supabase.from("savings_deposits").select("status, amount, scheme_id"),
-      auth.supabase.from("profiles").select("role, status"),
+    const adminSupabase = createSupabaseAdminClient();
+
+    const [targetGoalsResult, savingsPaymentsResult, generalSchemesResult, usersResult] = await Promise.all([
+      adminSupabase.from("individual_savings_goals").select("id, name"),
+      adminSupabase.from("payment_records").select("status, amount, metadata").in("type", ["individual_savings", "bulk_contribution"]),
+      adminSupabase.from("savings_schemes").select("id, name"),
+      adminSupabase.from("profiles").select("role, status"),
     ]);
 
     if (targetGoalsResult.error) {
       return NextResponse.json({ error: targetGoalsResult.error.message }, { status: 400 });
     }
-    if (targetContributionsResult.error) {
-      return NextResponse.json({ error: targetContributionsResult.error.message }, { status: 400 });
+    if (savingsPaymentsResult.error) {
+      return NextResponse.json({ error: savingsPaymentsResult.error.message }, { status: 400 });
     }
     if (generalSchemesResult.error) {
       return NextResponse.json({ error: generalSchemesResult.error.message }, { status: 400 });
-    }
-    if (generalDepositsResult.error) {
-      return NextResponse.json({ error: generalDepositsResult.error.message }, { status: 400 });
     }
     if (usersResult.error) {
       return NextResponse.json({ error: usersResult.error.message }, { status: 400 });
     }
 
     const targetGoals = targetGoalsResult.data ?? [];
-    const targetContributions = targetContributionsResult.data ?? [];
+    const savingsPayments = savingsPaymentsResult.data ?? [];
     const generalSchemes = generalSchemesResult.data ?? [];
-    const generalDeposits = generalDepositsResult.data ?? [];
     const users = usersResult.data ?? [];
+
+    // Parse payments to separate target contributions and general deposits
+    const targetContributions = savingsPayments.filter(payment => {
+      const metadata = payment.metadata as { goalId?: string; schemeId?: string } | null;
+      return metadata?.goalId;
+    });
+
+    const generalDeposits = savingsPayments.filter(payment => {
+      const metadata = payment.metadata as { goalId?: string; schemeId?: string } | null;
+      return metadata?.schemeId;
+    });
 
     const groupsByCategory = [
       { name: "target", value: targetGoals.length },
@@ -86,14 +95,18 @@ export async function GET() {
     const sourceContributionTotals = new Map<string, number>();
     for (const contribution of targetContributions) {
       if (contribution.status !== "success") continue;
-      if (!contribution.goal_id) continue;
-      const key = `target:${contribution.goal_id}`;
+      const metadata = contribution.metadata as { goalId?: string } | null;
+      const goalId = metadata?.goalId;
+      if (!goalId) continue;
+      const key = `target:${goalId}`;
       sourceContributionTotals.set(key, (sourceContributionTotals.get(key) ?? 0) + Number(contribution.amount ?? 0));
     }
     for (const deposit of generalDeposits) {
       if (deposit.status !== "success") continue;
-      if (!deposit.scheme_id) continue;
-      const key = `general:${deposit.scheme_id}`;
+      const metadata = deposit.metadata as { schemeId?: string } | null;
+      const schemeId = metadata?.schemeId;
+      if (!schemeId) continue;
+      const key = `general:${schemeId}`;
       sourceContributionTotals.set(key, (sourceContributionTotals.get(key) ?? 0) + Number(deposit.amount ?? 0));
     }
 

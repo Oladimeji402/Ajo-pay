@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin, serverErrorResponse } from "@/lib/api/auth";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export const revalidate = 60;
 
@@ -8,30 +9,40 @@ export async function GET() {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
 
-    const [users, activeGoals, activeSchemes, successfulGoalContributions, successfulSchemeDeposits, allSchemes, allSchemeDeposits, allSchemePayouts] = await Promise.all([
-      auth.supabase.from("profiles").select("id", { count: "exact", head: true }),
-      auth.supabase.from("individual_savings_goals").select("id", { count: "exact", head: true }).eq("status", "active"),
-      auth.supabase.from("savings_schemes").select("id", { count: "exact", head: true }).eq("status", "active"),
-      auth.supabase.from("individual_savings_contributions").select("amount").eq("status", "success"),
-      auth.supabase.from("savings_deposits").select("amount").eq("status", "success"),
-      auth.supabase.from("savings_schemes").select("id").neq("status", "cancelled"),
-      auth.supabase.from("savings_deposits").select("scheme_id, amount").eq("status", "success"),
-      auth.supabase.from("passbook_payouts").select("scheme_id, amount"),
+    const adminSupabase = createSupabaseAdminClient();
+
+    const [users, activeGoals, activeSchemes, successfulSavingsPayments, allSchemes, allSchemePayouts] = await Promise.all([
+      adminSupabase.from("profiles").select("id", { count: "exact", head: true }),
+      adminSupabase.from("individual_savings_goals").select("id", { count: "exact", head: true }).eq("status", "active"),
+      adminSupabase.from("savings_schemes").select("id", { count: "exact", head: true }).eq("status", "active"),
+      adminSupabase.from("payment_records").select("amount").in("type", ["individual_savings", "bulk_contribution"]).eq("status", "success"),
+      adminSupabase.from("savings_schemes").select("id").neq("status", "cancelled"),
+      adminSupabase.from("passbook_payouts").select("scheme_id, amount"),
     ]);
 
-    const volumeFromGoals = (successfulGoalContributions.data ?? []).reduce((sum, row) => sum + Number(row.amount ?? 0), 0);
-    const volumeFromSchemes = (successfulSchemeDeposits.data ?? []).reduce((sum, row) => sum + Number(row.amount ?? 0), 0);
-    const totalVolume = volumeFromGoals + volumeFromSchemes;
+    const totalVolume = (successfulSavingsPayments.data ?? []).reduce((sum, row) => sum + Number(row.amount ?? 0), 0);
 
     const schemeIds = new Set((allSchemes.data ?? []).map((row) => row.id));
-    const savedByScheme = new Map<string, number>();
     const paidByScheme = new Map<string, number>();
 
-    for (const row of allSchemeDeposits.data ?? []) {
-      savedByScheme.set(row.scheme_id, (savedByScheme.get(row.scheme_id) ?? 0) + Number(row.amount ?? 0));
-    }
     for (const row of allSchemePayouts.data ?? []) {
       paidByScheme.set(row.scheme_id, (paidByScheme.get(row.scheme_id) ?? 0) + Number(row.amount ?? 0));
+    }
+
+    // Query savings deposits from payment_records for pending payout calculation
+    const { data: savingsPaymentsForSchemes } = await adminSupabase
+      .from("payment_records")
+      .select("metadata, amount")
+      .in("type", ["individual_savings", "bulk_contribution"])
+      .eq("status", "success");
+
+    const savedByScheme = new Map<string, number>();
+    for (const row of savingsPaymentsForSchemes ?? []) {
+      const metadata = row.metadata as { goalId?: string; schemeId?: string } | null;
+      const schemeId = metadata?.schemeId;
+      if (schemeId) {
+        savedByScheme.set(schemeId, (savedByScheme.get(schemeId) ?? 0) + Number(row.amount ?? 0));
+      }
     }
 
     let pendingPayoutCount = 0;

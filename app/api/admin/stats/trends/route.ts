@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin, serverErrorResponse } from "@/lib/api/auth";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export const revalidate = 60;
 
@@ -24,8 +25,9 @@ function getDaysParam(value: string | null) {
 }
 
 function buildDateBuckets(days: number) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Use current date/time to ensure today's data is included
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   return Array.from({ length: days }, (_, index) => {
     const date = new Date(today.getTime() - (days - 1 - index) * DAY_MS);
@@ -51,7 +53,10 @@ function aggregateTrendData(
   for (const row of rows) {
     const bucket = row.created_at.slice(0, 10);
     const current = base.get(bucket);
-    if (!current) continue;
+    
+    if (!current) {
+      continue;
+    }
 
     current.amount += Number(row.amount ?? 0);
     current.count += 1;
@@ -81,6 +86,8 @@ export async function GET(request: Request) {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
 
+    const adminSupabase = createSupabaseAdminClient();
+
     const url = new URL(request.url);
     const days = getDaysParam(url.searchParams.get("days"));
 
@@ -91,29 +98,22 @@ export async function GET(request: Request) {
     const since = start.toISOString();
     const buckets = buildDateBuckets(days);
 
-    const [targetContributionsResult, schemeDepositsResult, payoutsResult, usersResult] = await Promise.all([
-      auth.supabase
-        .from("individual_savings_contributions")
+    const [savingsPaymentsResult, payoutsResult, usersResult] = await Promise.all([
+      adminSupabase
+        .from("payment_records")
         .select("created_at, amount")
+        .in("type", ["individual_savings", "bulk_contribution"])
         .eq("status", "success")
         .gte("created_at", since),
-      auth.supabase
-        .from("savings_deposits")
-        .select("created_at, amount")
-        .eq("status", "success")
-        .gte("created_at", since),
-      auth.supabase
+      adminSupabase
         .from("passbook_payouts")
         .select("created_at, amount")
         .gte("created_at", since),
-      auth.supabase.from("profiles").select("created_at").gte("created_at", since),
+      adminSupabase.from("profiles").select("created_at").gte("created_at", since),
     ]);
 
-    if (targetContributionsResult.error) {
-      return NextResponse.json({ error: targetContributionsResult.error.message }, { status: 400 });
-    }
-    if (schemeDepositsResult.error) {
-      return NextResponse.json({ error: schemeDepositsResult.error.message }, { status: 400 });
+    if (savingsPaymentsResult.error) {
+      return NextResponse.json({ error: savingsPaymentsResult.error.message }, { status: 400 });
     }
     if (payoutsResult.error) {
       return NextResponse.json({ error: payoutsResult.error.message }, { status: 400 });
@@ -122,10 +122,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: usersResult.error.message }, { status: 400 });
     }
 
-    const contributionTrends = aggregateTrendData(
-      [...(targetContributionsResult.data ?? []), ...(schemeDepositsResult.data ?? [])],
-      buckets,
-    );
+    const contributionTrends = aggregateTrendData(savingsPaymentsResult.data ?? [], buckets);
     const payoutTrends = aggregateTrendData(payoutsResult.data ?? [], buckets);
     const userGrowth = aggregateUserGrowth(usersResult.data ?? [], buckets);
 

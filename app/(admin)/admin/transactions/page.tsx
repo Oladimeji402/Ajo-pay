@@ -217,7 +217,29 @@ export default function AdminTransactionsPage() {
   });
   const pendingTransactions = filtered.filter((tx) => normalizeStatus(tx.status) === 'pending');
 
-  const successfulVolume = successfulTransactions.reduce((sum, tx) => sum + Number(tx.amount ?? 0), 0);
+  // Separate volumes by transaction type to avoid double-counting
+  const walletFundingVolume = successfulTransactions
+    .filter((tx) => tx.type === 'wallet_funding')
+    .reduce((sum, tx) => sum + Number(tx.amount ?? 0), 0);
+  
+  const savingsVolume = successfulTransactions
+    .filter((tx) => tx.type === 'individual_savings' || tx.type === 'bulk_contribution')
+    .reduce((sum, tx) => sum + Number(tx.amount ?? 0), 0);
+  
+  const passbookVolume = successfulTransactions
+    .filter((tx) => tx.type === 'passbook_activation')
+    .reduce((sum, tx) => sum + Number(tx.amount ?? 0), 0);
+  
+  const payoutVolume = successfulTransactions
+    .filter((tx) => tx.type === 'payout')
+    .reduce((sum, tx) => sum + Number(tx.amount ?? 0), 0);
+
+  // Gross volume = sum of ALL successful transactions (includes double-counting)
+  const grossVolume = successfulTransactions.reduce((sum, tx) => sum + Number(tx.amount ?? 0), 0);
+  
+  // Net inflow = wallet funding - (savings + passbook + payouts)
+  const netInflow = walletFundingVolume - (savingsVolume + passbookVolume + payoutVolume);
+
   const pendingVolume = pendingTransactions.reduce((sum, tx) => sum + Number(tx.amount ?? 0), 0);
   const successCount = successfulTransactions.length;
   const successRate = filtered.length > 0 ? (successCount / filtered.length) * 100 : 0;
@@ -359,11 +381,60 @@ export default function AdminTransactionsPage() {
         </button>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Successful Volume</p><p className="text-xl font-bold text-emerald-700">{toCurrency(successfulVolume)}</p></div>
-        <div className="rounded-xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Pending Volume</p><p className="text-xl font-bold text-amber-700">{toCurrency(pendingVolume)}</p></div>
-        <div className="rounded-xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Transaction Count</p><p className="text-xl font-bold text-brand-navy">{filtered.length.toLocaleString()}</p></div>
-        <div className="rounded-xl border border-slate-100 bg-white p-4"><p className="text-xs text-brand-gray">Success Rate</p><p className="text-xl font-bold text-brand-navy">{successRate.toFixed(1)}%</p></div>
+      {/* Transaction Type Breakdown */}
+      <div>
+        <h2 className="text-sm font-semibold text-brand-navy mb-2">Transaction Type Breakdown</h2>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-xl border border-slate-100 bg-white p-4">
+            <p className="text-xs text-brand-gray">Wallet Funding</p>
+            <p className="text-xl font-bold text-blue-700">{toCurrency(walletFundingVolume)}</p>
+            <p className="text-[10px] text-slate-500 mt-1">Money received from banks</p>
+          </div>
+          <div className="rounded-xl border border-slate-100 bg-white p-4">
+            <p className="text-xs text-brand-gray">Savings Volume</p>
+            <p className="text-xl font-bold text-emerald-700">{toCurrency(savingsVolume)}</p>
+            <p className="text-[10px] text-slate-500 mt-1">User contributions</p>
+          </div>
+          <div className="rounded-xl border border-slate-100 bg-white p-4">
+            <p className="text-xs text-brand-gray">Passbook Fees</p>
+            <p className="text-xl font-bold text-purple-700">{toCurrency(passbookVolume)}</p>
+            <p className="text-[10px] text-slate-500 mt-1">Activation fees collected</p>
+          </div>
+          <div className="rounded-xl border border-slate-100 bg-white p-4">
+            <p className="text-xs text-brand-gray">Payouts</p>
+            <p className="text-xl font-bold text-red-700">{toCurrency(payoutVolume)}</p>
+            <p className="text-[10px] text-slate-500 mt-1">Withdrawals to users</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Summary Metrics */}
+      <div>
+        <h2 className="text-sm font-semibold text-brand-navy mb-2">Summary Metrics</h2>
+        <div className="grid gap-3 sm:grid-cols-4">
+          <div className="rounded-xl border border-slate-100 bg-white p-4">
+            <p className="text-xs text-brand-gray">Gross Volume</p>
+            <p className="text-lg font-bold text-slate-700">{toCurrency(grossVolume)}</p>
+            <p className="text-[10px] text-slate-500 mt-1">All transactions (includes double-counting)</p>
+          </div>
+          <div className="rounded-xl border border-slate-100 bg-white p-4">
+            <p className="text-xs text-brand-gray">Transaction Count</p>
+            <p className="text-lg font-bold text-brand-navy">{filtered.length.toLocaleString()}</p>
+            <p className="text-[10px] text-slate-500 mt-1">{successRate.toFixed(1)}% success rate</p>
+          </div>
+          <div className="rounded-xl border border-slate-100 bg-white p-4">
+            <p className="text-xs text-brand-gray">Pending Volume</p>
+            <p className="text-lg font-bold text-amber-700">{toCurrency(pendingVolume)}</p>
+            <p className="text-[10px] text-slate-500 mt-1">Awaiting confirmation</p>
+          </div>
+          <div className="rounded-xl border border-slate-100 bg-white p-4">
+            <p className="text-xs text-brand-gray">Net Inflow</p>
+            <p className={`text-lg font-bold ${netInflow >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+              {toCurrency(netInflow)}
+            </p>
+            <p className="text-[10px] text-slate-500 mt-1">Funding - spending</p>
+          </div>
+        </div>
       </div>
 
       <ChartCard title="Transaction Volume Trend" subtitle="Volume for selected filters">
@@ -390,11 +461,12 @@ export default function AdminTransactionsPage() {
           </select>
           <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }} className="rounded-xl border border-slate-200 px-3 py-2 text-sm">
             <option value="all">All Types</option>
-            <option value="contribution">Contribution</option>
-            <option value="payout">Payout</option>
             <option value="wallet_funding">Wallet funding</option>
             <option value="individual_savings">Individual savings</option>
             <option value="bulk_contribution">Bulk contribution</option>
+            <option value="passbook_activation">Passbook activation</option>
+            <option value="payout">Payout</option>
+            <option value="contribution">Contribution (legacy)</option>
           </select>
           <select value={pendingBucket} onChange={(e) => { setPendingBucket(e.target.value); setPage(1); }} className="rounded-xl border border-slate-200 px-3 py-2 text-sm">
             <option value="all">Pending age</option>

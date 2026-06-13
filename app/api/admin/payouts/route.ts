@@ -22,10 +22,12 @@ export async function GET(request: Request) {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
 
+    const adminSupabase = createSupabaseAdminClient();
+
     const url = new URL(request.url);
     const status = url.searchParams.get("status");
 
-    let query = auth.supabase
+    let query = adminSupabase
       .from("payouts")
       .select("*, groups:group_id(id, name, start_date, frequency, current_cycle), profiles:user_id(id, name, email, phone, bank_account, bank_name)")
       .order("created_at", { ascending: false });

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin, serverErrorResponse } from "@/lib/api/auth";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 /** Next fixed payout date for each frequency. */
 function nextPayoutDate(frequency: string): string {
@@ -31,8 +32,10 @@ export async function GET() {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
 
+    const adminSupabase = createSupabaseAdminClient();
+
     // All non-cancelled schemes with user profile + bank details
-    const { data: schemes, error } = await auth.supabase
+    const { data: schemes, error } = await adminSupabase
       .from("savings_schemes")
       .select(`
         id,
@@ -59,22 +62,28 @@ export async function GET() {
 
     const schemeIds = (schemes ?? []).map((s) => s.id);
 
-    // Total deposits per scheme
-    const { data: depositTotals } = await auth.supabase
-      .from("savings_deposits")
-      .select("scheme_id, amount")
-      .in("scheme_id", schemeIds.length ? schemeIds : ["00000000-0000-0000-0000-000000000000"])
-      .eq("status", "success");
+    // Total deposits per scheme from payment_records
+    const { data: depositTotals } = await adminSupabase
+      .from("payment_records")
+      .select("metadata, amount")
+      .eq("type", "individual_savings")
+      .eq("status", "success")
+      .not("metadata", "is", null);
 
     // Total payouts already recorded per scheme
-    const { data: payoutTotals } = await auth.supabase
+    const { data: payoutTotals } = await adminSupabase
       .from("passbook_payouts")
       .select("scheme_id, amount")
       .in("scheme_id", schemeIds.length ? schemeIds : ["00000000-0000-0000-0000-000000000000"]);
 
     const depositByScheme = new Map<string, number>();
     for (const d of depositTotals ?? []) {
-      depositByScheme.set(d.scheme_id, (depositByScheme.get(d.scheme_id) ?? 0) + Number(d.amount));
+      // Parse metadata to get schemeId (camelCase)
+      const metadata = typeof d.metadata === "object" && d.metadata !== null ? d.metadata as Record<string, unknown> : {};
+      const schemeId = metadata.schemeId as string | undefined;
+      if (schemeId) {
+        depositByScheme.set(schemeId, (depositByScheme.get(schemeId) ?? 0) + Number(d.amount));
+      }
     }
 
     const payoutByScheme = new Map<string, number>();
