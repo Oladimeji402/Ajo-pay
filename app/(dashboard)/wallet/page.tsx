@@ -418,6 +418,14 @@ export default function WalletPage() {
             <span className="font-semibold">Minimum deposit: NGN 500.</span> Bank transfer charges may apply.
           </p>
         </div>
+
+        {/* Processing time notice */}
+        <div className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2.5 flex items-start gap-2">
+          <span className="text-blue-500 mt-0.5 text-base leading-none">ℹ️</span>
+          <p className="text-xs text-blue-800">
+            <span className="font-semibold">Bank transfers take 2-5 minutes to process.</span> After sending money, wait a few minutes before checking for deposits. Our system also auto-checks every 5 minutes.
+          </p>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
@@ -427,7 +435,7 @@ export default function WalletPage() {
         </div>
         <p className="text-[11px] text-slate-500">
           Last checked: {formatDate(lastCheckedAt)}
-          <span className="ml-2 text-emerald-600 font-medium">• Auto-checking every 30s</span>
+          <span className="ml-2 text-emerald-600 font-medium">• System checks every 5 minutes</span>
         </p>
         <button
           onClick={handleManualRefresh}

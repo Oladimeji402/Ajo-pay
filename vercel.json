@@ -9,6 +9,10 @@
     {
       "path": "/api/internal/payments/reconcile",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/internal/sync-deposits",
+      "schedule": "*/5 * * * *"
     }
   ]
 }
