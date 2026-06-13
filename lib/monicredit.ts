@@ -399,25 +399,29 @@ export async function getMonicreditWalletTransactions(params: {
 }): Promise<MonicreditWalletTransaction[]> {
   const { baseUrl } = getMonicreditConfig();
 
-  // Use the virtual-account transactions endpoint which returns
-  // incoming bank transfers for a specific virtual account wallet
-  let url = `${baseUrl}/payment/transactions/virtual-account?wallet_id=${encodeURIComponent(params.walletId)}`;
+  // Use the correct wallet transactions endpoint
+  let url = `${baseUrl}/banking/wallet/transactions?`;
 
+  // Add query parameters
+  const queryParams: string[] = [];
+  
   if (params.fromDate) {
-    url += `&from_date=${encodeURIComponent(params.fromDate)}`;
+    queryParams.push(`from=${encodeURIComponent(params.fromDate)}`);
   }
 
   if (params.toDate) {
-    url += `&to_date=${encodeURIComponent(params.toDate)}`;
+    queryParams.push(`to=${encodeURIComponent(params.toDate)}`);
   }
 
   if (params.type) {
-    url += `&type=${encodeURIComponent(params.type)}`;
+    queryParams.push(`type=${encodeURIComponent(params.type)}`);
   }
 
   if (params.status) {
-    url += `&status=${encodeURIComponent(params.status)}`;
+    queryParams.push(`status=${encodeURIComponent(params.status)}`);
   }
+
+  url += queryParams.join('&');
 
   const response = await fetch(url, {
     method: "GET",
@@ -431,7 +435,7 @@ export async function getMonicreditWalletTransactions(params: {
 
   const json = await response.json() as Record<string, unknown>;
 
-  // API may return { data: [...] } or just an array or { status: false }
+  // API returns { success: true, data: { data: [...] } }
   if (!response.ok) {
     throw new MonicreditHttpError(
       response.status,
@@ -440,11 +444,18 @@ export async function getMonicreditWalletTransactions(params: {
     );
   }
 
-  // Handle both array response and { data: [...] } response
-  if (Array.isArray(json)) return json as MonicreditWalletTransaction[];
-  if (Array.isArray(json.data)) return json.data as MonicreditWalletTransaction[];
+  // Handle response structure: { success: true, data: { data: [...] } }
+  if (json.success && json.data && typeof json.data === 'object') {
+    const dataObj = json.data as Record<string, unknown>;
+    if (Array.isArray(dataObj.data)) {
+      // Filter by wallet_id since this endpoint returns all wallets for the merchant
+      return (dataObj.data as MonicreditWalletTransaction[]).filter(
+        tx => !params.walletId || String(tx.wallet_id) === String(params.walletId)
+      );
+    }
+  }
 
-  // If status false with no data, return empty (don't throw — wallet may just have no transactions)
+  // Fallback
   return [];
 }
 
