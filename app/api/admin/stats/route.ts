@@ -51,12 +51,28 @@ export async function GET() {
       if (owed > 0) pendingPayoutCount += 1;
     }
 
+    // Calculate contributions for current month
+    const now = new Date();
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    const { data: currentMonthPayments } = await adminSupabase
+      .from("payment_records")
+      .select("amount")
+      .in("type", ["individual_savings", "bulk_contribution"])
+      .eq("status", "success")
+      .gte("created_at", currentMonthStart.toISOString())
+      .lte("created_at", currentMonthEnd.toISOString());
+
+    const contributionsThisMonth = (currentMonthPayments ?? []).reduce((sum, row) => sum + Number(row.amount ?? 0), 0);
+
     return NextResponse.json({
       data: {
         totalUsers: users.count ?? 0,
         activeGroups: (activeGoals.count ?? 0) + (activeSchemes.count ?? 0),
         pendingPayouts: pendingPayoutCount,
         totalVolume,
+        contributionsThisMonth,
       },
     });
   } catch {

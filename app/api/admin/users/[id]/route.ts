@@ -415,7 +415,7 @@ export async function GET(_request: Request, context: Context) {
 
       recentActivity.push({
         id: `payment:${payment.id}`,
-        type: payment.type as const,
+        type: payment.type,
         status: payment.status,
         title,
         description: `${description} · Ref: ${payment.reference.slice(0, 20)}`,

@@ -27,6 +27,7 @@ type AdminStats = {
   activeGroups: number;
   pendingPayouts: number;
   totalVolume: number;
+  contributionsThisMonth: number;
 };
 
 type TrendPoint = {
@@ -257,7 +258,8 @@ export default function AdminOverviewPage() {
   const payoutCurrent = sumLastDays(dashboard.payoutTrends, 30, 'count');
   const payoutPrevious = sumPreviousDays(dashboard.payoutTrends, 30, 'count');
 
-  const contributionsThisMonth = sumCurrentMonth(dashboard.contributionTrends);
+  // Use API-provided current month contributions (accurate for current calendar month)
+  const contributionsThisMonth = dashboard.stats.contributionsThisMonth ?? 0;
   const contributionsPreviousMonth = sumPreviousMonth(dashboard.contributionTrends);
 
   const totalContributions = dashboard.contributionsByStatus.reduce(
