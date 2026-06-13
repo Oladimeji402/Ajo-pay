@@ -1,10 +1,4 @@
 {
-  "version": 2,
-  "framework": "nextjs",
-  "installCommand": "npm install",
-  "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
-  "outputDirectory": ".next",
   "crons": [
     {
       "path": "/api/internal/payments/reconcile",
@@ -12,7 +6,7 @@
     },
     {
       "path": "/api/internal/sync-deposits",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 * * * *"
     }
   ]
 }
