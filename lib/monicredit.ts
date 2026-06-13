@@ -251,7 +251,7 @@ async function monicreditPrivateKeyRequest<T>(path: string, body: Record<string,
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
-      Authorization: `Bearer ${privateKey}`,
+      // Note: Private key requests don't use Authorization header
     },
     body: JSON.stringify({
       ...body,
