@@ -10,7 +10,8 @@ const MIN_DEPOSIT_NAIRA = 100; // Lower threshold to accept amounts after provid
 function toAmountNaira(value: number | string | unknown) {
   const parsed = Number(value ?? 0);
   if (!Number.isFinite(parsed) || parsed < MIN_DEPOSIT_NAIRA) return null;
-  return Math.round(parsed);
+  // Keep decimal precision - don't round yet, let the database/display handle it
+  return parsed;
 }
 
 function buildReference(transaction: { tracking_reference?: string; id?: number | string; transaction_id?: string; order_id?: string }) {
@@ -197,7 +198,7 @@ export async function POST() {
         user_id: auth.user.id,
         type: "wallet_funded",
         title: "Wallet funded successfully",
-        body: `Your wallet has been credited with NGN ${amount.toLocaleString("en-NG")}.`,
+        body: `Your wallet has been credited with NGN ${amount.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.`,
         metadata: { reference, amount, provider: "monicredit" },
       });
       console.log("[wallet/check-deposits] Notification created");

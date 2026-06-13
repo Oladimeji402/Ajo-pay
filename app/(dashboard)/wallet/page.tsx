@@ -164,7 +164,7 @@ export default function WalletPage() {
       });
 
       if (!silent && Number(data.credited ?? 0) > 0) {
-        notifySuccess(showToast, `Wallet credited with NGN ${Number(data.credited).toLocaleString('en-NG')}.`);
+        notifySuccess(showToast, `Wallet credited with NGN ${Number(data.credited).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.`);
       }
       return Boolean(nextAccountNumber && nextBankName && nextAccountName);
     } catch (error) {
@@ -250,7 +250,7 @@ export default function WalletPage() {
   }
 
   const statusText = creditedNow > 0
-    ? `Wallet credited with NGN ${creditedNow.toLocaleString('en-NG')} on last check.`
+    ? `Wallet credited with NGN ${creditedNow.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} on last check.`
     : 'No new deposits found on your last check.';
 
   const statusIcon = creditedNow > 0 ? <CheckCircle2 size={15} className="text-emerald-600" /> : null;

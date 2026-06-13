@@ -104,7 +104,12 @@ export default function DashboardPage() {
         return transactions.filter((tx) => tx.type === activityFilter);
     }, [activityFilter, transactions]);
 
-    const formatCurrency = (value: number) => Number(value).toLocaleString('en-NG');
+    const formatCurrency = (value: number) => {
+        return Number(value).toLocaleString('en-NG', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+    };
 
     const refreshWalletBalance = async () => {
         setRefreshingBalance(true);
