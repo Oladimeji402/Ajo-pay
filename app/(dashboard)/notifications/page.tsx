@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Bell, BookOpen, CheckCheck, Clock3, Layers, Loader2, Settings, ShieldCheck, Target, Users, Wallet, X } from 'lucide-react';
+import { Bell, BookOpen, CheckCheck, Clock3, HandCoins, Layers, Loader2, Settings, ShieldCheck, Target, Users, Wallet, X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
 
@@ -37,6 +37,8 @@ function getNotificationMeta(type: string): {
             return { category: 'transaction', badge: { label: 'Transaction', icon: Wallet, className: 'bg-blue-50 text-blue-700 border-blue-200' } };
         case 'individual_savings_paid':
             return { category: 'transaction', badge: { label: 'Savings', icon: Target, className: 'bg-purple-50 text-purple-700 border-purple-200' } };
+        case 'payout_recorded':
+            return { category: 'transaction', badge: { label: 'Payout', icon: HandCoins, className: 'bg-amber-50 text-amber-700 border-amber-200' } };
         case 'bulk_payment_confirmed':
             return { category: 'transaction', badge: { label: 'Bulk Pay', icon: Layers, className: 'bg-indigo-50 text-indigo-700 border-indigo-200' } };
         case 'group_leave':

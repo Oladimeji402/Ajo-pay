@@ -10,6 +10,7 @@ import {
     LogOut,
     ArrowUpRight,
     BookOpen,
+    Bell,
     X,
     Target,
     CreditCard,
@@ -19,6 +20,7 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
 import { BrandLogo } from '@/components/ui/BrandLogo';
+import { useRealtimeSubscription } from '@/lib/hooks/useRealtimeSubscription';
 
 interface DashboardLayoutProps {
     children: ReactNode;
@@ -30,7 +32,25 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     const [userEmail, setUserEmail] = useState('member@example.com');
     const [passbookActivated, setPassbookActivated] = useState(true);
     const [bannerDismissed, setBannerDismissed] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
     const { showToast } = useToast();
+    const { refreshTrigger } = useRealtimeSubscription({
+        channelName: 'dashboard-notifications',
+        tables: ['notifications'],
+    });
+
+    useEffect(() => {
+        const loadUnreadCount = async () => {
+            try {
+                const res = await fetch('/api/notifications?limit=1', { cache: 'no-store' });
+                const json = await res.json();
+                if (res.ok) setUnreadCount(Number(json.unreadCount ?? 0));
+            } catch {
+                // Non-critical — leave badge as-is.
+            }
+        };
+        void loadUnreadCount();
+    }, [refreshTrigger]);
 
     useEffect(() => {
         const loadUser = async () => {
@@ -200,6 +220,14 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     </div>
 
                     <div className="flex items-center gap-2">
+                        <Link href="/notifications" className="relative inline-flex items-center justify-center h-10 w-10 rounded-xl border border-slate-200 bg-white text-brand-gray hover:text-brand-navy hover:bg-slate-50 transition-colors">
+                            <Bell size={18} />
+                            {unreadCount > 0 && (
+                                <span className="absolute -top-1 -right-1 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                                    {unreadCount > 9 ? '9+' : unreadCount}
+                                </span>
+                            )}
+                        </Link>
                         <Link href="/passbook" className="relative inline-flex items-center justify-center h-10 w-10 rounded-xl border border-slate-200 bg-white text-brand-gray hover:text-brand-navy hover:bg-slate-50 transition-colors">
                             <BookOpen size={18} />
                         </Link>
@@ -217,6 +245,14 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                             <p className="text-sm font-semibold text-brand-navy truncate">{sectionHeading}</p>
                         </div>
                         <div className="flex items-center gap-2">
+                            <Link href="/notifications" className="relative inline-flex items-center justify-center h-9 w-9 rounded-lg border border-slate-200 bg-white text-brand-gray">
+                                <Bell size={16} />
+                                {unreadCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                                        {unreadCount > 9 ? '9+' : unreadCount}
+                                    </span>
+                                )}
+                            </Link>
                             <Link href="/passbook" className="relative inline-flex items-center justify-center h-9 w-9 rounded-lg border border-slate-200 bg-white text-brand-gray">
                                 <BookOpen size={16} />
                             </Link>
