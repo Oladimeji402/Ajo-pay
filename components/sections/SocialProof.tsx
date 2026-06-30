@@ -147,9 +147,8 @@ export const SocialProof = () => {
 
           <div className="flex items-center gap-2 px-5 py-3 rounded-2xl border border-slate-200 bg-white shadow-sm">
             <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
-              <rect width="32" height="32" rx="8" fill="#1a56db" />
-              <path d="M6 16c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10S6 21.523 6 16z" stroke="white" strokeWidth="2" fill="none"/>
-              <path d="M11 16h10M16 11v10" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+              <circle cx="16" cy="16" r="11" stroke="#4F46E5" strokeWidth="3.5" fill="none"/>
+              <path d="M9 17l5 5 10-14" stroke="#2DD4D4" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
             </svg>
             <span className="text-[15px] font-black text-slate-800 tracking-tight">monicredit</span>
           </div>

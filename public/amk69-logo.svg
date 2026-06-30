@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 172 40" width="172" height="40">
+  <!-- Badge mark -->
+  <rect x="1" y="2" width="34" height="34" rx="9" fill="#0D1A6E"/>
+  <text x="18" y="24" text-anchor="middle" font-family="'Trebuchet MS', 'Segoe UI', Arial, sans-serif" font-size="13" font-weight="800" fill="#F5A623" letter-spacing="0.5">AMK</text>
+
+  <!-- "69" badge overlapping top-right corner -->
+  <circle cx="32" cy="9" r="9" fill="#1A35D4" stroke="#FFFFFF" stroke-width="1.5"/>
+  <text x="32" y="12" text-anchor="middle" font-family="'Trebuchet MS', 'Segoe UI', Arial, sans-serif" font-size="8" font-weight="700" fill="#FFFFFF">69</text>
+
+  <!-- Wordmark -->
+  <text x="46" y="20" font-family="'Trebuchet MS', 'Segoe UI', Arial, sans-serif" font-size="15" font-weight="800" fill="#0D1A6E" letter-spacing="0.2">AMK 69</text>
+  <text x="46" y="32" font-family="'Trebuchet MS', 'Segoe UI', Arial, sans-serif" font-size="8.5" font-weight="600" fill="#64748B" letter-spacing="2.5">PROJECT 1</text>
+</svg>

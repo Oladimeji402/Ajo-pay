@@ -185,7 +185,7 @@ export const Hero = () => {
             <div className="absolute top-1/2 right-[10%] -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-brand-accent/[0.04] blur-[120px] pointer-events-none" />
             <div className="absolute top-1/2 right-[10%] -translate-y-1/2 w-[300px] h-[300px] rounded-full bg-brand-primary/[0.07] blur-[80px] pointer-events-none" />
 
-            <Container className="relative z-10 w-full pt-20 pb-24 lg:pt-28 lg:pb-32">
+            <Container className="relative z-10 w-full pt-[116px] pb-24 lg:pt-[148px] lg:pb-32">
                 <div className="grid lg:grid-cols-[1fr_auto] gap-12 lg:gap-20 items-center">
 
                     {/* ─── LEFT — Typographic lead ─── */}

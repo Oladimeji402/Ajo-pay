@@ -1,3 +1,4 @@
+import { SponsorBar } from '@/components/layout/SponsorBar';
 import { Navbar } from '@/components/layout/Navbar';
 import { Hero } from '@/components/sections/Hero';
 import { HowItWorks } from '@/components/sections/HowItWorks';
@@ -9,6 +10,7 @@ import { Footer } from '@/components/layout/Footer';
 export default function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col scroll-smooth">
+      <SponsorBar />
       <Navbar />
       <main className="flex-grow">
         <Hero />
