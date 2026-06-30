@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { badRequestResponse, requireAdmin, serverErrorResponse } from "@/lib/api/auth";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const schema = z.object({
   schemeId:    z.string().uuid(),
@@ -22,9 +23,10 @@ export async function POST(request: Request) {
     if (!parsed.success) return badRequestResponse(parsed.error.issues[0]?.message ?? "Validation failed.");
 
     const { schemeId, userId, amount, periodLabel, notes } = parsed.data;
+    const adminSupabase = createSupabaseAdminClient();
 
     // Verify scheme exists and belongs to user
-    const { data: scheme } = await auth.supabase
+    const { data: scheme } = await adminSupabase
       .from("savings_schemes")
       .select("id, frequency")
       .eq("id", schemeId)
@@ -33,7 +35,7 @@ export async function POST(request: Request) {
 
     if (!scheme) return NextResponse.json({ error: "Scheme not found for this user." }, { status: 404 });
 
-    const { data, error } = await auth.supabase
+    const { data, error } = await adminSupabase
       .from("passbook_payouts")
       .insert({
         user_id:      userId,
@@ -50,7 +52,7 @@ export async function POST(request: Request) {
     if (error) return serverErrorResponse(error);
 
     // Insert a notification so user sees the payout in their alerts.
-    await auth.supabase.from("notifications").insert({
+    await adminSupabase.from("notifications").insert({
       user_id: userId,
       type:    "payout_recorded",
       title:   "Savings payout sent",
