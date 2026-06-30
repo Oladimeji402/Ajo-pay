@@ -3,6 +3,7 @@
 import { ReactNode } from 'react';
 import { motion } from 'motion/react';
 import { BrandLogo } from '../ui/BrandLogo';
+import { SponsorBar } from './SponsorBar';
 
 interface AuthLayoutProps {
     children: ReactNode;
@@ -11,11 +12,12 @@ interface AuthLayoutProps {
 export const AuthLayout = ({ children }: AuthLayoutProps) => {
     return (
         <div className="min-h-screen bg-brand-warm" style={{ fontFamily: 'var(--font-sans)' }}>
+            <SponsorBar />
             <a href="#auth-main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-white focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-brand-navy">
                 Skip to authentication form
             </a>
 
-            <div className="flex min-h-screen">
+            <div className="flex min-h-screen pt-9">
                 {/* Left brand panel */}
                 <aside className="relative hidden w-[42%] min-w-95 overflow-hidden lg:flex lg:flex-col" aria-hidden="true">
                     <div className="absolute inset-0 bg-[#2563EB]" />
