@@ -253,9 +253,6 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                                     </span>
                                 )}
                             </Link>
-                            <Link href="/passbook" className="relative inline-flex items-center justify-center h-9 w-9 rounded-lg border border-slate-200 bg-white text-brand-gray">
-                                <BookOpen size={16} />
-                            </Link>
                             <button
                                 onClick={handleSignOut}
                                 className="inline-flex items-center justify-center h-9 w-9 rounded-lg border border-slate-200 bg-white text-brand-gray hover:text-red-600 hover:border-red-200 transition-colors"
