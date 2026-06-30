@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin, serverErrorResponse } from "@/lib/api/auth";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 type AdminActivityType = "contribution" | "payout" | "signup";
 
@@ -26,24 +27,25 @@ export async function GET(request: Request) {
 
     const url = new URL(request.url);
     const limit = getLimitParam(url.searchParams.get("limit"));
+    const adminSupabase = createSupabaseAdminClient();
 
     const [targetContributionsResult, schemeDepositsResult, payoutsResult, usersResult] = await Promise.all([
-      auth.supabase
+      adminSupabase
         .from("individual_savings_contributions")
         .select("id, amount, status, created_at, profiles:user_id(name, email), goals:goal_id(name)")
         .order("created_at", { ascending: false })
         .limit(limit),
-      auth.supabase
+      adminSupabase
         .from("savings_deposits")
         .select("id, amount, status, created_at, profiles:user_id(name, email), schemes:scheme_id(name)")
         .order("created_at", { ascending: false })
         .limit(limit),
-      auth.supabase
+      adminSupabase
         .from("passbook_payouts")
         .select("id, amount, period_label, created_at, profiles:user_id(name, email), schemes:scheme_id(name)")
         .order("created_at", { ascending: false })
         .limit(limit),
-      auth.supabase.from("profiles").select("id, name, email, created_at").order("created_at", { ascending: false }).limit(limit),
+      adminSupabase.from("profiles").select("id, name, email, created_at").order("created_at", { ascending: false }).limit(limit),
     ]);
 
     if (targetContributionsResult.error) {
