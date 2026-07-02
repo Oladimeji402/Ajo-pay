@@ -109,7 +109,8 @@ export default function AdminSupportPage() {
 
     // Real-time subscription
     useRealtimeSubscription({
-        table: 'support_cases',
+        channelName: 'admin-support-cases',
+        tables: ['support_cases', 'support_case_events'],
         callback: () => void loadCases(),
     });
 
