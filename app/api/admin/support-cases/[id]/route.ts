@@ -9,13 +9,13 @@ const updateSchema = z.object({
 
 export async function GET(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const auth = await requireAdmin();
         if (auth.error) return auth.error;
 
-        const caseId = params.id;
+        const { id: caseId } = await params;
 
         // Get case details
         const { data: supportCase, error: caseError } = await auth.supabase
@@ -61,13 +61,13 @@ export async function GET(
 
 export async function PATCH(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const auth = await requireAdmin();
         if (auth.error || !auth.user) return auth.error;
 
-        const caseId = params.id;
+        const { id: caseId } = await params;
         const body = await request.json();
         const parsed = updateSchema.safeParse(body);
 

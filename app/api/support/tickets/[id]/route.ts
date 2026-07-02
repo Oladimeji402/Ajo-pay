@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 
 export async function GET(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const supabase = createSupabaseBrowserClient();
+        const cookieStore = cookies();
+        const supabase = createSupabaseServerClient(cookieStore);
         const {
             data: { user },
         } = await supabase.auth.getUser();
@@ -18,7 +20,7 @@ export async function GET(
             );
         }
 
-        const ticketId = params.id;
+        const { id: ticketId } = await params;
 
         // Get ticket
         const { data: ticket, error: ticketError } = await supabase

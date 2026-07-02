@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 
 const replySchema = z.object({
     message: z.string().min(1).max(1000),
@@ -8,10 +9,11 @@ const replySchema = z.object({
 
 export async function POST(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const supabase = createSupabaseBrowserClient();
+        const cookieStore = cookies();
+        const supabase = createSupabaseServerClient(cookieStore);
         const {
             data: { user },
         } = await supabase.auth.getUser();
@@ -23,7 +25,7 @@ export async function POST(
             );
         }
 
-        const ticketId = params.id;
+        const { id: ticketId } = await params;
 
         // Verify user owns this ticket
         const { data: ticket, error: ticketError } = await supabase

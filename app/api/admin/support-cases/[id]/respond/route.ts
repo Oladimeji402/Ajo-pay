@@ -11,13 +11,13 @@ const respondSchema = z.object({
 
 export async function POST(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const auth = await requireAdmin();
         if (auth.error || !auth.user) return auth.error;
 
-        const caseId = params.id;
+        const { id: caseId } = await params;
         const body = await request.json();
         const parsed = respondSchema.safeParse(body);
 
