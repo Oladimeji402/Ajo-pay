@@ -575,6 +575,22 @@ export default function SettingsPage() {
                             <ChevronRight size={16} className="text-slate-400" />
                         </Link>
 
+                        <Link href="/support" className="w-full px-5 py-4 border-b border-slate-100 flex items-center justify-between text-left hover:bg-slate-50">
+                            <div>
+                                <p className="text-sm font-semibold text-brand-navy">Get Help</p>
+                                <p className="text-xs text-slate-500">Submit a support ticket</p>
+                            </div>
+                            <ChevronRight size={16} className="text-slate-400" />
+                        </Link>
+
+                        <Link href="/support/my-tickets" className="w-full px-5 py-4 border-b border-slate-100 flex items-center justify-between text-left hover:bg-slate-50">
+                            <div>
+                                <p className="text-sm font-semibold text-brand-navy">My Tickets</p>
+                                <p className="text-xs text-slate-500">Track your support requests</p>
+                            </div>
+                            <ChevronRight size={16} className="text-slate-400" />
+                        </Link>
+
                         <button onClick={() => setMobileView('danger')} className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-red-50">
                             <div>
                                 <p className="text-sm font-semibold text-red-700">Delete Account</p>

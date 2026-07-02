@@ -14,6 +14,7 @@ import {
     X,
     Target,
     CreditCard,
+    MessageSquare,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -184,9 +185,9 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                                     Manage Savings
                                     <ArrowUpRight size={16} />
                                 </Link>
-                                <Link href="/activity" className="w-full inline-flex items-center justify-between rounded-xl border border-white/20 bg-white/10 px-3 py-2.5 text-sm font-semibold text-slate-200 hover:text-white hover:bg-white/15 transition-colors">
-                                    View Payments
-                                    <ArrowUpRight size={15} />
+                                <Link href="/support" className="w-full inline-flex items-center justify-between rounded-xl border border-white/20 bg-white/10 px-3 py-2.5 text-sm font-semibold text-slate-200 hover:text-white hover:bg-white/15 transition-colors">
+                                    Get Help
+                                    <MessageSquare size={15} />
                                 </Link>
                             </div>
                         </div>

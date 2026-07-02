@@ -23,6 +23,7 @@ export async function GET(request: Request) {
 
     const url = new URL(request.url);
     const status = url.searchParams.get("status");
+    const severity = url.searchParams.get("severity");
     const search = url.searchParams.get("search");
     const page = Math.max(Number(url.searchParams.get("page") ?? 1), 1);
     const pageSize = Math.min(Math.max(Number(url.searchParams.get("pageSize") ?? 20), 1), 100);
@@ -34,6 +35,7 @@ export async function GET(request: Request) {
       .range((page - 1) * pageSize, page * pageSize - 1);
 
     if (status) query = query.eq("status", status);
+    if (severity) query = query.eq("severity", severity);
     if (search) query = query.ilike("summary", `%${search}%`);
 
     const { data, error, count } = await query;
