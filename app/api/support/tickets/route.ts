@@ -95,7 +95,7 @@ export async function POST(request: Request) {
                 case_number: caseNumber,
                 user_id: user.id,
                 status: 'open',
-                severity: 'medium', // Default severity
+                severity: 'medium',
                 complaint_type: parsed.data.category,
                 summary: parsed.data.subject,
             })
@@ -103,7 +103,12 @@ export async function POST(request: Request) {
             .single();
 
         if (caseError) {
-            throw new Error(caseError.message);
+            console.error('Support case insert error:', caseError);
+            throw new Error(`Failed to create support case: ${caseError.message}`);
+        }
+
+        if (!supportCase) {
+            throw new Error('Support case was not created');
         }
 
         // Create initial event with description
