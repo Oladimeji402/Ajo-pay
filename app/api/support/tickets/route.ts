@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
 
 const createTicketSchema = z.object({
     category: z.enum(['payment', 'payout', 'account', 'savings', 'technical', 'other']),
@@ -19,8 +18,7 @@ function generateCaseNumber() {
 
 export async function GET(request: Request) {
     try {
-        const cookieStore = cookies();
-        const supabase = createSupabaseServerClient(cookieStore);
+        const supabase = await createSupabaseServerClient();
         const {
             data: { user },
         } = await supabase.auth.getUser();
@@ -63,8 +61,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     try {
-        const cookieStore = cookies();
-        const supabase = createSupabaseServerClient(cookieStore);
+        const supabase = await createSupabaseServerClient();
         const {
             data: { user },
         } = await supabase.auth.getUser();

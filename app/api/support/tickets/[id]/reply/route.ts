@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
 
 const replySchema = z.object({
     message: z.string().min(1).max(1000),
@@ -12,8 +11,7 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const cookieStore = cookies();
-        const supabase = createSupabaseServerClient(cookieStore);
+        const supabase = await createSupabaseServerClient();
         const {
             data: { user },
         } = await supabase.auth.getUser();

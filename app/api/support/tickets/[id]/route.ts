@@ -1,14 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
 
 export async function GET(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const cookieStore = cookies();
-        const supabase = createSupabaseServerClient(cookieStore);
+        const supabase = await createSupabaseServerClient();
         const {
             data: { user },
         } = await supabase.auth.getUser();
