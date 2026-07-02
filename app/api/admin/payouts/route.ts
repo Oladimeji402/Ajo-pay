@@ -207,10 +207,32 @@ export async function PATCH(request: Request) {
       },
     });
 
-    // Advance cycle when payout is marked done
+    // Advance cycle and create payment record when payout is marked done
     if (status === "done") {
       try {
         const adminClient = createSupabaseAdminClient();
+
+        // Create payment record for the payout transaction
+        const payoutReference = `PAYOUT-${data.id}-${Date.now()}`;
+        await adminClient.from("payment_records").insert({
+          user_id: data.user_id,
+          group_id: data.group_id,
+          provider: "monicredit",
+          type: "payout",
+          amount: data.amount,
+          currency: "NGN",
+          status: "success",
+          reference: payoutReference,
+          provider_reference: data.proof_url || null,
+          metadata: {
+            payout_id: data.id,
+            cycle_number: data.cycle_number,
+            bank_account: data.bank_account,
+            bank_name: data.bank_name,
+            marked_done_by: data.marked_done_by,
+            marked_done_at: data.marked_done_at,
+          },
+        });
 
         const { data: group } = await adminClient
           .from("groups")

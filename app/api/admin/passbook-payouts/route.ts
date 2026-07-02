@@ -51,6 +51,26 @@ export async function POST(request: Request) {
 
     if (error) return serverErrorResponse(error);
 
+    // Create payment record for the payout transaction
+    const payoutReference = `SAVINGS-PAYOUT-${data.id}-${Date.now()}`;
+    await adminSupabase.from("payment_records").insert({
+      user_id: userId,
+      provider: "monicredit",
+      type: "payout",
+      amount,
+      currency: "NGN",
+      status: "success",
+      reference: payoutReference,
+      metadata: {
+        passbook_payout_id: data.id,
+        scheme_id: schemeId,
+        period_label: periodLabel,
+        notes: notes || null,
+        recorded_by: auth.user.id,
+        payout_type: "savings_withdrawal",
+      },
+    });
+
     // Insert a notification so user sees the payout in their alerts.
     await adminSupabase.from("notifications").insert({
       user_id: userId,

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { badRequestResponse, requireUser, serverErrorResponse } from "@/lib/api/auth";
 
 const createSchema = z.object({
-  name: z.string().min(1).max(100),
+  name: z.string().min(1).max(100).optional(), // Make name optional
   frequency: z.enum(["daily", "weekly", "monthly"]),
   minimum_amount: z.number().int().min(500).optional(),
 });
@@ -63,11 +63,14 @@ export async function POST(request: Request) {
 
     const { name, frequency, minimum_amount } = parsed.data;
 
+    // Auto-generate standard name if not provided
+    const schemeName = name?.trim() || `General ${frequency.charAt(0).toUpperCase() + frequency.slice(1)} Savings`;
+
     const { data, error } = await auth.supabase
       .from("savings_schemes")
       .insert({
         user_id: auth.user.id,
-        name: name.trim(),
+        name: schemeName,
         frequency,
         minimum_amount: minimum_amount ?? 500,
       })

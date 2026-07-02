@@ -79,6 +79,183 @@ function AdminPayoutsSkeleton() {
   );
 }
 
+// ── Payment History ───────────────────────────────────────────────────────────
+
+type PaymentHistoryRow = {
+  id: string;
+  type: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    phone?: string | null;
+    bank_account?: string | null;
+    bank_name?: string | null;
+  };
+  group_or_scheme: string;
+  amount: number;
+  reference: string;
+  period?: string | null;
+  paid_at: string;
+  notes?: string | null;
+};
+
+function PaymentHistoryTab() {
+  const [loading, setLoading] = useState(true);
+  const [payments, setPayments] = useState<PaymentHistoryRow[]>([]);
+  const [summary, setSummary] = useState({ totalPaidOut: 0, totalPayments: 0, uniqueUsers: 0, savingsPayouts: 0, groupPayouts: 0 });
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch('/api/admin/payment-history', { cache: 'no-store' });
+        const json = await res.json();
+        if (res.ok) {
+          setPayments(json.data.payments || []);
+          setSummary(json.data.summary || {});
+        }
+      } catch (err) {
+        console.error('Failed to load payment history:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    void load();
+  }, []);
+
+  const filtered = useMemo(() => {
+    if (!searchTerm.trim()) return payments;
+    const term = searchTerm.toLowerCase();
+    return payments.filter(p =>
+      p.user.name.toLowerCase().includes(term) ||
+      p.user.email.toLowerCase().includes(term) ||
+      p.group_or_scheme.toLowerCase().includes(term) ||
+      p.reference.toLowerCase().includes(term)
+    );
+  }, [payments, searchTerm]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center gap-2 py-16 text-sm text-brand-gray">
+        <Loader2 size={16} className="animate-spin" /> Loading payment history...
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Summary Cards */}
+      <div className="grid gap-3 sm:grid-cols-4">
+        <div className="rounded-xl border border-slate-100 bg-white p-4">
+          <p className="text-xs text-brand-gray">Total Paid Out</p>
+          <p className="text-xl font-bold text-emerald-700">{toCurrency(summary.totalPaidOut)}</p>
+        </div>
+        <div className="rounded-xl border border-slate-100 bg-white p-4">
+          <p className="text-xs text-brand-gray">Total Payments</p>
+          <p className="text-xl font-bold text-brand-navy">{summary.totalPayments}</p>
+        </div>
+        <div className="rounded-xl border border-slate-100 bg-white p-4">
+          <p className="text-xs text-brand-gray">Users Paid</p>
+          <p className="text-xl font-bold text-blue-700">{summary.uniqueUsers}</p>
+        </div>
+        <div className="rounded-xl border border-slate-100 bg-white p-4">
+          <p className="text-xs text-brand-gray">Savings vs Group</p>
+          <p className="text-sm font-bold text-slate-600">{summary.savingsPayouts} / {summary.groupPayouts}</p>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="rounded-xl border border-slate-100 bg-white p-3">
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          placeholder="Search by user name, email, or reference..."
+          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+        />
+      </div>
+
+      {/* Payment List */}
+      <div className="rounded-xl border border-slate-100 bg-white overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 bg-slate-50">
+                <th className="text-left py-3 px-4 font-semibold text-slate-600">Date</th>
+                <th className="text-left py-3 px-4 font-semibold text-slate-600">User</th>
+                <th className="text-left py-3 px-4 font-semibold text-slate-600">Plan / Group</th>
+                <th className="text-left py-3 px-4 font-semibold text-slate-600">Period</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">Amount</th>
+                <th className="text-left py-3 px-4 font-semibold text-slate-600">Bank Details</th>
+                <th className="text-left py-3 px-4 font-semibold text-slate-600">Reference</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-slate-400">
+                    {searchTerm ? 'No payments match your search' : 'No payment history found'}
+                  </td>
+                </tr>
+              )}
+              {filtered.map((payment) => (
+                <tr key={payment.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+                  <td className="py-3 px-4">
+                    <p className="text-xs text-slate-600">{new Date(payment.paid_at).toLocaleDateString()}</p>
+                    <p className="text-[10px] text-slate-400">{new Date(payment.paid_at).toLocaleTimeString()}</p>
+                  </td>
+                  <td className="py-3 px-4">
+                    <p className="font-semibold text-brand-navy">{payment.user.name}</p>
+                    <p className="text-xs text-slate-500">{payment.user.email}</p>
+                    {payment.user.phone && <p className="text-xs text-slate-400">{payment.user.phone}</p>}
+                  </td>
+                  <td className="py-3 px-4">
+                    <p className="font-medium text-slate-700">{payment.group_or_scheme}</p>
+                    <span className={`inline-block mt-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${payment.type === 'savings_withdrawal' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                      {payment.type === 'savings_withdrawal' ? 'Savings' : 'Group'}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <p className="text-slate-600">{payment.period || '—'}</p>
+                    {payment.notes && <p className="text-xs text-slate-400 mt-0.5">{payment.notes}</p>}
+                  </td>
+                  <td className="py-3 px-4 text-right">
+                    <p className="font-bold text-emerald-700">{toCurrency(payment.amount)}</p>
+                  </td>
+                  <td className="py-3 px-4">
+                    {payment.user.bank_account ? (
+                      <>
+                        <p className="text-xs font-semibold text-slate-600">{payment.user.bank_name || 'Bank'}</p>
+                        <p className="text-xs font-mono text-slate-500">{payment.user.bank_account}</p>
+                      </>
+                    ) : (
+                      <p className="text-xs text-slate-400">No bank details</p>
+                    )}
+                  </td>
+                  <td className="py-3 px-4">
+                    <p className="text-xs font-mono text-slate-500">{payment.reference}</p>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Footer Note */}
+      <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-900">
+        <p className="font-semibold mb-1">✅ Payment History</p>
+        <p className="text-emerald-800">
+          This shows all completed payouts to users. Each entry represents money that has been sent to a user's bank account.
+          You can search by user name, email, plan name, or reference number.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ── Savings Schedule ──────────────────────────────────────────────────────────
 
 type ScheduleRow = {
@@ -321,7 +498,7 @@ function SavingsScheduleTab() {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function AdminPayoutsPage() {
-  const [activeTab, setActiveTab] = useState<'payouts' | 'schedule'>('schedule');
+  const [activeTab, setActiveTab] = useState<'schedule' | 'history'>('schedule');
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState('');
   const [error, setError] = useState('');
@@ -578,16 +755,23 @@ export default function AdminPayoutsPage() {
       <LastSynced timestamp={lastSyncedAt} loading={loading || savingId !== ''} />
 
       {/* Tab switcher */}
-      <div className="flex gap-0.5 rounded-lg border border-slate-200 bg-slate-50 p-0.5 max-w-xs">
+      <div className="flex gap-0.5 rounded-lg border border-slate-200 bg-slate-50 p-0.5">
         <button
           onClick={() => setActiveTab('schedule')}
           className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 ${activeTab === 'schedule' ? 'bg-white text-brand-navy' : 'text-slate-400 hover:text-brand-navy'}`}
         >
-          <Calendar size={11} /> Savings Withdrawals
+          <Calendar size={11} /> Pending Withdrawals
+        </button>
+        <button
+          onClick={() => setActiveTab('history')}
+          className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 ${activeTab === 'history' ? 'bg-white text-brand-navy' : 'text-slate-400 hover:text-brand-navy'}`}
+        >
+          <CheckCircle2 size={11} /> Payment History
         </button>
       </div>
 
       {activeTab === 'schedule' && <SavingsScheduleTab />}
+      {activeTab === 'history' && <PaymentHistoryTab />}
       {activeTab === 'payouts' && (<>
 
       <div className="grid gap-3 sm:grid-cols-3">
