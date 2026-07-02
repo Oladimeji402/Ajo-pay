@@ -47,6 +47,7 @@ type DashboardData = {
     profile: Profile | null;
     transactions: Transaction[];
     individualSavingsTotal: number;
+    hasSavingsSchemes: boolean;
 };
 
 async function fetchDashboard(): Promise<DashboardData> {
@@ -76,10 +77,19 @@ async function fetchDashboard(): Promise<DashboardData> {
             .reduce((sum: number, g: { total_saved: number }) => sum + Number(g.total_saved ?? 0), 0);
     }
 
+    // Check if user has any savings schemes
+    const schemesRes = await fetch('/api/savings/schemes');
+    let hasSavingsSchemes = false;
+    if (schemesRes.ok) {
+        const schemesJson = await schemesRes.json();
+        hasSavingsSchemes = Array.isArray(schemesJson.data) && schemesJson.data.length > 0;
+    }
+
     return {
         profile: (profileRes.data as Profile) ?? null,
         transactions: Array.isArray(txJson.data) ? txJson.data : [],
         individualSavingsTotal,
+        hasSavingsSchemes,
     };
 }
 
@@ -95,6 +105,7 @@ export default function DashboardPage() {
     const profile = data?.profile ?? null;
     const transactions = data?.transactions ?? [];
     const individualSavingsTotal = data?.individualSavingsTotal ?? 0;
+    const hasSavingsSchemes = data?.hasSavingsSchemes ?? false;
 
     // Use the locally-refreshed balance if available, otherwise fall back to profile data
     const walletBalance = localWalletBalance ?? profile?.wallet_balance ?? 0;
@@ -294,7 +305,7 @@ export default function DashboardPage() {
                         href: '/settings?tab=bank',
                     },
                     {
-                        done: individualSavingsTotal > 0,
+                        done: individualSavingsTotal > 0 || hasSavingsSchemes,
                         icon: Target,
                         label: 'Create your first savings goal',
                         sub: 'Start your personal savings plan',
@@ -387,7 +398,7 @@ export default function DashboardPage() {
                         {filteredActivity.length === 0 ? (
                             <p className="p-4 text-sm text-brand-gray">No transactions found.</p>
                         ) : (
-                            filteredActivity.slice(0, 5).map((tx) => {
+                            filteredActivity.slice(0, 3).map((tx) => {
                                 const isContributionLike = tx.type === 'contribution' || tx.type === 'individual_savings' || tx.type === 'bulk_contribution' || tx.type === 'passbook_activation';
                                 const txLabel = tx.type === 'contribution'
                                     ? (tx.groups?.name ?? 'Group contribution')
