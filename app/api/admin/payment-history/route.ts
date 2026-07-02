@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     // Get all payment records with type 'payout' and status 'success'
     const { data: paymentRecords, error: recordsError } = await adminClient
       .from('payment_records')
-      .select('id, user_id, group_id, amount, reference, created_at, metadata, profiles:user_id(id, name, email, phone, bank_account, bank_name), groups:group_id(id, name)')
+      .select('id, user_id, group_id, amount, reference, created_at, metadata, profiles:user_id!inner(id, name, email, phone, bank_account, bank_name), groups:group_id(id, name)')
       .eq('type', 'payout')
       .eq('status', 'success')
       .order('created_at', { ascending: false });
@@ -29,15 +29,30 @@ export async function GET(request: Request) {
     // Also get passbook payouts for a complete view
     const { data: passbookPayouts, error: payoutsError } = await adminClient
       .from('passbook_payouts')
-      .select('id, user_id, scheme_id, amount, period_label, paid_at, created_at, profiles:user_id(id, name, email, phone, bank_account, bank_name), schemes:scheme_id(id, name)')
+      .select('id, user_id, scheme_id, amount, period_label, paid_at, created_at, profiles:user_id!inner(id, name, email, phone, bank_account, bank_name), schemes:scheme_id(id, name)')
       .order('created_at', { ascending: false });
 
     if (payoutsError) {
       return NextResponse.json({ error: payoutsError.message }, { status: 400 });
     }
 
+    // Type definitions for the joined data
+    type PaymentRecordWithProfile = {
+      id: string;
+      user_id: string;
+      group_id: string | null;
+      amount: number;
+      reference: string;
+      created_at: string;
+      metadata: any;
+      profiles: { id: string; name: string; email: string; phone: string | null; bank_account: string | null; bank_name: string | null } | null;
+      groups: { id: string; name: string } | null;
+    };
+
+    const typedRecords = (paymentRecords || []) as unknown as PaymentRecordWithProfile[];
+
     // Combine and format the data
-    const paymentHistory = (paymentRecords || []).map(record => ({
+    const paymentHistory = typedRecords.map(record => ({
       id: record.id,
       type: record.metadata?.payout_type || (record.group_id ? 'group_payout' : 'savings_withdrawal'),
       user: {

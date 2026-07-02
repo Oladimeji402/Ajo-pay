@@ -16,13 +16,26 @@ export async function GET(request: Request) {
     // 1. Get all payouts with status breakdown
     const { data: payouts, error: payoutsError } = await adminClient
       .from('payouts')
-      .select('id, status, amount, cycle_number, created_at, marked_done_at, groups:group_id(name)')
+      .select('id, status, amount, cycle_number, created_at, marked_done_at, groups:group_id!inner(name)')
       .order('created_at', { ascending: false })
       .limit(50);
 
     if (payoutsError) {
       return NextResponse.json({ error: payoutsError.message }, { status: 400 });
     }
+
+    // Type assertion for the groups relationship
+    type PayoutWithGroup = {
+      id: string;
+      status: string;
+      amount: number;
+      cycle_number: number;
+      created_at: string;
+      marked_done_at: string | null;
+      groups: { name: string } | null;
+    };
+
+    const typedPayouts = (payouts || []) as unknown as PayoutWithGroup[];
 
     // 2. Get payment records with type: payout
     const { data: paymentRecords, error: recordsError } = await adminClient
@@ -38,18 +51,18 @@ export async function GET(request: Request) {
 
     // 3. Count by status
     const statusCounts: Record<string, number> = {};
-    for (const payout of payouts || []) {
+    for (const payout of typedPayouts) {
       const status = payout.status || 'unknown';
       statusCounts[status] = (statusCounts[status] || 0) + 1;
     }
 
     return NextResponse.json({
       summary: {
-        totalPayouts: payouts?.length || 0,
+        totalPayouts: typedPayouts.length,
         statusBreakdown: statusCounts,
         paymentRecordsWithTypePayout: paymentRecords?.length || 0,
       },
-      recentPayouts: payouts?.slice(0, 10).map(p => ({
+      recentPayouts: typedPayouts.slice(0, 10).map(p => ({
         id: p.id,
         status: p.status,
         amount: p.amount,
