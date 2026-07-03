@@ -18,6 +18,7 @@ import {
     Wallet,
     PiggyBank,
     MessageSquare,
+    Mail,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { adminLogout, getAdminEmail } from '@/lib/admin-auth';
@@ -96,6 +97,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
         { name: 'Savings Overview', icon: PiggyBank, path: '/admin/savings-overview' },
         { name: 'Settlements', icon: Wallet, path: '/admin/settlements' },
         { name: 'Payouts', icon: Banknote, path: '/admin/payouts', badge: pendingPayoutsCount },
+        { name: 'Communications', icon: Mail, path: '/admin/communications' },
         { name: 'Support', icon: MessageSquare, path: '/admin/support', badge: openSupportCasesCount },
         { name: 'Festive Periods', icon: CalendarDays, path: '/admin/festive-periods' },
         { name: 'Transactions', icon: History, path: '/admin/transactions' },
