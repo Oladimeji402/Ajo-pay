@@ -46,6 +46,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
     const [adminEmail, setAdminEmail] = useState('');
     const [pendingPayoutsCount, setPendingPayoutsCount] = useState(0);
     const [newUsersTodayCount, setNewUsersTodayCount] = useState(0);
+    const [openSupportCasesCount, setOpenSupportCasesCount] = useState(0);
     const { refreshTrigger } = useRealtimeSubscription({
         channelName: 'admin-layout-badges',
         tables: LAYOUT_REALTIME_TABLES,
@@ -62,11 +63,12 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
     useEffect(() => {
         const loadBadges = async () => {
             try {
-                const [statsRes, usersRes] = await Promise.all([
+                const [statsRes, usersRes, supportRes] = await Promise.all([
                     fetch('/api/admin/stats', { cache: 'no-store' }),
                     fetch('/api/admin/users?page=1&pageSize=500', { cache: 'no-store' }),
+                    fetch('/api/admin/support-cases?status=open&page=1&pageSize=1', { cache: 'no-store' }),
                 ]);
-                const [statsJson, usersJson] = await Promise.all([statsRes.json(), usersRes.json()]);
+                const [statsJson, usersJson, supportJson] = await Promise.all([statsRes.json(), usersRes.json(), supportRes.json()]);
                 if (statsRes.ok) setPendingPayoutsCount(Number(statsJson.data?.pendingPayouts ?? 0));
                 if (usersRes.ok && Array.isArray(usersJson.data)) {
                     const today = new Date();
@@ -76,6 +78,10 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
                         return new Date(user.created_at).getTime() >= today.getTime();
                     }).length;
                     setNewUsersTodayCount(count);
+                }
+                if (supportRes.ok) {
+                    const openCount = supportJson.pagination?.total ?? 0;
+                    setOpenSupportCasesCount(openCount);
                 }
             } catch {
                 // non-blocking
@@ -90,7 +96,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
         { name: 'Savings Overview', icon: PiggyBank, path: '/admin/savings-overview' },
         { name: 'Settlements', icon: Wallet, path: '/admin/settlements' },
         { name: 'Payouts', icon: Banknote, path: '/admin/payouts', badge: pendingPayoutsCount },
-        { name: 'Support', icon: MessageSquare, path: '/admin/support' },
+        { name: 'Support', icon: MessageSquare, path: '/admin/support', badge: openSupportCasesCount },
         { name: 'Festive Periods', icon: CalendarDays, path: '/admin/festive-periods' },
         { name: 'Transactions', icon: History, path: '/admin/transactions' },
         { name: 'Audit Log', icon: ScrollText, path: '/admin/audit-log' },

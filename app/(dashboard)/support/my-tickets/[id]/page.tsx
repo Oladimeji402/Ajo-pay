@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 type TicketEvent = {
     id: string;
@@ -48,6 +49,36 @@ export default function TicketDetailPage() {
     const [ticket, setTicket] = useState<Ticket | null>(null);
     const [reply, setReply] = useState('');
     const [submitting, setSubmitting] = useState(false);
+
+    // Real-time subscription for new messages
+    useEffect(() => {
+        if (!ticketId) return;
+
+        const supabase = createSupabaseBrowserClient();
+        
+        // Subscribe to new events on this ticket
+        const channel = supabase
+            .channel(`ticket-${ticketId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'support_case_events',
+                    filter: `case_id=eq.${ticketId}`,
+                },
+                (payload) => {
+                    console.log('New message received:', payload);
+                    // Reload ticket to get the new message
+                    void loadTicket();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            void supabase.removeChannel(channel);
+        };
+    }, [ticketId]);
 
     const loadTicket = useCallback(async () => {
         if (!ticketId) return;

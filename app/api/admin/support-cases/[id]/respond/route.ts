@@ -109,7 +109,7 @@ export async function POST(
         await auth.supabase.from('notifications').insert({
             user_id: supportCase.user_id,
             type: 'support_response',
-            title: `Response to ${supportCase.case_number}`,
+            title: `New response to ${supportCase.case_number}`,
             body: parsed.data.message.substring(0, 200),
             metadata: {
                 caseId,
@@ -118,6 +118,9 @@ export async function POST(
             },
         });
 
+        // Send browser notification if user is online (optional enhancement)
+        // This will show up in the notifications badge
+        
         // Log admin action
         await logAdminAction({
             adminId: auth.user.id,

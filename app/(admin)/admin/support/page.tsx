@@ -20,6 +20,7 @@ import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
 import { LastSynced } from '@/components/admin/LastSynced';
 import { useRealtimeSubscription } from '@/lib/hooks/useRealtimeSubscription';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 type SupportCase = {
     id: string;
@@ -108,10 +109,9 @@ export default function AdminSupportPage() {
     const [lastSync, setLastSync] = useState(new Date());
 
     // Real-time subscription
-    useRealtimeSubscription({
+    const { refreshTrigger } = useRealtimeSubscription({
         channelName: 'admin-support-cases',
         tables: ['support_cases', 'support_case_events'],
-        callback: () => void loadCases(),
     });
 
     const loadCases = useCallback(async () => {
@@ -143,7 +143,7 @@ export default function AdminSupportPage() {
 
     useEffect(() => {
         void loadCases();
-    }, [loadCases]);
+    }, [loadCases, refreshTrigger]);
 
     const loadCaseDetails = async (caseItem: SupportCase) => {
         setSelectedCase(caseItem);
@@ -166,6 +166,35 @@ export default function AdminSupportPage() {
             notifyError(showToast, error, 'Failed to load case details');
         }
     };
+
+    // Real-time subscription for selected case messages
+    useEffect(() => {
+        if (!selectedCase) return;
+
+        const supabase = createSupabaseBrowserClient();
+        
+        const channel = supabase
+            .channel(`admin-case-${selectedCase.id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'support_case_events',
+                    filter: `case_id=eq.${selectedCase.id}`,
+                },
+                (payload) => {
+                    console.log('New message received:', payload);
+                    // Reload case details to get the new message
+                    void loadCaseDetails(selectedCase);
+                }
+            )
+            .subscribe();
+
+        return () => {
+            void supabase.removeChannel(channel);
+        };
+    }, [selectedCase?.id]);
 
     const handleSendResponse = async () => {
         if (!selectedCase || !response.trim()) {
@@ -283,7 +312,7 @@ export default function AdminSupportPage() {
                     <h1 className="text-2xl font-bold text-brand-navy">Support Cases</h1>
                     <p className="text-sm text-brand-gray mt-0.5">Manage user support tickets and inquiries</p>
                 </div>
-                <LastSynced timestamp={lastSync} />
+                <LastSynced timestamp={lastSync.toISOString()} />
             </div>
 
             {/* Stats */}
