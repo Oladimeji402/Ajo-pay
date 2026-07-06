@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
 
         if (!parsed.success) {
             return NextResponse.json(
-                { error: 'Invalid request data', details: parsed.error.errors },
+                { error: 'Invalid request data', details: parsed.error.issues },
                 { status: 400 }
             );
         }
