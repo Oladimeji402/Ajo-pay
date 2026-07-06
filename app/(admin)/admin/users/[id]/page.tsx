@@ -7,6 +7,9 @@ import { Activity, ArrowLeft, Banknote, Landmark, Shield, TriangleAlert, UserCog
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
 import { useRefreshOnFocus } from '@/lib/hooks/useRefreshOnFocus';
+import { UserAccountActions } from '@/components/admin/UserAccountActions';
+import { UserNotesAndFlagsSection } from '@/components/admin/UserNotesAndFlagsSection';
+import { FlagType } from '@/components/admin/UserFlagBadge';
 
 type UserDetail = {
     id: string;
@@ -27,6 +30,9 @@ type UserDetail = {
     total_received: number;
     created_at?: string;
     updated_at?: string;
+    account_locked?: boolean;
+    suspension_reason?: string | null;
+    suspended_at?: string | null;
 };
 
 type UserActivity = {
@@ -103,6 +109,8 @@ export default function AdminUserDetailPage() {
     const [savingsPlans, setSavingsPlans] = useState<SavingsPlan[]>([]);
     const [recentActivity, setRecentActivity] = useState<UserActivity[]>([]);
     const [confirmAction, setConfirmAction] = useState<{ type: 'role' | 'status'; nextValue: string } | null>(null);
+    const [activeFlags, setActiveFlags] = useState<Array<{ id: string; flagType: FlagType; flagLabel?: string }>>([]);
+    const [currentAdminId, setCurrentAdminId] = useState<string>('');
     const { showToast } = useToast();
 
     const loadUser = useCallback(async () => {
@@ -112,6 +120,17 @@ export default function AdminUserDetailPage() {
         setUser(json.data as UserDetail);
         setSavingsPlans(Array.isArray(json.savingsPlans) ? (json.savingsPlans as SavingsPlan[]) : []);
         setRecentActivity(Array.isArray(json.recentActivity) ? (json.recentActivity as UserActivity[]) : []);
+        
+        // Load flags
+        try {
+            const flagsRes = await fetch(`/api/admin/users/${id}/flags?active=true`, { cache: 'no-store' });
+            const flagsJson = await flagsRes.json();
+            if (flagsRes.ok && flagsJson.data?.activeFlags) {
+                setActiveFlags(flagsJson.data.activeFlags);
+            }
+        } catch (err) {
+            console.error('Failed to load flags:', err);
+        }
     }, [id]);
 
     useEffect(() => {
@@ -120,6 +139,18 @@ export default function AdminUserDetailPage() {
             setError('');
             try {
                 await loadUser();
+                
+                // Get current admin ID using supabase client
+                const { createBrowserClient } = await import('@supabase/ssr');
+                const supabase = createBrowserClient(
+                    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+                );
+                
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user?.id) {
+                    setCurrentAdminId(user.id);
+                }
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Unable to load user.');
             } finally {
@@ -187,8 +218,25 @@ export default function AdminUserDetailPage() {
             <div className="rounded-xl border border-slate-100 bg-white p-5 space-y-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                        <h1 className="text-xl font-bold text-brand-navy">{user.name || user.email}</h1>
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-xl font-bold text-brand-navy">{user.name || user.email}</h1>
+                            {user.status === 'suspended' && (
+                                <span className="rounded-full bg-red-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-red-600 border border-red-200">
+                                    Suspended
+                                </span>
+                            )}
+                            {user.account_locked && (
+                                <span className="rounded-full bg-amber-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-600 border border-amber-200">
+                                    Locked
+                                </span>
+                            )}
+                        </div>
                         <p className="mt-1 text-sm text-brand-gray">{user.email} · {user.phone || 'No phone'}</p>
+                        {user.status === 'suspended' && user.suspension_reason && (
+                            <p className="mt-2 text-xs text-red-600">
+                                <strong>Reason:</strong> {user.suspension_reason}
+                            </p>
+                        )}
                     </div>
                     <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600">
                         <Shield size={12} className="text-emerald-600" /> Admin profile control
@@ -388,13 +436,23 @@ export default function AdminUserDetailPage() {
             </div>
 
             <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm space-y-3">
-                <h2 className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-navy"><Activity size={14} className="text-emerald-600" /> Recent activity</h2>
+                <div className="flex items-center justify-between gap-2">
+                    <h2 className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-navy"><Activity size={14} className="text-emerald-600" /> Recent activity</h2>
+                    {recentActivity.length > 3 && (
+                        <Link 
+                            href={`/admin/users/${id}/activity`}
+                            className="text-xs font-semibold text-brand-navy hover:text-blue-600 transition-colors"
+                        >
+                            Show all ({recentActivity.length})
+                        </Link>
+                    )}
+                </div>
 
                 {recentActivity.length === 0 ? (
                     <p className="text-sm text-brand-gray">No recent activity recorded for this user.</p>
                 ) : (
                     <div className="space-y-2">
-                        {recentActivity.map((item) => (
+                        {recentActivity.slice(0, 3).map((item) => (
                             <div key={item.id} className="rounded-xl border border-slate-200/70 bg-gradient-to-r from-white to-slate-50 p-3 shadow-sm transition hover:border-slate-300 hover:shadow">
                                 <div className="flex flex-wrap items-start justify-between gap-2">
                                     <div>
@@ -412,9 +470,37 @@ export default function AdminUserDetailPage() {
                                 </div>
                             </div>
                         ))}
+                        {recentActivity.length > 3 && (
+                            <Link
+                                href={`/admin/users/${id}/activity`}
+                                className="block rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-center text-xs font-semibold text-brand-navy hover:border-brand-navy hover:bg-slate-100 transition-all"
+                            >
+                                View all {recentActivity.length} activities →
+                            </Link>
+                        )}
                     </div>
                 )}
             </div>
+
+            {/* NEW: User Account Management Actions */}
+            <UserAccountActions
+                userId={user.id}
+                userName={user.name}
+                userStatus={user.status as 'active' | 'suspended'}
+                userEmail={user.email}
+                walletBalance={Number(user.wallet_balance)}
+                isAccountLocked={user.account_locked || false}
+                activeFlags={activeFlags}
+                onActionComplete={loadUser}
+            />
+
+            {/* NEW: Admin Notes and Flags */}
+            {currentAdminId && (
+                <UserNotesAndFlagsSection
+                    userId={user.id}
+                    currentAdminId={currentAdminId}
+                />
+            )}
 
             {confirmAction && (
                 <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/55 px-4">
