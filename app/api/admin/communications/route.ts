@@ -336,6 +336,30 @@ export async function POST(request: NextRequest) {
         if (send_now) {
             // TODO: Integrate with actual email/SMS providers
             // For now, we'll just mark as sent (simulation)
+            
+            // For in-app notifications, create entries in the notifications table
+            if (channel === 'in_app' || channel === 'email_in_app' || channel === 'sms_in_app' || channel === 'all') {
+                const notificationsToInsert = recipients.map(recipient => ({
+                    user_id: recipient.id,
+                    type: 'admin_broadcast',
+                    title: subject || campaign_name,
+                    body: in_app_body || '',
+                    read: false,
+                    metadata: {
+                        campaign_id: message.id,
+                        campaign_name,
+                    },
+                }));
+
+                const { error: notifError } = await supabase
+                    .from('notifications')
+                    .insert(notificationsToInsert);
+
+                if (notifError) {
+                    console.error('Error creating in-app notifications:', notifError);
+                }
+            }
+            
             await supabase
                 .from('communication_messages')
                 .update({ status: 'sent', sent_at: new Date().toISOString() })

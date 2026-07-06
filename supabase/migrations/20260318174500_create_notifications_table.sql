@@ -29,7 +29,15 @@ create policy notifications_insert_own
 	on public.notifications
 	for insert
 	to authenticated
-	with check (user_id = auth.uid());
+	with check (
+		user_id = auth.uid() 
+		OR 
+		EXISTS (
+			SELECT 1 FROM profiles 
+			WHERE profiles.id = auth.uid() 
+			AND profiles.role = 'admin'
+		)
+	);
 
 drop policy if exists notifications_update_own on public.notifications;
 create policy notifications_update_own
