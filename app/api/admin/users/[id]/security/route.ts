@@ -100,7 +100,6 @@ The AjoPay Team
 
         response = {
           resetLink: resetData.properties?.action_link,
-          expiresAt: resetData.properties?.expires_at,
         };
 
         break;
