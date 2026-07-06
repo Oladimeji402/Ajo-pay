@@ -19,6 +19,7 @@ import {
     PiggyBank,
     MessageSquare,
     Mail,
+    BookOpen,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { adminLogout, getAdminEmail } from '@/lib/admin-auth';
@@ -94,6 +95,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
     const navItems = [
         { name: 'Overview', icon: LayoutDashboard, path: '/admin' },
         { name: 'Users', icon: Users, path: '/admin/users', badge: newUsersTodayCount },
+        { name: 'Passbook', icon: BookOpen, path: '/admin/passbook' },
         { name: 'Savings Overview', icon: PiggyBank, path: '/admin/savings-overview' },
         { name: 'Settlements', icon: Wallet, path: '/admin/settlements' },
         { name: 'Payouts', icon: Banknote, path: '/admin/payouts', badge: pendingPayoutsCount },
