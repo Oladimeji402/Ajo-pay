@@ -61,6 +61,8 @@ type Group = {
     member_count: number;
 };
 
+// REMOVED: No group savings in platform anymore
+
 type DeliveryLog = {
     id: string;
     channel: 'email' | 'sms' | 'in_app';
@@ -78,9 +80,8 @@ type DeliveryLog = {
 // Compose Message Form
 // ============================================================================
 
-function ComposeMessageForm({ templates, groups, onMessageSent }: {
+function ComposeMessageForm({ templates, onMessageSent }: {
     templates: Template[];
-    groups: Group[];
     onMessageSent: () => void;
 }) {
     const { showToast } = useToast();
@@ -366,54 +367,15 @@ function ComposeMessageForm({ templates, groups, onMessageSent }: {
                 <label className="block text-sm font-semibold text-brand-navy mb-2">
                     Send To *
                 </label>
-                <select
-                    value={formData.audience_type}
-                    onChange={e => setFormData(prev => ({ 
-                        ...prev, 
-                        audience_type: e.target.value as 'all' | 'group_members' | 'custom_filter' 
-                    }))}
-                    className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
-                >
-                    <option value="all">All Users</option>
-                    <option value="group_members">Specific Group Members</option>
-                </select>
+                <div className="rounded-xl border border-slate-200 bg-slate-100 px-4 py-3">
+                    <p className="text-sm font-semibold text-brand-navy">All Users</p>
+                    <p className="text-xs text-slate-600 mt-0.5">
+                        Message will be sent to all users (admins excluded)
+                    </p>
+                </div>
             </div>
 
-            {/* Group Selection */}
-            {formData.audience_type === 'group_members' && (
-                <div>
-                    <label className="block text-sm font-semibold text-brand-navy mb-2">
-                        Select Groups
-                    </label>
-                    <div className="space-y-2 max-h-48 overflow-y-auto rounded-xl border border-slate-200 p-3">
-                        {groups.map(group => (
-                            <label key={group.id} className="flex items-center gap-3 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={formData.group_ids.includes(group.id)}
-                                    onChange={e => {
-                                        if (e.target.checked) {
-                                            setFormData(prev => ({ 
-                                                ...prev, 
-                                                group_ids: [...prev.group_ids, group.id] 
-                                            }));
-                                        } else {
-                                            setFormData(prev => ({ 
-                                                ...prev, 
-                                                group_ids: prev.group_ids.filter(id => id !== group.id) 
-                                            }));
-                                        }
-                                    }}
-                                    className="rounded border-slate-300"
-                                />
-                                <span className="text-sm text-brand-navy">
-                                    {group.name} ({group.member_count} members)
-                                </span>
-                            </label>
-                        ))}
-                    </div>
-                </div>
-            )}
+            {/* Group Selection - REMOVED (no group savings) */}
 
             {/* Schedule */}
             <div>
@@ -605,7 +567,6 @@ export default function CommunicationCenterPage() {
     const [activeTab, setActiveTab] = useState<'compose' | 'history' | 'templates'>('compose');
     const [messages, setMessages] = useState<Message[]>([]);
     const [templates, setTemplates] = useState<Template[]>([]);
-    const [groups, setGroups] = useState<Group[]>([]);
     const [lastSync, setLastSync] = useState(new Date());
 
     const loadData = useCallback(async () => {
@@ -628,26 +589,15 @@ export default function CommunicationCenterPage() {
                 setTemplates(templatesData.data || []);
             }
 
-            // Load messages and groups in parallel
-            const [messagesRes, groupsRes] = await Promise.all([
-                fetch('/api/admin/communications?pageSize=20', { 
-                    cache: 'no-store',
-                    signal: AbortSignal.timeout(10000)
-                }).catch(() => null),
-                fetch('/api/admin/groups?page=1&pageSize=50', { 
-                    cache: 'no-store',
-                    signal: AbortSignal.timeout(10000)
-                }).catch(() => null),
-            ]);
+            // Load messages only (no groups needed)
+            const messagesRes = await fetch('/api/admin/communications?pageSize=20', { 
+                cache: 'no-store',
+                signal: AbortSignal.timeout(10000)
+            }).catch(() => null);
 
             if (messagesRes?.ok) {
                 const messagesData = await messagesRes.json();
                 setMessages(messagesData.data || []);
-            }
-            
-            if (groupsRes?.ok) {
-                const groupsData = await groupsRes.json();
-                setGroups(groupsData.data || []);
             }
 
             setLastSync(new Date());
@@ -805,7 +755,6 @@ export default function CommunicationCenterPage() {
                 {activeTab === 'compose' && (
                     <ComposeMessageForm
                         templates={templates}
-                        groups={groups}
                         onMessageSent={loadData}
                     />
                 )}
