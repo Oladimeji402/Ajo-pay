@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { sendEmail } from '@/lib/email';
 
 // ============================================================================
 // GET /api/admin/communications - List all communication campaigns
@@ -224,6 +225,9 @@ export async function POST(request: NextRequest) {
             if (audience_filter.wallet_balance_lt) {
                 recipientQuery = recipientQuery.lte('wallet_balance', audience_filter.wallet_balance_lt);
             }
+        } else {
+            // For 'all' users, exclude admins
+            recipientQuery = recipientQuery.neq('role', 'admin');
         }
 
         // Fetch recipients
@@ -232,7 +236,7 @@ export async function POST(request: NextRequest) {
         if (recipientsError) {
             console.error('Error fetching recipients:', recipientsError);
             return NextResponse.json(
-                { error: 'Failed to fetch recipients' },
+                { error: 'Failed to fetch recipients', details: recipientsError.message },
                 { status: 500 }
             );
         }
@@ -332,24 +336,78 @@ export async function POST(request: NextRequest) {
             // Don't fail the request, just log the error
         }
 
-        // If send_now, trigger actual sending (this would integrate with email/SMS providers)
+        // If send_now, trigger actual sending
         if (send_now) {
-            // TODO: Integrate with actual email/SMS providers
-            // For now, we'll just mark as sent (simulation)
+            // Send emails via Resend
+            if (channel === 'email' || channel === 'email_sms' || channel === 'email_in_app' || channel === 'all') {
+                const emailPromises = recipients
+                    .filter(r => r.email)
+                    .map(async (recipient) => {
+                        try {
+                            // Replace template variables
+                            let finalBody = email_body || '';
+                            finalBody = finalBody.replace(/\{\{name\}\}/g, recipient.name || 'User');
+                            finalBody = finalBody.replace(/\{\{email\}\}/g, recipient.email || '');
+                            
+                            const result = await sendEmail({
+                                to: recipient.email!,
+                                subject: subject || campaign_name,
+                                body: finalBody,
+                                from: process.env.RESEND_FROM_EMAIL,
+                            });
+
+                            // Update delivery log for this recipient
+                            if (result.success) {
+                                await supabase
+                                    .from('communication_delivery_logs')
+                                    .update({ 
+                                        status: 'sent', 
+                                        sent_at: new Date().toISOString(),
+                                        provider_response: { resend_id: result.data?.id }
+                                    })
+                                    .eq('message_id', message.id)
+                                    .eq('user_id', recipient.id)
+                                    .eq('channel', 'email');
+                            } else {
+                                await supabase
+                                    .from('communication_delivery_logs')
+                                    .update({ 
+                                        status: 'failed', 
+                                        failed_at: new Date().toISOString(),
+                                        error_message: result.error
+                                    })
+                                    .eq('message_id', message.id)
+                                    .eq('user_id', recipient.id)
+                                    .eq('channel', 'email');
+                            }
+                        } catch (error) {
+                            console.error('Error sending email to', recipient.email, error);
+                        }
+                    });
+
+                // Wait for all emails to send (max 30 seconds)
+                await Promise.allSettled(emailPromises);
+            }
             
             // For in-app notifications, create entries in the notifications table
             if (channel === 'in_app' || channel === 'email_in_app' || channel === 'sms_in_app' || channel === 'all') {
-                const notificationsToInsert = recipients.map(recipient => ({
-                    user_id: recipient.id,
-                    type: 'admin_broadcast',
-                    title: subject || campaign_name,
-                    body: in_app_body || '',
-                    read: false,
-                    metadata: {
-                        campaign_id: message.id,
-                        campaign_name,
-                    },
-                }));
+                const notificationsToInsert = recipients.map(recipient => {
+                    // Replace template variables in in-app message
+                    let finalBody = in_app_body || '';
+                    finalBody = finalBody.replace(/\{\{name\}\}/g, recipient.name || 'User');
+                    
+                    return {
+                        user_id: recipient.id,
+                        type: 'admin_broadcast',
+                        title: subject || campaign_name,
+                        body: finalBody,
+                        read: false,
+                        metadata: {
+                            campaign_id: message.id,
+                            campaign_name,
+                        },
+                    };
+                });
 
                 const { error: notifError } = await supabase
                     .from('notifications')
@@ -357,19 +415,24 @@ export async function POST(request: NextRequest) {
 
                 if (notifError) {
                     console.error('Error creating in-app notifications:', notifError);
+                } else {
+                    // Update in-app delivery logs to sent
+                    await supabase
+                        .from('communication_delivery_logs')
+                        .update({ 
+                            status: 'sent', 
+                            sent_at: new Date().toISOString() 
+                        })
+                        .eq('message_id', message.id)
+                        .eq('channel', 'in_app');
                 }
             }
             
+            // Update message status to sent
             await supabase
                 .from('communication_messages')
                 .update({ status: 'sent', sent_at: new Date().toISOString() })
                 .eq('id', message.id);
-
-            // Update delivery logs to 'sent' status
-            await supabase
-                .from('communication_delivery_logs')
-                .update({ status: 'sent', sent_at: new Date().toISOString() })
-                .eq('message_id', message.id);
         }
 
         return NextResponse.json({
