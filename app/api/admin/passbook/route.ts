@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
-import { requireAdminUser } from '@/lib/api/auth';
+import { requireAdmin } from '@/lib/api/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,8 +9,8 @@ export const dynamic = 'force-dynamic';
  * Fetch all users with their passbook activation status
  */
 export async function GET(req: NextRequest) {
-  const authResult = await requireAdminUser(req);
-  if (authResult.error || !authResult.admin) {
+  const authResult = await requireAdmin();
+  if (authResult.error || !authResult.user) {
     return authResult.error!;
   }
 
