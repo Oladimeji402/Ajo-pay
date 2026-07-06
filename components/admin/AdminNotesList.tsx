@@ -160,8 +160,14 @@ export function AddNoteForm({
     setNote('');
   };
 
+  const handleButtonClick = () => {
+    // Trigger form submit programmatically
+    const form = document.getElementById('add-note-form') as HTMLFormElement;
+    form?.requestSubmit();
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <form id="add-note-form" onSubmit={handleSubmit} className="space-y-3">
       <div>
         <textarea
           value={note}
@@ -183,7 +189,7 @@ export function AddNoteForm({
       </div>
 
       <AdminActionButton
-        onClick={handleSubmit}
+        onClick={handleButtonClick}
         icon={MessageSquare}
         variant="primary"
         size="sm"
