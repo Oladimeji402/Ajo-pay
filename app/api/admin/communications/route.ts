@@ -113,7 +113,7 @@ const createMessageSchema = z.object({
     sms_body: z.string().optional(),
     in_app_body: z.string().optional(),
     audience_type: z.enum(['all', 'group_members', 'custom_filter']),
-    audience_filter: z.record(z.any()).optional(),
+    audience_filter: z.record(z.string(), z.any()).optional(),
     group_ids: z.array(z.string().uuid()).optional(),
     template_id: z.string().uuid().optional(),
     scheduled_for: z.string().datetime().optional().or(z.literal('')),
