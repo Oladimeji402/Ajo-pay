@@ -63,6 +63,19 @@ export async function GET(request: NextRequest) {
 
         if (error) {
             console.error('Error fetching communications:', error);
+            
+            // Check if table doesn't exist
+            if (error.message?.includes('relation "communication_messages" does not exist')) {
+                return NextResponse.json(
+                    { 
+                        error: 'Communication tables not found. Please run the database migration first.',
+                        data: [],
+                        pagination: { total: 0, page: 1, pageSize, totalPages: 0 }
+                    },
+                    { status: 200 } // Return 200 so UI doesn't break
+                );
+            }
+            
             return NextResponse.json(
                 { error: 'Failed to fetch communications' },
                 { status: 500 }
@@ -102,7 +115,7 @@ const createMessageSchema = z.object({
     audience_filter: z.record(z.any()).optional(),
     group_ids: z.array(z.string().uuid()).optional(),
     template_id: z.string().uuid().optional(),
-    scheduled_for: z.string().datetime().optional(),
+    scheduled_for: z.string().datetime().optional().or(z.literal('')),
     send_now: z.boolean().default(false),
 });
 
@@ -163,12 +176,13 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        if ((channel === 'sms' || channel === 'email_sms' || channel === 'sms_in_app' || channel === 'all') && !sms_body) {
-            return NextResponse.json(
-                { error: 'SMS body is required for SMS messages' },
-                { status: 400 }
-            );
-        }
+        // SMS validation - optional for now
+        // if ((channel === 'sms' || channel === 'email_sms' || channel === 'sms_in_app' || channel === 'all') && !sms_body) {
+        //     return NextResponse.json(
+        //         { error: 'SMS body is required for SMS messages' },
+        //         { status: 400 }
+        //     );
+        // }
 
         if ((channel === 'in_app' || channel === 'email_in_app' || channel === 'sms_in_app' || channel === 'all') && !in_app_body) {
             return NextResponse.json(

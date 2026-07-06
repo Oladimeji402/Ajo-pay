@@ -57,6 +57,15 @@ export async function GET(request: NextRequest) {
 
         if (error) {
             console.error('Error fetching templates:', error);
+            
+            // Check if table doesn't exist
+            if (error.message?.includes('relation "communication_templates" does not exist')) {
+                return NextResponse.json({ 
+                    error: 'Communication tables not found. Please run the database migration first.',
+                    data: []
+                });
+            }
+            
             return NextResponse.json(
                 { error: 'Failed to fetch templates' },
                 { status: 500 }

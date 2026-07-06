@@ -89,7 +89,7 @@ function ComposeMessageForm({ templates, groups, onMessageSent }: {
     
     const [formData, setFormData] = useState({
         campaign_name: '',
-        channel: 'all' as 'email' | 'sms' | 'in_app' | 'email_sms' | 'email_in_app' | 'sms_in_app' | 'all',
+        channel: 'email_in_app' as 'email' | 'sms' | 'in_app' | 'email_sms' | 'email_in_app' | 'sms_in_app' | 'all',
         subject: '',
         email_body: '',
         sms_body: '',
@@ -129,8 +129,9 @@ function ComposeMessageForm({ templates, groups, onMessageSent }: {
         }
 
         if ((formData.channel === 'sms' || formData.channel === 'email_sms' || formData.channel === 'sms_in_app' || formData.channel === 'all') && !formData.sms_body.trim()) {
-            notifyError(showToast, new Error('SMS body required'), 'Please enter SMS content');
-            return;
+            // SMS is disabled, so skip this validation
+            // notifyError(showToast, new Error('SMS body required'), 'Please enter SMS content');
+            // return;
         }
 
         if ((formData.channel === 'in_app' || formData.channel === 'email_in_app' || formData.channel === 'sms_in_app' || formData.channel === 'all') && !formData.in_app_body.trim()) {
@@ -141,19 +142,34 @@ function ComposeMessageForm({ templates, groups, onMessageSent }: {
         setSubmitting(true);
 
         try {
+            // Clean up payload before sending
+            const payload: any = {
+                campaign_name: formData.campaign_name,
+                channel: formData.channel,
+                audience_type: formData.audience_type,
+                send_now: formData.send_now,
+            };
+
+            // Only add fields that have values
+            if (formData.subject?.trim()) payload.subject = formData.subject;
+            if (formData.email_body?.trim()) payload.email_body = formData.email_body;
+            if (formData.sms_body?.trim()) payload.sms_body = formData.sms_body;
+            if (formData.in_app_body?.trim()) payload.in_app_body = formData.in_app_body;
+            if (formData.scheduled_for?.trim()) payload.scheduled_for = formData.scheduled_for;
+            if (formData.group_ids?.length > 0) payload.group_ids = formData.group_ids;
+            if (selectedTemplate) payload.template_id = selectedTemplate;
+
             const response = await fetch('/api/admin/communications', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ...formData,
-                    template_id: selectedTemplate || undefined,
-                }),
+                body: JSON.stringify(payload),
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || 'Failed to create message');
+                console.error('API Error Response:', data);
+                throw new Error(data.error || data.details?.[0]?.message || 'Failed to create message');
             }
 
             notifySuccess(
@@ -164,7 +180,7 @@ function ComposeMessageForm({ templates, groups, onMessageSent }: {
             // Reset form
             setFormData({
                 campaign_name: '',
-                channel: 'all',
+                channel: 'email_in_app',
                 subject: '',
                 email_body: '',
                 sms_body: '',
@@ -223,7 +239,7 @@ function ComposeMessageForm({ templates, groups, onMessageSent }: {
                 <label className="block text-sm font-semibold text-brand-navy mb-2">
                     Channel *
                 </label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                     <button
                         type="button"
                         onClick={() => setFormData(prev => ({ ...prev, channel: 'email' }))}
@@ -236,7 +252,8 @@ function ComposeMessageForm({ templates, groups, onMessageSent }: {
                         <Mail size={16} />
                         Email
                     </button>
-                    <button
+                    {/* SMS Disabled for now */}
+                    {/* <button
                         type="button"
                         onClick={() => setFormData(prev => ({ ...prev, channel: 'sms' }))}
                         className={`flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition-all ${
@@ -247,7 +264,7 @@ function ComposeMessageForm({ templates, groups, onMessageSent }: {
                     >
                         <Phone size={16} />
                         SMS
-                    </button>
+                    </button> */}
                     <button
                         type="button"
                         onClick={() => setFormData(prev => ({ ...prev, channel: 'in_app' }))}
@@ -262,15 +279,15 @@ function ComposeMessageForm({ templates, groups, onMessageSent }: {
                     </button>
                     <button
                         type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, channel: 'all' }))}
+                        onClick={() => setFormData(prev => ({ ...prev, channel: 'email_in_app' }))}
                         className={`flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition-all ${
-                            formData.channel === 'all'
+                            formData.channel === 'email_in_app'
                                 ? 'border-brand-primary bg-brand-primary text-white'
                                 : 'border-slate-200 bg-white text-brand-navy hover:border-slate-300'
                         }`}
                     >
                         <Users size={16} />
-                        All
+                        Both
                     </button>
                 </div>
             </div>
@@ -584,6 +601,7 @@ function MessageHistoryList({ messages, onViewDetails }: {
 export default function CommunicationCenterPage() {
     const { showToast } = useToast();
     const [loading, setLoading] = useState(true);
+    const [migrationNeeded, setMigrationNeeded] = useState(false);
     const [activeTab, setActiveTab] = useState<'compose' | 'history' | 'templates'>('compose');
     const [messages, setMessages] = useState<Message[]>([]);
     const [templates, setTemplates] = useState<Template[]>([]);
@@ -593,33 +611,58 @@ export default function CommunicationCenterPage() {
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
-            const [messagesRes, templatesRes, groupsRes] = await Promise.all([
-                fetch('/api/admin/communications?pageSize=50', { cache: 'no-store' }),
-                fetch('/api/admin/communications/templates', { cache: 'no-store' }),
-                fetch('/api/admin/groups?page=1&pageSize=100', { cache: 'no-store' }),
+            // Load templates first (lightest query)
+            const templatesRes = await fetch('/api/admin/communications/templates?active_only=true', { 
+                cache: 'no-store',
+                signal: AbortSignal.timeout(10000) // 10 second timeout
+            });
+            
+            if (templatesRes.ok) {
+                const templatesData = await templatesRes.json();
+                
+                // Check if migration is needed
+                if (templatesData.error?.includes('migration')) {
+                    setMigrationNeeded(true);
+                }
+                
+                setTemplates(templatesData.data || []);
+            }
+
+            // Load messages and groups in parallel
+            const [messagesRes, groupsRes] = await Promise.all([
+                fetch('/api/admin/communications?pageSize=20', { 
+                    cache: 'no-store',
+                    signal: AbortSignal.timeout(10000)
+                }).catch(() => null),
+                fetch('/api/admin/groups?page=1&pageSize=50', { 
+                    cache: 'no-store',
+                    signal: AbortSignal.timeout(10000)
+                }).catch(() => null),
             ]);
 
-            const [messagesData, templatesData, groupsData] = await Promise.all([
-                messagesRes.json(),
-                templatesRes.json(),
-                groupsRes.json(),
-            ]);
-
-            if (messagesRes.ok) setMessages(messagesData.data || []);
-            if (templatesRes.ok) setTemplates(templatesData.data || []);
-            if (groupsRes.ok) setGroups(groupsData.data || []);
+            if (messagesRes?.ok) {
+                const messagesData = await messagesRes.json();
+                setMessages(messagesData.data || []);
+            }
+            
+            if (groupsRes?.ok) {
+                const groupsData = await groupsRes.json();
+                setGroups(groupsData.data || []);
+            }
 
             setLastSync(new Date());
         } catch (error) {
-            notifyError(showToast, error, 'Failed to load data');
+            console.error('Load data error:', error);
+            notifyError(showToast, error, 'Failed to load some data. Some features may be limited.');
         } finally {
             setLoading(false);
         }
     }, [showToast]);
 
+    // Load data only on mount, not on every tab change
     useEffect(() => {
         void loadData();
-    }, [loadData]);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const stats = {
         total: messages.length,
@@ -630,10 +673,31 @@ export default function CommunicationCenterPage() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center py-16">
-                <div className="flex items-center gap-2 text-sm text-brand-gray">
-                    <Loader2 size={16} className="animate-spin" />
-                    Loading Communication Center...
+            <div className="space-y-5 animate-pulse">
+                {/* Header skeleton */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <div className="h-8 w-64 rounded bg-slate-200 mb-2" />
+                        <div className="h-4 w-48 rounded bg-slate-200" />
+                    </div>
+                </div>
+                {/* Stats skeleton */}
+                <div className="grid gap-3 sm:grid-cols-4">
+                    {Array.from({ length: 4 }).map((_, idx) => (
+                        <div key={idx} className="rounded-xl border border-slate-100 bg-white p-4">
+                            <div className="h-3 w-24 rounded bg-slate-200 mb-2" />
+                            <div className="h-8 w-16 rounded bg-slate-200" />
+                        </div>
+                    ))}
+                </div>
+                {/* Content skeleton */}
+                <div className="rounded-xl border border-slate-200 bg-white p-5">
+                    <div className="h-64 flex items-center justify-center">
+                        <div className="flex items-center gap-2 text-sm text-brand-gray">
+                            <Loader2 size={16} className="animate-spin" />
+                            Loading Communication Center...
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -641,6 +705,29 @@ export default function CommunicationCenterPage() {
 
     return (
         <div className="space-y-5">
+            {/* Migration Warning Banner */}
+            {migrationNeeded && (
+                <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-4">
+                    <div className="flex items-start gap-3">
+                        <AlertCircle size={20} className="text-amber-600 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                            <h3 className="text-sm font-bold text-amber-900 mb-1">
+                                Database Migration Required
+                            </h3>
+                            <p className="text-sm text-amber-800 mb-3">
+                                The Communication Center tables haven't been created yet. Please run the migration file:
+                            </p>
+                            <code className="block bg-amber-100 text-amber-900 px-3 py-2 rounded-lg text-xs font-mono mb-2">
+                                supabase/migrations/20260702000001_communication_center.sql
+                            </code>
+                            <p className="text-xs text-amber-700">
+                                Run this via Supabase Dashboard SQL Editor or CLI: <code className="bg-amber-100 px-1 rounded">npx supabase db push</code>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
