@@ -25,8 +25,8 @@ export const Footer = () => {
         {
             title: 'Legal',
             links: [
-                { name: 'Privacy Policy', href: '#' },
-                { name: 'Terms of Service', href: '#' },
+                { name: 'Privacy Policy', href: '/privacy' },
+                { name: 'Terms of Service', href: '/terms' },
             ],
         },
     ];

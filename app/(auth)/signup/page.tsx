@@ -16,7 +16,9 @@ export default function SignUpPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isResending, setIsResending] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [agreedToTerms, setAgreedToTerms] = useState(false);
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
@@ -44,6 +46,21 @@ export default function SignUpPage() {
             showToast(message, { type: 'error' });
             return;
         }
+
+        if (password.length < 8) {
+            const message = 'Password must be at least 8 characters long.';
+            setError(message);
+            showToast(message, { type: 'error' });
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            const message = 'Passwords do not match. Please enter the same password in both fields.';
+            setError(message);
+            showToast(message, { type: 'error' });
+            return;
+        }
+
         const phoneE164 = formatNigeriaPhoneE164(localPhone);
 
         setIsLoading(true);
@@ -117,14 +134,11 @@ export default function SignUpPage() {
 
     const passwordChecks = useMemo(() => [
         { label: 'At least 8 characters', valid: password.length >= 8 },
-        { label: 'One uppercase letter', valid: /[A-Z]/.test(password) },
-        { label: 'One number', valid: /[0-9]/.test(password) },
-        { label: 'One special character', valid: /[^A-Za-z0-9]/.test(password) },
     ], [password]);
 
-    const strengthPercent = (passwordChecks.filter(c => c.valid).length / passwordChecks.length) * 100;
-    const strengthColor = strengthPercent <= 25 ? 'bg-red-500' : strengthPercent <= 50 ? 'bg-amber-500' : strengthPercent <= 75 ? 'bg-blue-500' : 'bg-emerald-500';
-    const strengthLabel = strengthPercent <= 25 ? 'Weak' : strengthPercent <= 50 ? 'Fair' : strengthPercent <= 75 ? 'Good' : 'Strong';
+    const strengthPercent = password.length >= 8 ? 100 : Math.min((password.length / 8) * 100, 100);
+    const strengthColor = password.length >= 8 ? 'bg-emerald-500' : password.length >= 4 ? 'bg-amber-500' : 'bg-red-500';
+    const strengthLabel = password.length >= 8 ? 'Good' : password.length > 0 ? 'Too short' : 'Enter a password';
 
     // ── Verification screen ────────────────────────────────────────────────
     if (verificationMode) {
@@ -257,7 +271,7 @@ export default function SignUpPage() {
                     <p className="text-[11px] text-slate-400">Your permanent account number will be linked to this.</p>
                 </div>
 
-                <div>
+                <div className="space-y-3">
                     <div className="space-y-1 w-full">
                         <label htmlFor="signup-password" className="block text-sm font-semibold text-brand-navy">Password</label>
                         <div className="relative">
@@ -267,7 +281,7 @@ export default function SignUpPage() {
                                 autoComplete="new-password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Create a strong password"
+                                placeholder="Create a password"
                                 required
                                 className="block w-full px-4 py-3 pr-12 rounded-lg border border-brand-border text-brand-navy placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all duration-200"
                             />
@@ -282,11 +296,35 @@ export default function SignUpPage() {
                         </div>
                     </div>
 
+                    <div className="space-y-1 w-full">
+                        <label htmlFor="signup-confirm-password" className="block text-sm font-semibold text-brand-navy">Confirm password</label>
+                        <div className="relative">
+                            <input
+                                id="signup-confirm-password"
+                                type={showConfirmPassword ? 'text' : 'password'}
+                                autoComplete="new-password"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                placeholder="Re-enter your password"
+                                required
+                                className="block w-full px-4 py-3 pr-12 rounded-lg border border-brand-border text-brand-navy placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all duration-200"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowConfirmPassword((v) => !v)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-brand-navy transition-colors"
+                                aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                            >
+                                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                            </button>
+                        </div>
+                    </div>
+
                     {password.length > 0 && (
                         <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
-                            className="mt-3 space-y-2.5"
+                            className="space-y-2.5"
                         >
                             <div className="flex items-center gap-2.5">
                                 <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -296,11 +334,11 @@ export default function SignUpPage() {
                                         className={`h-full rounded-full transition-colors ${strengthColor}`}
                                     />
                                 </div>
-                                <span className={`text-[10px] font-bold uppercase tracking-wider ${strengthPercent <= 25 ? 'text-red-500' : strengthPercent <= 50 ? 'text-amber-500' : strengthPercent <= 75 ? 'text-blue-500' : 'text-emerald-500'}`}>
+                                <span className={`text-[10px] font-bold uppercase tracking-wider ${strengthPercent < 100 ? 'text-amber-500' : 'text-emerald-500'}`}>
                                     {strengthLabel}
                                 </span>
                             </div>
-                            <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                            <div className="flex flex-wrap gap-x-3 gap-y-1">
                                 {passwordChecks.map((check, i) => (
                                     <div key={i} className="flex items-center gap-1.5">
                                         {check.valid
