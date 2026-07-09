@@ -11,13 +11,13 @@ interface AuthLayoutProps {
 
 export const AuthLayout = ({ children }: AuthLayoutProps) => {
     return (
-        <div className="min-h-screen bg-brand-warm" style={{ fontFamily: 'var(--font-sans)' }}>
+        <div className="min-h-screen overflow-hidden bg-brand-warm" style={{ fontFamily: 'var(--font-sans)' }}>
             <SponsorBar />
             <a href="#auth-main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-white focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-brand-navy">
                 Skip to authentication form
             </a>
 
-            <div className="flex min-h-screen pt-9">
+            <div className="flex min-h-screen pt-9 overflow-hidden">
                 {/* Left brand panel */}
                 <aside className="relative hidden w-[42%] min-w-95 overflow-hidden lg:flex lg:flex-col" aria-hidden="true">
                     <div className="absolute inset-0 bg-[#2563EB]" />
@@ -92,8 +92,8 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
                 </aside>
 
                 {/* Right form panel */}
-                <main id="auth-main" className="flex flex-1 flex-col bg-brand-warm">
-                    <div className="mx-auto flex w-full max-w-130 flex-1 flex-col justify-center px-5 py-10 sm:px-8">
+                <main id="auth-main" className="flex flex-1 flex-col min-h-0 overflow-hidden bg-brand-warm">
+                    <div className="mx-auto flex w-full max-w-[44rem] flex-1 flex-col justify-center px-5 py-6 sm:px-8 lg:py-8">
                         {/* Mobile logo */}
                         <div className="mb-8 flex items-center justify-between lg:hidden">
                             <BrandLogo size="sm" dark />
@@ -104,7 +104,7 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
                             initial={{ opacity: 0, y: 16 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                            className="rounded-2xl border border-brand-border bg-white p-7 shadow-[0_1px_2px_rgba(15,23,42,0.05),0_10px_30px_rgba(15,23,42,0.07)] sm:p-8"
+                            className="max-h-[calc(100vh-8rem)] overflow-y-auto rounded-2xl border border-brand-border bg-white p-7 shadow-[0_1px_2px_rgba(15,23,42,0.05),0_10px_30px_rgba(15,23,42,0.07)] sm:p-8"
                         >
                             {children}
                         </motion.div>
