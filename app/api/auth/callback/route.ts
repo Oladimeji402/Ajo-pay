@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { attributeMarketerReferral } from "@/lib/referrals/attribute-marketer";
+import { savePendingReferralCode } from "@/lib/referrals/attribute-marketer";
 
 /** Prevent open-redirect: only allow same-origin relative paths. */
 function getSafeRedirectPath(next: string, base: string): string {
@@ -38,14 +38,14 @@ export async function GET(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Fire-and-forget: sync registration, provision MonieCredit virtual account,
-  // send welcome email, and attribute marketer referral after email verification.
+  // send welcome email, and stash referral code (attribution waits for passbook).
   const appUrl = request.nextUrl.origin;
   void Promise.all([
     fetch(`${appUrl}/api/users/sync-registration`, { method: "POST" }).catch(() => {}),
     fetch(`${appUrl}/api/user/provision-virtual-account`, { method: "POST" }).catch(() => {}),
     fetch(`${appUrl}/api/users/send-welcome-email`, { method: "POST" }).catch(() => {}),
     user
-      ? attributeMarketerReferral(user.id, user.user_metadata?.referral_code).catch(() => {})
+      ? savePendingReferralCode(user.id, user.user_metadata?.referral_code).catch(() => {})
       : Promise.resolve(),
   ]);
 

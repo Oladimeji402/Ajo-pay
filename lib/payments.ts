@@ -2,6 +2,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { verifyMonicreditTransaction, mapMonicreditTransactionStatus } from "@/lib/monicredit";
 import { isWhatsappConfigured, sendGroupReceipt } from "@/lib/whatsapp";
 import { generatePassbookSlots } from "@/lib/ajo-schedule";
+import { attributeMarketerOnPassbookActivation } from "@/lib/referrals/attribute-marketer";
 
 // Re-export for backwards compatibility
 export { mapMonicreditTransactionStatus };
@@ -381,6 +382,9 @@ export async function markPassbookActivated(params: {
     },
     { onConflict: "reference", ignoreDuplicates: true },
   );
+
+  // Credit marketer only after a real first-time passbook activation.
+  void attributeMarketerOnPassbookActivation(params.userId).catch(() => {});
 
   return { ok: true };
 }

@@ -36,26 +36,51 @@ export async function GET() {
     if (error) return badRequestResponse(error.message);
 
     const marketerIds = (marketers ?? []).map((m) => m.id);
-    const referralCounts = new Map<string, number>();
+    const codes = (marketers ?? []).map((m) => m.referral_code);
+    const attributedCounts = new Map<string, number>();
+    const pendingCounts = new Map<string, number>();
 
     if (marketerIds.length > 0) {
-      const { data: profiles, error: countError } = await adminSupabase
-        .from("profiles")
-        .select("marketer_id")
-        .in("marketer_id", marketerIds);
+      const [{ data: attributedProfiles, error: attributedError }, { data: pendingProfiles, error: pendingError }] =
+        await Promise.all([
+          adminSupabase.from("profiles").select("marketer_id").in("marketer_id", marketerIds),
+          codes.length > 0
+            ? adminSupabase
+                .from("profiles")
+                .select("referral_code_used")
+                .in("referral_code_used", codes)
+                .is("marketer_id", null)
+            : Promise.resolve({ data: [], error: null }),
+        ]);
 
-      if (countError) return badRequestResponse(countError.message);
+      if (attributedError) return badRequestResponse(attributedError.message);
+      if (pendingError) return badRequestResponse(pendingError.message);
 
-      for (const row of profiles ?? []) {
+      for (const row of attributedProfiles ?? []) {
         if (!row.marketer_id) continue;
-        referralCounts.set(row.marketer_id, (referralCounts.get(row.marketer_id) ?? 0) + 1);
+        attributedCounts.set(row.marketer_id, (attributedCounts.get(row.marketer_id) ?? 0) + 1);
+      }
+
+      const codeToMarketerId = new Map((marketers ?? []).map((m) => [m.referral_code, m.id]));
+      for (const row of pendingProfiles ?? []) {
+        if (!row.referral_code_used) continue;
+        const marketerId = codeToMarketerId.get(row.referral_code_used);
+        if (!marketerId) continue;
+        pendingCounts.set(marketerId, (pendingCounts.get(marketerId) ?? 0) + 1);
       }
     }
 
-    const data = (marketers ?? []).map((marketer) => ({
-      ...marketer,
-      referral_count: referralCounts.get(marketer.id) ?? 0,
-    }));
+    const data = (marketers ?? []).map((marketer) => {
+      const attributed = attributedCounts.get(marketer.id) ?? 0;
+      const pending = pendingCounts.get(marketer.id) ?? 0;
+      return {
+        ...marketer,
+        attributed_count: attributed,
+        pending_count: pending,
+        referral_count: attributed,
+        total_users: attributed + pending,
+      };
+    });
 
     return NextResponse.json({ data });
   } catch (error) {

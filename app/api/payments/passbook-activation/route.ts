@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { badRequestResponse, requireUser, serverErrorResponse } from "@/lib/api/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { attributeMarketerOnPassbookActivation } from "@/lib/referrals/attribute-marketer";
 
 const PASSBOOK_FEE_NGN = 500;
 
@@ -55,6 +56,8 @@ export async function POST() {
     if (status !== "activated") {
       return badRequestResponse("Could not activate passbook from wallet.");
     }
+
+    void attributeMarketerOnPassbookActivation(auth.user.id).catch(() => {});
 
     await auth.supabase.from("notifications").insert({
       user_id: auth.user.id,

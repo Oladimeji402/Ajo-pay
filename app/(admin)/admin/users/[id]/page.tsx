@@ -260,9 +260,14 @@ export default function AdminUserDetailPage() {
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-xs text-brand-gray">KYC Level</p><p className="font-bold text-brand-navy">Level {user.kyc_level}</p></div>
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-xs text-brand-gray">Profile Created</p><p className="font-bold text-brand-navy">{user.created_at ? new Date(user.created_at).toLocaleDateString('en-NG') : 'N/A'}</p></div>
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-xs text-brand-gray">Last Updated</p><p className="font-bold text-brand-navy">{user.updated_at ? new Date(user.updated_at).toLocaleDateString('en-NG') : 'N/A'}</p></div>
-                    {user.marketer && (
+                    {user.marketer ? (
                         <div className="rounded-xl border border-violet-100 bg-violet-50/60 p-3 sm:col-span-2">
-                            <p className="text-xs text-brand-gray">Referred by Marketer</p>
+                            <div className="flex items-center gap-2 mb-1">
+                                <p className="text-xs text-brand-gray">Referred by Marketer</p>
+                                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700 border border-emerald-100">
+                                    Attributed
+                                </span>
+                            </div>
                             <p className="font-bold text-brand-navy">
                                 <Link href={`/admin/marketers/${user.marketer.id}`} className="hover:underline">
                                     {user.marketer.name}
@@ -273,7 +278,22 @@ export default function AdminUserDetailPage() {
                                 <p className="mt-1 text-xs text-brand-gray">Code used at signup: {user.referral_code_used}</p>
                             )}
                         </div>
-                    )}
+                    ) : user.referral_code_used ? (
+                        <div className="rounded-xl border border-amber-100 bg-amber-50/60 p-3 sm:col-span-2">
+                            <div className="flex items-center gap-2 mb-1">
+                                <p className="text-xs text-brand-gray">Referral Code</p>
+                                <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-700 border border-amber-200">
+                                    Pending
+                                </span>
+                            </div>
+                            <p className="font-bold text-brand-navy">
+                                <code className="text-xs font-mono">{user.referral_code_used}</code>
+                            </p>
+                            <p className="mt-1 text-xs text-brand-gray">
+                                Awaiting passbook activation before counting toward the marketer.
+                            </p>
+                        </div>
+                    ) : null}
                 </div>
 
                 <div className="flex items-center gap-2">

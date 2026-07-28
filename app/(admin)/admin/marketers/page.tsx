@@ -16,6 +16,9 @@ type Marketer = {
     status: 'active' | 'inactive';
     notes?: string | null;
     referral_count: number;
+    attributed_count?: number;
+    pending_count?: number;
+    total_users?: number;
     created_at: string;
 };
 
@@ -138,13 +141,14 @@ export default function AdminMarketersPage() {
         : marketers.filter((m) => m.status === statusFilter);
 
     const activeCount = marketers.filter((m) => m.status === 'active').length;
-    const totalReferrals = marketers.reduce((sum, m) => sum + (m.referral_count ?? 0), 0);
+    const totalReferrals = marketers.reduce((sum, m) => sum + (m.attributed_count ?? m.referral_count ?? 0), 0);
+    const totalUsers = marketers.reduce((sum, m) => sum + (m.total_users ?? m.referral_count ?? 0), 0);
 
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <p className="text-xs text-slate-400">
-                    {marketers.length} marketers · {activeCount} active · {totalReferrals} total signups
+                    {marketers.length} marketers · {activeCount} active · {totalReferrals} attributed · {totalUsers} total users
                 </p>
                 <button
                     onClick={() => {
@@ -258,7 +262,7 @@ export default function AdminMarketersPage() {
                                 <tr className="border-b border-slate-100 bg-slate-50/80 text-left text-xs font-semibold text-brand-gray">
                                     <th className="px-4 py-3">Marketer</th>
                                     <th className="px-4 py-3">Referral Code</th>
-                                    <th className="px-4 py-3">Signups</th>
+                                    <th className="px-4 py-3">Users</th>
                                     <th className="px-4 py-3">Status</th>
                                     <th className="px-4 py-3">Actions</th>
                                 </tr>
@@ -286,10 +290,19 @@ export default function AdminMarketersPage() {
                                             </button>
                                         </td>
                                         <td className="px-4 py-3">
-                                            <span className="inline-flex items-center gap-1 text-brand-navy font-semibold">
-                                                <Users size={13} />
-                                                {marketer.referral_count}
-                                            </span>
+                                            <Link
+                                                href={`/admin/marketers/${marketer.id}`}
+                                                className="inline-flex flex-col gap-0.5 text-brand-navy font-semibold hover:underline"
+                                            >
+                                                <span className="inline-flex items-center gap-1">
+                                                    <Users size={13} />
+                                                    {marketer.total_users ?? marketer.referral_count}
+                                                </span>
+                                                <span className="text-[10px] font-medium text-brand-gray no-underline">
+                                                    {marketer.attributed_count ?? marketer.referral_count} attributed
+                                                    {(marketer.pending_count ?? 0) > 0 ? ` · ${marketer.pending_count} pending` : ''}
+                                                </span>
+                                            </Link>
                                         </td>
                                         <td className="px-4 py-3">
                                             <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${marketer.status === 'active' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
