@@ -53,8 +53,25 @@ function LoginContent() {
         }
 
         notifySuccess(showToast, rememberMe ? 'Signed in successfully. Redirecting...' : 'Signed in for this browser session only. Redirecting...');
-        const redirect = getSafeRedirect(searchParams.get('next'));
-        window.location.href = redirect;
+
+        const nextParam = searchParams.get('next');
+        if (nextParam) {
+            window.location.href = getSafeRedirect(nextParam);
+            return;
+        }
+
+        // Prefer marketer portal when this account has a marketer application.
+        try {
+            const meRes = await fetch('/api/marketer/me', { cache: 'no-store' });
+            if (meRes.ok) {
+                window.location.href = '/marketer';
+                return;
+            }
+        } catch {
+            // fall through to dashboard
+        }
+
+        window.location.href = '/dashboard';
     };
 
     return (

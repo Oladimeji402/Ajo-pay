@@ -10,7 +10,9 @@ const updateSchema = z.object({
   email: z.string().email().optional().nullable().or(z.literal("")),
   phone: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
-  status: z.enum(["active", "inactive"]).optional(),
+  status: z.enum(["pending", "active", "rejected", "inactive"]).optional(),
+  action: z.enum(["approve", "reject"]).optional(),
+  rejectionReason: z.string().optional().nullable(),
 });
 
 type Context = { params: Promise<{ id: string }> };
@@ -81,9 +83,21 @@ export async function PATCH(request: Request, context: Context) {
 
     const updates: Record<string, unknown> = {};
 
+    if (parsed.data.action === "approve") {
+      updates.status = "active";
+      updates.rejection_reason = null;
+      updates.reviewed_at = new Date().toISOString();
+      updates.reviewed_by = auth.user.id;
+    } else if (parsed.data.action === "reject") {
+      updates.status = "rejected";
+      updates.rejection_reason = parsed.data.rejectionReason?.trim() || "Application not approved.";
+      updates.reviewed_at = new Date().toISOString();
+      updates.reviewed_by = auth.user.id;
+    }
+
     if (parsed.data.name !== undefined) updates.name = parsed.data.name.trim();
     if (parsed.data.notes !== undefined) updates.notes = parsed.data.notes?.trim() || null;
-    if (parsed.data.status !== undefined) updates.status = parsed.data.status;
+    if (parsed.data.status !== undefined && !parsed.data.action) updates.status = parsed.data.status;
     if (parsed.data.email !== undefined) {
       updates.email = parsed.data.email?.trim() ? parsed.data.email.trim().toLowerCase() : null;
     }
@@ -114,7 +128,11 @@ export async function PATCH(request: Request, context: Context) {
 
     await logAdminAction({
       adminId: auth.user.id,
-      action: "marketer.update",
+      action: parsed.data.action === "approve"
+        ? "marketer.approve"
+        : parsed.data.action === "reject"
+          ? "marketer.reject"
+          : "marketer.update",
       targetType: "marketer",
       targetId: id,
       before: before as Record<string, unknown>,

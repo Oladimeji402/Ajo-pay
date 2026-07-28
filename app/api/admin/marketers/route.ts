@@ -4,13 +4,15 @@ import { badRequestResponse, requireAdmin, serverErrorResponse } from "@/lib/api
 import { logAdminAction } from "@/lib/admin-audit";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { formatNigeriaPhoneE164, isValidNigeriaPhoneLocal, parseNigeriaPhoneToLocal } from "@/lib/phone";
+import { validateCustomReferralCode } from "@/lib/referrals/referral-code";
 
 const createSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
   email: z.string().email().optional().nullable().or(z.literal("")),
   phone: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
-  status: z.enum(["active", "inactive"]).default("active"),
+  status: z.enum(["pending", "active", "rejected", "inactive"]).default("active"),
+  referralCode: z.string().optional().nullable(),
 });
 
 async function generateReferralCode(adminSupabase: ReturnType<typeof createSupabaseAdminClient>) {
@@ -36,7 +38,7 @@ export async function GET() {
     if (error) return badRequestResponse(error.message);
 
     const marketerIds = (marketers ?? []).map((m) => m.id);
-    const codes = (marketers ?? []).map((m) => m.referral_code);
+    const codes = (marketers ?? []).map((m) => m.referral_code).filter(Boolean);
     const attributedCounts = new Map<string, number>();
     const pendingCounts = new Map<string, number>();
 
@@ -70,6 +72,25 @@ export async function GET() {
       }
     }
 
+    const pathsNeedingUrls = (marketers ?? [])
+      .map((m) => m.passport_path)
+      .filter((path): path is string => Boolean(path));
+
+    const passportUrlByPath = new Map<string, string>();
+    if (pathsNeedingUrls.length > 0) {
+      const { data: signed, error: signedError } = await adminSupabase.storage
+        .from("marketer-passports")
+        .createSignedUrls(pathsNeedingUrls, 60 * 30);
+
+      if (!signedError && signed) {
+        for (const item of signed) {
+          if (item.path && item.signedUrl) {
+            passportUrlByPath.set(item.path, item.signedUrl);
+          }
+        }
+      }
+    }
+
     const data = (marketers ?? []).map((marketer) => {
       const attributed = attributedCounts.get(marketer.id) ?? 0;
       const pending = pendingCounts.get(marketer.id) ?? 0;
@@ -79,6 +100,9 @@ export async function GET() {
         pending_count: pending,
         referral_count: attributed,
         total_users: attributed + pending,
+        passport_url: marketer.passport_path
+          ? passportUrlByPath.get(marketer.passport_path) ?? null
+          : null,
       };
     });
 
@@ -106,7 +130,21 @@ export async function POST(request: Request) {
     }
 
     const adminSupabase = createSupabaseAdminClient();
-    const referralCode = await generateReferralCode(adminSupabase);
+
+    let referralCode: string;
+    if (parsed.data.referralCode?.trim()) {
+      const validated = validateCustomReferralCode(parsed.data.referralCode);
+      if (!validated.ok) return badRequestResponse(validated.error);
+      const { data: taken } = await adminSupabase
+        .from("marketers")
+        .select("id")
+        .eq("referral_code", validated.code)
+        .maybeSingle();
+      if (taken) return badRequestResponse("That referral code is already in use.");
+      referralCode = validated.code;
+    } else {
+      referralCode = await generateReferralCode(adminSupabase);
+    }
 
     let phone: string | null = null;
     if (parsed.data.phone) {

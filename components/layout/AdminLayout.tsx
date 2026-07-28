@@ -21,13 +21,16 @@ import {
     Mail,
     BookOpen,
     Link2,
+    ChevronDown,
+    ClipboardList,
+    List,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { adminLogout, getAdminEmail } from '@/lib/admin-auth';
 import { useRealtimeSubscription } from '@/lib/hooks/useRealtimeSubscription';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 
-const LAYOUT_REALTIME_TABLES = ['payouts', 'profiles', 'savings_schemes', 'passbook_payouts'];
+const LAYOUT_REALTIME_TABLES = ['payouts', 'profiles', 'savings_schemes', 'passbook_payouts', 'marketers'];
 
 function formatBadgeCount(value: number) {
     return value > 99 ? '99+' : String(value);
@@ -35,9 +38,21 @@ function formatBadgeCount(value: number) {
 
 function getPageTitle(pathname: string): string {
     if (pathname === '/admin') return 'Overview';
+    if (pathname === '/admin/marketers') return 'Marketers';
+    if (pathname === '/admin/marketers/assign-tasks') return 'Assign Tasks';
+    if (pathname.startsWith('/admin/marketers/')) return 'Marketer Detail';
     const last = pathname.split('/').filter(Boolean).pop() ?? 'Admin';
     return last.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
+
+type NavChild = { name: string; path: string; icon: typeof List };
+type NavItem = {
+    name: string;
+    icon: typeof LayoutDashboard;
+    path: string;
+    badge?: number;
+    children?: NavChild[];
+};
 
 interface AdminLayoutProps {
     children: ReactNode;
@@ -50,10 +65,20 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
     const [pendingPayoutsCount, setPendingPayoutsCount] = useState(0);
     const [newUsersTodayCount, setNewUsersTodayCount] = useState(0);
     const [openSupportCasesCount, setOpenSupportCasesCount] = useState(0);
+    const [pendingMarketersCount, setPendingMarketersCount] = useState(0);
+    const [marketersOpen, setMarketersOpen] = useState(
+        () => pathname === '/admin/marketers' || pathname.startsWith('/admin/marketers/'),
+    );
     const { refreshTrigger } = useRealtimeSubscription({
         channelName: 'admin-layout-badges',
         tables: LAYOUT_REALTIME_TABLES,
     });
+
+    useEffect(() => {
+        if (pathname === '/admin/marketers' || pathname.startsWith('/admin/marketers/')) {
+            setMarketersOpen(true);
+        }
+    }, [pathname]);
 
     useEffect(() => {
         const loadAdminEmail = async () => {
@@ -66,12 +91,18 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
     useEffect(() => {
         const loadBadges = async () => {
             try {
-                const [statsRes, usersRes, supportRes] = await Promise.all([
+                const [statsRes, usersRes, supportRes, marketersRes] = await Promise.all([
                     fetch('/api/admin/stats', { cache: 'no-store' }),
                     fetch('/api/admin/users?page=1&pageSize=500', { cache: 'no-store' }),
                     fetch('/api/admin/support-cases?status=open&page=1&pageSize=1', { cache: 'no-store' }),
+                    fetch('/api/admin/marketers', { cache: 'no-store' }),
                 ]);
-                const [statsJson, usersJson, supportJson] = await Promise.all([statsRes.json(), usersRes.json(), supportRes.json()]);
+                const [statsJson, usersJson, supportJson, marketersJson] = await Promise.all([
+                    statsRes.json(),
+                    usersRes.json(),
+                    supportRes.json(),
+                    marketersRes.json(),
+                ]);
                 if (statsRes.ok) setPendingPayoutsCount(Number(statsJson.data?.pendingPayouts ?? 0));
                 if (usersRes.ok && Array.isArray(usersJson.data)) {
                     const today = new Date();
@@ -86,6 +117,11 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
                     const openCount = supportJson.pagination?.total ?? 0;
                     setOpenSupportCasesCount(openCount);
                 }
+                if (marketersRes.ok && Array.isArray(marketersJson.data)) {
+                    setPendingMarketersCount(
+                        marketersJson.data.filter((m: { status?: string }) => m.status === 'pending').length,
+                    );
+                }
             } catch {
                 // non-blocking
             }
@@ -93,10 +129,19 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
         void loadBadges();
     }, [refreshTrigger]);
 
-    const navItems = [
+    const navItems: NavItem[] = [
         { name: 'Overview', icon: LayoutDashboard, path: '/admin' },
         { name: 'Users', icon: Users, path: '/admin/users', badge: newUsersTodayCount },
-        { name: 'Marketers', icon: Link2, path: '/admin/marketers' },
+        {
+            name: 'Marketers',
+            icon: Link2,
+            path: '/admin/marketers',
+            badge: pendingMarketersCount,
+            children: [
+                { name: 'All Marketers', path: '/admin/marketers', icon: List },
+                { name: 'Assign Tasks', path: '/admin/marketers/assign-tasks', icon: ClipboardList },
+            ],
+        },
         { name: 'Passbook', icon: BookOpen, path: '/admin/passbook' },
         { name: 'Savings Overview', icon: PiggyBank, path: '/admin/savings-overview' },
         { name: 'Settlements', icon: Wallet, path: '/admin/settlements' },
@@ -122,10 +167,85 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
             {/* Nav */}
             <nav className="sidebar-nav flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
                 {navItems.map((item) => {
-                    const isActive =
+                    const hasChildren = Boolean(item.children?.length);
+                    const isSectionActive =
                         pathname === item.path ||
                         (item.path !== '/admin' && pathname.startsWith(item.path));
                     const Icon = item.icon;
+
+                    if (hasChildren) {
+                        const open = item.name === 'Marketers' ? marketersOpen : isSectionActive;
+                        return (
+                            <div key={item.name} className="space-y-0.5">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (item.name === 'Marketers') setMarketersOpen((v) => !v);
+                                    }}
+                                    className={`relative flex w-full items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-150 ${
+                                        isSectionActive
+                                            ? 'bg-white/10 text-white font-medium'
+                                            : 'text-slate-400 hover:bg-white/6 hover:text-slate-200 font-normal'
+                                    }`}
+                                >
+                                    {isSectionActive && (
+                                        <motion.div
+                                            layoutId="admin-sidebar-active"
+                                            className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-brand-primary rounded-r-full"
+                                        />
+                                    )}
+                                    <Icon size={16} strokeWidth={isSectionActive ? 2 : 1.75} />
+                                    <span className="flex-1 truncate text-left">{item.name}</span>
+                                    {(item.badge ?? 0) > 0 && (
+                                        <span className="rounded-full bg-brand-primary/80 px-1.5 py-px text-[10px] font-semibold text-white leading-none">
+                                            {formatBadgeCount(item.badge ?? 0)}
+                                        </span>
+                                    )}
+                                    <ChevronDown
+                                        size={14}
+                                        className={`shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
+                                    />
+                                </button>
+                                <AnimatePresence initial={false}>
+                                    {open && (
+                                        <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: 'auto', opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            className="overflow-hidden pl-3 space-y-0.5"
+                                        >
+                                            {item.children!.map((child) => {
+                                                const childActive =
+                                                    child.path === '/admin/marketers'
+                                                        ? pathname === '/admin/marketers'
+                                                        : pathname === child.path || pathname.startsWith(`${child.path}/`);
+                                                const ChildIcon = child.icon;
+                                                return (
+                                                    <Link
+                                                        key={child.path}
+                                                        href={child.path}
+                                                        onClick={() => setIsMobileMenuOpen(false)}
+                                                        className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] transition-all duration-150 ${
+                                                            childActive
+                                                                ? 'bg-white/10 text-white font-medium'
+                                                                : 'text-slate-400 hover:bg-white/6 hover:text-slate-200 font-normal'
+                                                        }`}
+                                                    >
+                                                        <ChildIcon size={14} strokeWidth={childActive ? 2 : 1.75} />
+                                                        <span className="truncate">{child.name}</span>
+                                                    </Link>
+                                                );
+                                            })}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        );
+                    }
+
+                    const isActive =
+                        pathname === item.path ||
+                        (item.path !== '/admin' && pathname.startsWith(item.path));
                     return (
                         <Link
                             key={item.name}

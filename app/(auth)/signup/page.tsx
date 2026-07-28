@@ -456,11 +456,17 @@ function SignUpContent() {
                 </Button>
             </form>
 
-            <div className="border-t border-slate-100 pt-5">
+            <div className="border-t border-slate-100 pt-5 space-y-2">
                 <p className="text-center text-sm text-slate-500">
                     Already have an account?{' '}
                     <Link href="/login" className="font-semibold text-brand-navy hover:text-brand-accent transition-colors">
                         Sign in
+                    </Link>
+                </p>
+                <p className="text-center text-sm text-slate-500">
+                    Want to become a marketer?{' '}
+                    <Link href="/marketer/apply" className="font-semibold text-brand-navy hover:text-brand-accent transition-colors">
+                        Apply here
                     </Link>
                 </p>
             </div>
