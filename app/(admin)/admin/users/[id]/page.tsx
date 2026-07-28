@@ -33,6 +33,14 @@ type UserDetail = {
     account_locked?: boolean;
     suspension_reason?: string | null;
     suspended_at?: string | null;
+    marketer_id?: string | null;
+    referral_code_used?: string | null;
+    marketer?: {
+        id: string;
+        name: string;
+        referral_code: string;
+        status: string;
+    } | null;
 };
 
 type UserActivity = {
@@ -252,6 +260,20 @@ export default function AdminUserDetailPage() {
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-xs text-brand-gray">KYC Level</p><p className="font-bold text-brand-navy">Level {user.kyc_level}</p></div>
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-xs text-brand-gray">Profile Created</p><p className="font-bold text-brand-navy">{user.created_at ? new Date(user.created_at).toLocaleDateString('en-NG') : 'N/A'}</p></div>
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-xs text-brand-gray">Last Updated</p><p className="font-bold text-brand-navy">{user.updated_at ? new Date(user.updated_at).toLocaleDateString('en-NG') : 'N/A'}</p></div>
+                    {user.marketer && (
+                        <div className="rounded-xl border border-violet-100 bg-violet-50/60 p-3 sm:col-span-2">
+                            <p className="text-xs text-brand-gray">Referred by Marketer</p>
+                            <p className="font-bold text-brand-navy">
+                                <Link href={`/admin/marketers/${user.marketer.id}`} className="hover:underline">
+                                    {user.marketer.name}
+                                </Link>
+                                {' '}· <code className="text-xs font-mono">{user.marketer.referral_code}</code>
+                            </p>
+                            {user.referral_code_used && user.referral_code_used !== user.marketer.referral_code && (
+                                <p className="mt-1 text-xs text-brand-gray">Code used at signup: {user.referral_code_used}</p>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-2">

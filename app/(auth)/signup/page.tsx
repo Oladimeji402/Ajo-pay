@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { motion } from 'motion/react';
@@ -11,8 +12,28 @@ import { useToast } from '@/components/ui/Toast';
 import { notifySuccess } from '@/lib/toast';
 import { isDuplicateSignupWithoutError, mapAuthError } from '@/lib/auth-errors';
 import { formatNigeriaPhoneE164, isValidNigeriaPhoneLocal, parseNigeriaPhoneToLocal } from '@/lib/phone';
+import { normalizeReferralCode, REFERRAL_STORAGE_KEY } from '@/lib/referrals/referral-code';
 
 export default function SignUpPage() {
+    return (
+        <Suspense fallback={
+            <section className="space-y-5 animate-pulse">
+                <div className="h-4 w-16 rounded bg-slate-200" />
+                <div className="h-8 w-48 rounded bg-slate-200" />
+                <div className="h-4 w-64 rounded bg-slate-200" />
+                <div className="space-y-4">
+                    {Array.from({ length: 5 }, (_, i) => (
+                        <div key={i} className="h-12 rounded-lg bg-slate-100" />
+                    ))}
+                </div>
+            </section>
+        }>
+            <SignUpContent />
+        </Suspense>
+    );
+}
+
+function SignUpContent() {
     const [isLoading, setIsLoading] = useState(false);
     const [isResending, setIsResending] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
@@ -27,7 +48,29 @@ export default function SignUpPage() {
     const [verificationMode, setVerificationMode] = useState(false);
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
+    const [referralCode, setReferralCode] = useState('');
+    const searchParams = useSearchParams();
     const { showToast } = useToast();
+
+    useEffect(() => {
+        const refFromUrl = normalizeReferralCode(searchParams.get('ref'));
+        if (refFromUrl) {
+            setReferralCode(refFromUrl);
+            try {
+                localStorage.setItem(REFERRAL_STORAGE_KEY, refFromUrl);
+            } catch {
+                // localStorage unavailable — URL value still used for this session
+            }
+            return;
+        }
+
+        try {
+            const stored = normalizeReferralCode(localStorage.getItem(REFERRAL_STORAGE_KEY));
+            if (stored) setReferralCode(stored);
+        } catch {
+            // ignore
+        }
+    }, [searchParams]);
 
     const getEmailRedirectUrl = () => {
         const base = typeof window !== 'undefined' ? window.location.origin : process.env.APP_URL ?? '';
@@ -62,6 +105,7 @@ export default function SignUpPage() {
         }
 
         const phoneE164 = formatNigeriaPhoneE164(localPhone);
+        const normalizedReferralCode = normalizeReferralCode(referralCode);
 
         setIsLoading(true);
 
@@ -76,6 +120,7 @@ export default function SignUpPage() {
                 data: {
                     name: fullName.trim(),
                     phone: phoneE164,
+                    ...(normalizedReferralCode ? { referral_code: normalizedReferralCode } : {}),
                 },
             },
         });
@@ -97,6 +142,11 @@ export default function SignUpPage() {
         }
 
         await supabase.auth.signOut();
+        try {
+            localStorage.removeItem(REFERRAL_STORAGE_KEY);
+        } catch {
+            // ignore
+        }
         setPendingEmail(normalizedEmail);
         setVerificationMode(true);
         notifySuccess(showToast, 'Verification link sent! Check your inbox.');
@@ -269,6 +319,18 @@ export default function SignUpPage() {
                         />
                     </div>
                     <p className="text-[11px] text-slate-400">Your permanent account number will be linked to this.</p>
+                </div>
+
+                <div className="space-y-1 w-full">
+                    <Input
+                        label="Referral code (optional)"
+                        type="text"
+                        autoComplete="off"
+                        placeholder="e.g. MK-ABC12345"
+                        value={referralCode}
+                        onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                    />
+                    <p className="text-[11px] text-slate-400">Have a marketer code? Enter it here, or leave blank.</p>
                 </div>
 
                 <div className="space-y-3">

@@ -90,6 +90,16 @@ export async function GET(_request: Request, context: Context) {
     if (profileError) return badRequestResponse(profileError.message);
     if (!profile) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
+    let marketer: { id: string; name: string; referral_code: string; status: string } | null = null;
+    if (profile.marketer_id) {
+      const { data: marketerData } = await adminSupabase
+        .from("marketers")
+        .select("id, name, referral_code, status")
+        .eq("id", profile.marketer_id)
+        .maybeSingle();
+      marketer = marketerData;
+    }
+
     const [
       targetGoalsResult,
       savingsPaymentsResult,
@@ -461,6 +471,7 @@ export async function GET(_request: Request, context: Context) {
       ...profile,
       total_saved: totalSaved,
       total_contributed: totalSaved,
+      marketer,
     };
 
     return NextResponse.json({
