@@ -1,11 +1,11 @@
 {
-  "name": "subtech-ajo-solution",
+  "name": "ajoflow-user",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3001",
+    "dev": "next dev -H 127.0.0.1 -p 3001",
     "build": "next build",
-    "start": "next start -p 3001",
+    "start": "next start -H 127.0.0.1 -p 3001",
     "lint": "eslint",
     "seed:admin": "node scripts/seed-admin.mjs",
     "test:mock": "tsx tests/virtual-account.mock.test.ts",
@@ -23,7 +23,6 @@
     "next": "^16.2.7",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "recharts": "^3.8.0",
     "resend": "^6.17.1",
     "zod": "^4.3.6"
   },

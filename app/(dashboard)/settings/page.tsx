@@ -25,6 +25,7 @@ import {
     User,
     XCircle,
     Bell,
+    Handshake,
 } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/Toast';
@@ -33,6 +34,7 @@ import { mapAuthError } from '@/lib/auth-errors';
 import { formatNigeriaPhoneE164, isValidNigeriaPhoneLocal, normalizeNigeriaPhoneLocalInput, parseNigeriaPhoneToLocal } from '@/lib/phone';
 import { ConfirmPopup } from '@/components/ui/ConfirmPopup';
 import { InfoTooltip } from '@/components/ui/Tooltip';
+import { getMarketerAppUrl } from '@/lib/app-urls';
 
 type Profile = {
     id: string;
@@ -590,6 +592,17 @@ export default function SettingsPage() {
                             </div>
                             <ChevronRight size={16} className="text-slate-400" />
                         </Link>
+
+                        <a
+                            href={`${getMarketerAppUrl()}/apply`}
+                            className="w-full px-5 py-4 border-b border-slate-100 flex items-center justify-between text-left hover:bg-slate-50"
+                        >
+                            <div>
+                                <p className="text-sm font-semibold text-brand-navy">Become a Marketer</p>
+                                <p className="text-xs text-slate-500">Earn with referrals — same account</p>
+                            </div>
+                            <ChevronRight size={16} className="text-slate-400" />
+                        </a>
 
                         <button onClick={() => setMobileView('danger')} className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-red-50">
                             <div>
@@ -1213,6 +1226,23 @@ export default function SettingsPage() {
                         {passwordChanging ? 'Updating...' : 'Update password'}
                     </button>
                 </form>
+            </section>
+
+            <section className="hidden md:block rounded-2xl border border-slate-200 bg-white p-5 space-y-3">
+                <div className="inline-flex items-center gap-2 text-brand-navy">
+                    <Handshake size={16} />
+                    <h2 className="font-semibold">Become a Marketer</h2>
+                </div>
+                <p className="text-sm text-slate-600">
+                    Already saving with AjoFlow? Apply to partner with us using this same account. You keep your
+                    customer dashboard; marketer tools live on the marketer portal after approval.
+                </p>
+                <a
+                    href={`${getMarketerAppUrl()}/apply`}
+                    className="inline-flex items-center justify-center rounded-xl bg-brand-navy px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-navy/90"
+                >
+                    Apply on marketer portal
+                </a>
             </section>
 
             <section className="hidden md:block rounded-2xl border border-red-200 bg-white p-5 space-y-4">

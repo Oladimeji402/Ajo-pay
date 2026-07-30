@@ -10,6 +10,7 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { notifyError, notifySuccess } from '@/lib/toast';
 import { mapAuthError } from '@/lib/auth-errors';
+import { getAdminAppUrl } from '@/lib/app-urls';
 
 /** Only redirect to same-origin paths to prevent open-redirect attacks. */
 function getSafeRedirect(raw: string | null): string {
@@ -60,12 +61,20 @@ function LoginContent() {
             return;
         }
 
-        // Prefer marketer portal when this account has a marketer application.
+        // Admins belong on the admin app.
         try {
-            const meRes = await fetch('/api/marketer/me', { cache: 'no-store' });
-            if (meRes.ok) {
-                window.location.href = '/marketer';
-                return;
+            const supabaseProfile = createSupabaseBrowserClient({ persistSession: rememberMe });
+            const { data: { user } } = await supabaseProfile.auth.getUser();
+            if (user) {
+                const { data: profile } = await supabaseProfile
+                    .from('profiles')
+                    .select('role, status')
+                    .eq('id', user.id)
+                    .maybeSingle();
+                if (profile?.role === 'admin' && profile?.status === 'active') {
+                    window.location.href = getAdminAppUrl();
+                    return;
+                }
             }
         } catch {
             // fall through to dashboard

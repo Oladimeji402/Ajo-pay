@@ -13,6 +13,7 @@ import { notifySuccess } from '@/lib/toast';
 import { isDuplicateSignupWithoutError, mapAuthError } from '@/lib/auth-errors';
 import { formatNigeriaPhoneE164, isValidNigeriaPhoneLocal, parseNigeriaPhoneToLocal } from '@/lib/phone';
 import { normalizeReferralCode, REFERRAL_STORAGE_KEY } from '@/lib/referrals/referral-code';
+import { getMarketerAppUrl } from '@/lib/app-urls';
 
 export default function SignUpPage() {
     return (
@@ -465,9 +466,12 @@ function SignUpContent() {
                 </p>
                 <p className="text-center text-sm text-slate-500">
                     Want to become a marketer?{' '}
-                    <Link href="/marketer/apply" className="font-semibold text-brand-navy hover:text-brand-accent transition-colors">
+                    <a
+                        href={`${getMarketerAppUrl()}/signup`}
+                        className="font-semibold text-brand-navy hover:text-brand-accent transition-colors"
+                    >
                         Apply here
-                    </Link>
+                    </a>
                 </p>
             </div>
         </section>

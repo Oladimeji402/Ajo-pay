@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { savePendingReferralCode } from "@/lib/referrals/attribute-marketer";
+import { getAdminAppUrl } from "@/lib/app-urls";
 
 /** Prevent open-redirect: only allow same-origin relative paths. */
 function getSafeRedirectPath(next: string, base: string): string {
@@ -36,6 +37,18 @@ export async function GET(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, status")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profile?.role === "admin" && profile?.status === "active") {
+      return NextResponse.redirect(new URL("/", getAdminAppUrl()));
+    }
+  }
 
   // Fire-and-forget: sync registration, provision MonieCredit virtual account,
   // send welcome email, and stash referral code (attribution waits for passbook).

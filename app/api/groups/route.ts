@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
-import { badRequestResponse, requireAdmin, requireUser, serverErrorResponse } from "@/lib/api/auth";
+import { requireUser, serverErrorResponse } from "@/lib/api/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 async function addMemberCounts<T extends { id: string }>(rows: T[]): Promise<Array<T & { member_count: number }>> {
@@ -9,27 +8,16 @@ async function addMemberCounts<T extends { id: string }>(rows: T[]): Promise<Arr
   const { data: memberRows } = await admin
     .from("group_members")
     .select("group_id")
-    .in("group_id", rows.map((r) => r.id));
+    .in(
+      "group_id",
+      rows.map((r) => r.id),
+    );
   const counts: Record<string, number> = {};
-  for (const row of (memberRows ?? [])) {
+  for (const row of memberRows ?? []) {
     counts[row.group_id] = (counts[row.group_id] ?? 0) + 1;
   }
   return rows.map((r) => ({ ...r, member_count: counts[r.id] ?? 0 }));
 }
-
-const createGroupSchema = z.object({
-  name: z.string().min(1, "name is required"),
-  contributionAmount: z.number({ error: "contributionAmount must be a number" }).positive("contributionAmount must be positive"),
-  frequency: z.enum(["daily", "weekly", "biweekly", "monthly"], { error: "Invalid frequency value" }),
-  maxMembers: z.number().int().min(2, "maxMembers must be at least 2").max(100),
-  totalCycles: z.number().int().min(1, "totalCycles must be at least 1"),
-  startDate: z.string().min(1, "startDate is required"),
-  category: z.string().optional(),
-  whatsappGroupPhone: z.string().optional().nullable(),
-  status: z.string().optional(),
-  color: z.string().optional(),
-  inviteCode: z.string().optional(),
-});
 
 export async function GET(request: Request) {
   try {
@@ -41,10 +29,14 @@ export async function GET(request: Request) {
     const scope = (url.searchParams.get("scope") || "joined").toLowerCase();
     const q = (url.searchParams.get("q") || "").trim();
 
-    const applyFilters = <T extends {
-      eq: (column: string, value: string) => T;
-      or: (filters: string) => T;
-    }>(query: T) => {
+    const applyFilters = <
+      T extends {
+        eq: (column: string, value: string) => T;
+        or: (filters: string) => T;
+      },
+    >(
+      query: T,
+    ) => {
       let nextQuery = query;
 
       if (category) {
@@ -60,26 +52,10 @@ export async function GET(request: Request) {
     };
 
     if (scope === "all") {
-      // Regular users may discover joinable groups (metadata only — no member PII).
-      // Admins see all statuses; regular users only see pending/active groups.
-      const adminCheck = await requireAdmin();
-      const isAdmin = !adminCheck.error;
+      // Discover joinable groups only (metadata — no member PII).
+      const DISCOVER_FIELDS =
+        "id, name, invite_code, contribution_amount, frequency, max_members, current_cycle, total_cycles, start_date, status, color, category";
 
-      const DISCOVER_FIELDS = "id, name, invite_code, contribution_amount, frequency, max_members, current_cycle, total_cycles, start_date, status, color, category";
-
-      if (isAdmin) {
-        // Admins: unrestricted full list
-        let query = auth.supabase
-          .from("groups")
-          .select(DISCOVER_FIELDS)
-          .order("created_at", { ascending: false });
-        query = applyFilters(query);
-        const { data, error } = await query;
-        if (error) return serverErrorResponse(error);
-        return NextResponse.json({ data: await addMemberCounts(data ?? []) });
-      }
-
-      // Regular users: only joinable groups
       let query = auth.supabase
         .from("groups")
         .select(DISCOVER_FIELDS)
@@ -115,49 +91,6 @@ export async function GET(request: Request) {
 
     if (error) return serverErrorResponse(error);
     return NextResponse.json({ data: await addMemberCounts(data ?? []) });
-  } catch {
-    return serverErrorResponse();
-  }
-}
-
-export async function POST(request: Request) {
-  try {
-    const auth = await requireAdmin();
-    if (auth.error) return auth.error;
-
-    let body: unknown;
-    try {
-      body = await request.json();
-    } catch {
-      return badRequestResponse("Invalid JSON body.");
-    }
-
-    const parsed = createGroupSchema.safeParse(body);
-    if (!parsed.success) {
-      const message = parsed.error.issues[0]?.message ?? "Validation failed.";
-      return badRequestResponse(message);
-    }
-
-    const d = parsed.data;
-    const payload = {
-      name: d.name.trim(),
-      category: d.category ? String(d.category) : "ajo",
-      contribution_amount: d.contributionAmount,
-      frequency: d.frequency.toLowerCase(),
-      max_members: d.maxMembers,
-      total_cycles: d.totalCycles,
-      start_date: d.startDate,
-      whatsapp_group_phone: d.whatsappGroupPhone ?? null,
-      status: d.status ? String(d.status).toLowerCase() : "pending",
-      color: d.color ?? "#3B82F6",
-      invite_code: d.inviteCode ? d.inviteCode.toUpperCase() : undefined,
-      created_by: auth.user?.id,
-    };
-
-    const { data, error } = await auth.supabase.from("groups").insert(payload).select("*").single();
-    if (error) return badRequestResponse(error.message);
-
-    return NextResponse.json({ data }, { status: 201 });
   } catch {
     return serverErrorResponse();
   }

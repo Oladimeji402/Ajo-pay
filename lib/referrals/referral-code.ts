@@ -9,6 +9,14 @@ export function buildReferralSignupUrl(origin: string, code: string) {
   return `${origin.replace(/\/$/, "")}/signup?ref=${encodeURIComponent(code)}`;
 }
 
+/** Prefer configured user-app origin for referral links. */
+export function buildUserReferralSignupUrl(code: string) {
+  const origin =
+    process.env.NEXT_PUBLIC_USER_APP_URL?.replace(/\/$/, "") ||
+    (typeof window !== "undefined" ? window.location.origin : "https://ajoflow.com");
+  return buildReferralSignupUrl(origin, code);
+}
+
 const CUSTOM_CODE_REGEX = /^[A-Z][A-Z0-9-]{3,19}$/;
 
 export type CustomReferralCodeValidation =

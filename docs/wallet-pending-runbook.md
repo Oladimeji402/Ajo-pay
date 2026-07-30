@@ -4,11 +4,11 @@
 Resolve stuck (`pending`) payment records quickly and preserve auditability.
 
 ## Detection
-- Use admin transactions filters: `status=pending` and age bucket (`5m+`, `30m+`, `2h+`, `24h+`).
-- Run anomaly checks in `docs/sql/wallet_anomaly_checks.sql`.
+- In the **admin app** (`admin.ajoflow.com`): transactions filters `status=pending` and age buckets (`5m+`, `30m+`, `2h+`, `24h+`).
+- Run anomaly checks in `docs/sql/wallet_anomaly_checks.sql` (user repo).
 
 ## Standard Response
-1. Open diagnostics endpoint for the reference: `/api/admin/transactions/{reference}/diagnostics`.
+1. Open diagnostics on the **admin app**: `/api/admin/transactions/{reference}/diagnostics`.
 2. If provider status is unknown, run admin action `reconcile_now`.
 3. If provider confirms terminal non-success:
    - mark `abandoned` or `failed` with reason via admin action endpoint.
@@ -28,8 +28,7 @@ Resolve stuck (`pending`) payment records quickly and preserve auditability.
 ## Postmortem Fields
 For each incident, capture:
 - reference
-- request_id
-- type/provider/status timeline
-- pending_reason transitions
-- reconciliation attempts and timestamps
-- final resolution and any compensation action
+- age of pending
+- provider response
+- action taken
+- outcome

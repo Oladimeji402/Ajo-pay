@@ -1,11 +1,9 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { getAdminAppUrl } from "@/lib/app-urls";
 
 const USER_PROTECTED_PATHS = ["/dashboard", "/groups", "/activity", "/notifications", "/settings"];
-const MARKETER_PROTECTED_PATH = "/marketer";
-const ADMIN_PROTECTED_PATH = "/admin";
-const AUTH_PAGES = ["/login", "/signup", "/forgot-password", "/reset-password", "/admin-login"];
-const MARKETER_PUBLIC_PATHS = ["/marketer/apply"];
+const AUTH_PAGES = ["/login", "/signup", "/forgot-password", "/reset-password"];
 
 function startsWithPath(pathname: string, paths: string[]) {
   return paths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
@@ -17,11 +15,6 @@ export async function middleware(request: NextRequest) {
   });
 
   const pathname = request.nextUrl.pathname;
-  const isAdminRoute = pathname === ADMIN_PROTECTED_PATH || pathname.startsWith(`${ADMIN_PROTECTED_PATH}/`);
-  const isMarketerPublic = startsWithPath(pathname, MARKETER_PUBLIC_PATHS);
-  const isMarketerRoute =
-    !isMarketerPublic &&
-    (pathname === MARKETER_PROTECTED_PATH || pathname.startsWith(`${MARKETER_PROTECTED_PATH}/`));
   const isUserProtectedRoute = startsWithPath(pathname, USER_PROTECTED_PATHS);
   const isAuthPage = startsWithPath(pathname, AUTH_PAGES);
 
@@ -29,9 +22,9 @@ export async function middleware(request: NextRequest) {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    if (isAdminRoute || isUserProtectedRoute || isMarketerRoute) {
+    if (isUserProtectedRoute) {
       const loginUrl = request.nextUrl.clone();
-      loginUrl.pathname = isAdminRoute ? "/admin-login" : "/login";
+      loginUrl.pathname = "/login";
       loginUrl.searchParams.set("next", pathname);
       return NextResponse.redirect(loginUrl);
     }
@@ -56,42 +49,14 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if ((isAdminRoute || isUserProtectedRoute || isMarketerRoute) && !user) {
+  if (isUserProtectedRoute && !user) {
     const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = isAdminRoute ? "/admin-login" : "/login";
+    loginUrl.pathname = "/login";
     loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  if (user && isAdminRoute) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role, status")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    const isAdmin = profile?.role === "admin" && profile?.status === "active";
-    if (!isAdmin) {
-      const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = "/dashboard";
-      return NextResponse.redirect(redirectUrl);
-    }
-  }
-
-  if (user && isMarketerRoute) {
-    const { data: marketer } = await supabase
-      .from("marketers")
-      .select("id")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (!marketer) {
-      const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = "/marketer/apply";
-      return NextResponse.redirect(redirectUrl);
-    }
-  }
-
+  // Admins should use the admin app; send them there from auth pages.
   if (user && isAuthPage) {
     const { data: profile } = await supabase
       .from("profiles")
@@ -101,54 +66,34 @@ export async function middleware(request: NextRequest) {
 
     const isAdmin = profile?.role === "admin" && profile?.status === "active";
     if (isAdmin) {
-      const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = "/admin";
-      return NextResponse.redirect(redirectUrl);
+      return NextResponse.redirect(new URL("/", getAdminAppUrl()));
     }
 
-    const { data: marketer } = await supabase
-      .from("marketers")
-      .select("id")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = marketer ? "/marketer" : "/dashboard";
+    redirectUrl.pathname = "/dashboard";
     return NextResponse.redirect(redirectUrl);
   }
 
-  // Logged-in marketers should not use the saver dashboard.
-  if (user && isUserProtectedRoute) {
-    const { data: marketer } = await supabase
-      .from("marketers")
-      .select("id")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (marketer) {
-      const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = "/marketer";
-      return NextResponse.redirect(redirectUrl);
-    }
-  }
+  // Dual customer + marketer is allowed on the user app — do not redirect marketers away.
 
   return response;
 }
 
 export const config = {
   matcher: [
+    "/dashboard",
     "/dashboard/:path*",
+    "/groups",
     "/groups/:path*",
+    "/activity",
     "/activity/:path*",
+    "/notifications",
     "/notifications/:path*",
+    "/settings",
     "/settings/:path*",
-    "/admin/:path*",
-    "/marketer",
-    "/marketer/:path*",
     "/login",
     "/signup",
     "/forgot-password",
     "/reset-password",
-    "/admin-login",
   ],
 };
