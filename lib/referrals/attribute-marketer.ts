@@ -1,3 +1,4 @@
+import { autoCompleteRecurringTasksOnPassbookAttribution } from "@/lib/marketer-task-auto-complete";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { normalizeReferralCode } from "@/lib/referrals/referral-code";
 
@@ -157,6 +158,11 @@ export async function attributeMarketerOnPassbookActivation(
     console.error("[referrals/attribute] profile update failed:", updateError.message);
     return { attributed: false };
   }
+
+  // Infer recurring task progress from real referral activity (passbook activation).
+  void autoCompleteRecurringTasksOnPassbookAttribution(marketer.id).catch((err) => {
+    console.error("[referrals/attribute] task auto-complete failed:", err);
+  });
 
   return {
     attributed: true,
