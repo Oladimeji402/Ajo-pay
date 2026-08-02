@@ -32,9 +32,7 @@ export const Footer = () => {
     ];
 
     return (
-        <footer className="relative overflow-hidden" style={{ backgroundColor: '#0D1A6E' }}>
-            <div className="h-px bg-gradient-to-r from-transparent via-brand-accent/20 to-transparent" />
-
+        <footer className="relative overflow-hidden border-t border-white/[0.08]" style={{ backgroundColor: '#0D1A6E' }}>
             {/* Main Footer */}
             <Container className="py-14">
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-10 lg:gap-16">

@@ -9,25 +9,28 @@ export const CTA = () => {
     return (
         <section
             className="py-20 lg:py-24 relative overflow-hidden"
-            style={{ backgroundColor: '#1A35D4' }}
+            style={{ backgroundColor: '#0D1A6E' }}
         >
-            {/* Texture — subtle dark dot grid */}
+            {/* Soft top edge — separates from content above */}
+            <div className="absolute inset-x-0 top-0 h-px bg-white/[0.08]" />
+
+            {/* Texture — subtle light dots on navy */}
             <div
-                className="absolute inset-0 pointer-events-none opacity-[0.07]"
+                className="absolute inset-0 pointer-events-none opacity-[0.04]"
                 style={{
-                    backgroundImage: 'radial-gradient(rgba(13,26,110,1) 0.5px, transparent 0.5px)',
+                    backgroundImage: 'radial-gradient(rgba(255,255,255,1) 0.5px, transparent 0.5px)',
                     backgroundSize: '28px 28px',
                 }}
             />
 
-            {/* Ambient shape — top right */}
+            {/* Ambient glow — soft brand lift, not a second color block */}
             <div
-                className="absolute -top-20 -right-20 w-64 h-64 rounded-full pointer-events-none"
-                style={{ backgroundColor: 'rgba(13,26,110,0.18)', filter: 'blur(60px)' }}
+                className="absolute -top-24 right-0 w-72 h-72 rounded-full pointer-events-none"
+                style={{ backgroundColor: 'rgba(26,53,212,0.35)', filter: 'blur(80px)' }}
             />
             <div
-                className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full pointer-events-none"
-                style={{ backgroundColor: 'rgba(13,26,110,0.22)', filter: 'blur(60px)' }}
+                className="absolute -bottom-20 -left-10 w-64 h-64 rounded-full pointer-events-none"
+                style={{ backgroundColor: 'rgba(245,166,35,0.08)', filter: 'blur(70px)' }}
             />
 
             <Container className="relative z-10">
@@ -36,12 +39,12 @@ export const CTA = () => {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.55 }}
-                    className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-10 lg:gap-16"
+                    className="flex flex-col lg:flex-row lg:items-end gap-10 lg:gap-14 max-w-3xl"
                 >
                     {/* Left — headline */}
-                    <div className="lg:max-w-md">
+                    <div className="flex-1 min-w-0">
                         <h2
-                            className="leading-[1.0] mb-5"
+                            className="leading-[1.0] mb-3"
                             style={{
                                 fontSize: 'clamp(2.4rem, 5vw, 3.8rem)',
                                 color: '#FFFFFF',
@@ -53,8 +56,18 @@ export const CTA = () => {
                             <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.03em' }}>your plan?</span>
                         </h2>
                         <p
-                            className="text-[15.5px] leading-relaxed mb-8 max-w-sm"
-                            style={{ color: 'rgba(255,255,255,0.65)' }}
+                            className="text-[17px] font-semibold mb-2.5"
+                            style={{
+                                fontFamily: 'var(--font-display)',
+                                color: 'rgba(255,255,255,0.88)',
+                                letterSpacing: '-0.01em',
+                            }}
+                        >
+                            Create your account today
+                        </p>
+                        <p
+                            className="text-[15px] leading-relaxed mb-8 max-w-sm"
+                            style={{ color: 'rgba(255,255,255,0.50)' }}
                         >
                             Create your free account, set up target or general savings, and track payouts with full clarity.
                         </p>
@@ -81,16 +94,16 @@ export const CTA = () => {
                                     className="inline-flex items-center justify-center text-[15px] font-semibold px-8 py-4 rounded-2xl transition-all"
                                     style={{
                                         color: 'rgba(255,255,255,0.70)',
-                                        border: '1.5px solid rgba(255,255,255,0.20)',
+                                        border: '1.5px solid rgba(255,255,255,0.18)',
                                         backgroundColor: 'transparent',
                                     }}
                                     onMouseEnter={e => {
                                         e.currentTarget.style.color = '#FFFFFF';
-                                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.40)';
+                                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)';
                                     }}
                                     onMouseLeave={e => {
                                         e.currentTarget.style.color = 'rgba(255,255,255,0.70)';
-                                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.20)';
+                                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)';
                                     }}
                                 >
                                     Sign In
@@ -99,8 +112,8 @@ export const CTA = () => {
                         </div>
                     </div>
 
-                    {/* Right — the 3 proof stats */}
-                    <div className="flex flex-row lg:flex-col gap-6 lg:gap-8">
+                    {/* Right — proof stats, sits close as support to the ask */}
+                    <div className="flex flex-row lg:flex-col gap-6 lg:gap-5 shrink-0 lg:pb-1">
                         {[
                             { value: '₦0', label: 'Missed payouts, ever' },
                             { value: '2 Types', label: 'Target and general savings' },
@@ -108,11 +121,11 @@ export const CTA = () => {
                         ].map((stat, i) => (
                             <div
                                 key={i}
-                                className={`${i > 0 ? 'border-l lg:border-l-0 lg:border-t pl-6 lg:pl-0 lg:pt-6' : ''}`}
-                                style={{ borderColor: 'rgba(255,255,255,0.15)' }}
+                                className={`${i > 0 ? 'border-l lg:border-l-0 lg:border-t pl-6 lg:pl-0 lg:pt-5' : ''}`}
+                                style={{ borderColor: 'rgba(255,255,255,0.10)' }}
                             >
                                 <p
-                                    className="text-[2rem] font-black leading-none tracking-tight"
+                                    className="text-[1.75rem] font-black leading-none tracking-tight"
                                     style={{
                                         fontFamily: 'var(--font-display)',
                                         color: '#FFFFFF',
@@ -121,8 +134,8 @@ export const CTA = () => {
                                     {stat.value}
                                 </p>
                                 <p
-                                    className="text-[12px] mt-1.5 font-medium"
-                                    style={{ color: 'rgba(255,255,255,0.50)' }}
+                                    className="text-[12px] mt-1.5 font-medium whitespace-nowrap"
+                                    style={{ color: 'rgba(255,255,255,0.45)' }}
                                 >
                                     {stat.label}
                                 </p>
