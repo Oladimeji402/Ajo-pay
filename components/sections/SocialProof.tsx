@@ -6,144 +6,192 @@ import { Star, Quote } from 'lucide-react';
 
 const testimonials = [
   {
+    name: 'Ibrahim K.',
+    role: 'Civil Servant',
+    location: 'Kano',
+    content: "I run multiple target plans and a general plan. I've been saving consistently for over a year without missing a single cycle — the passbook makes it impossible to lose track.",
+    metric: 'Saved ₦2.1M in 12 months',
+    rating: 5,
+    color: '#3B82F6',
+    initials: 'IK',
+    featured: true,
+  },
+  {
     name: 'Olawale J.',
-    role: 'Software Engineer, Lagos',
-    content: 'Automated contributions mean I never miss my plan. The transparency is unmatched.',
+    role: 'Software Engineer',
+    location: 'Lagos',
+    content: 'Automated contributions mean I never miss my plan.',
+    metric: 'Saved ₦1.2M in 6 months',
     rating: 5,
     color: '#1E3A6E',
     initials: 'OJ',
   },
   {
-    name: 'Chidinma E.',
-    role: 'Business Owner, Abuja',
-    content: 'Bank-grade security and transparent records gave me the peace of mind I needed.',
-    rating: 5,
-    color: '#2563EB',
-    initials: 'CE',
-  },
-  {
-    name: 'Ibrahim K.',
-    role: 'Civil Servant, Kano',
-    content: 'I run multiple target plans and a general plan. I\'ve been saving consistently for over a year.',
-    rating: 5,
-    color: '#3B82F6',
-    initials: 'IK',
-  },
-  {
-    name: 'Amara O.',
-    role: 'Teacher, Port Harcourt',
-    content: 'My savings plans have stayed consistent for months without a single issue.',
-    rating: 5,
-    color: '#60A5FA',
-    initials: 'AO',
-  },
-  {
     name: 'Bola T.',
-    role: 'Nurse, Ibadan',
-    content: 'Got my ₦500,000 payout within minutes of schedule. I trust AjoFlow completely.',
+    role: 'Nurse',
+    location: 'Ibadan',
+    content: 'Got my payout within minutes of schedule. I trust AjoFlow completely.',
+    metric: 'Payout ₦500K on time',
     rating: 5,
     color: '#1E3A6E',
     initials: 'BT',
   },
   {
+    name: 'Chidinma E.',
+    role: 'Business Owner',
+    location: 'Abuja',
+    content: 'Bank-grade security and transparent records gave me the peace of mind I needed.',
+    metric: 'Saved ₦850K in 4 months',
+    rating: 5,
+    color: '#2563EB',
+    initials: 'CE',
+  },
+  {
+    name: 'Amara O.',
+    role: 'Teacher',
+    location: 'Port Harcourt',
+    content: 'My savings plans have stayed consistent for months without a single issue.',
+    metric: 'Saved ₦480K in 5 months',
+    rating: 5,
+    color: '#60A5FA',
+    initials: 'AO',
+  },
+  {
     name: 'Emeka D.',
-    role: 'Entrepreneur, Enugu',
-    content: 'AjoFlow handles reminders, deductions, and payouts automatically. Game changer.',
+    role: 'Entrepreneur',
+    location: 'Enugu',
+    content: 'Handles reminders, deductions, and payouts automatically. Game changer.',
+    metric: 'Saved ₦960K in 8 months',
     rating: 5,
     color: '#2563EB',
     initials: 'ED',
   },
 ];
 
-const TestimonialCard = ({ t }: { t: typeof testimonials[0] }) => (
-  <div className="flex-shrink-0 w-[290px] mx-2.5 bg-white rounded-2xl border border-slate-100 p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 select-none">
-    <div className="flex items-center gap-0.5 mb-3">
-      {[...Array(t.rating)].map((_, i) => (
-        <Star key={i} size={11} className="fill-brand-accent text-brand-accent" />
-      ))}
+const Stars = ({ n }: { n: number }) => (
+  <div className="flex items-center gap-0.5">
+    {[...Array(n)].map((_, i) => (
+      <Star key={i} size={11} className="fill-brand-accent text-brand-accent" />
+    ))}
+  </div>
+);
+
+const FeaturedCard = ({ t }: { t: typeof testimonials[0] }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 18 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true, margin: '-40px' }}
+    transition={{ duration: 0.5 }}
+    className="h-full rounded-2xl p-7 lg:p-9 shadow-lg shadow-brand-navy/10 flex flex-col justify-between"
+    style={{ backgroundColor: '#0D1A6E' }}
+  >
+    <div>
+      <div className="flex items-start justify-between mb-5">
+        <Quote size={28} className="text-white/15" />
+        <Stars n={t.rating} />
+      </div>
+      <p className="text-[17px] sm:text-[19px] text-white leading-relaxed mb-6 font-medium">
+        &ldquo;{t.content}&rdquo;
+      </p>
     </div>
-    <Quote size={16} className="text-brand-primary/10 mb-2" />
-    <p className="text-[13px] text-brand-navy leading-relaxed mb-4">
+    <div>
+      <p className="text-[14px] font-black text-white mb-5">{t.metric}</p>
+      <div className="flex items-center gap-3 pt-5 border-t border-white/10">
+        <div
+          className="w-10 h-10 rounded-full flex items-center justify-center text-[11px] font-black text-white flex-shrink-0 ring-2 ring-white/15"
+          style={{ backgroundColor: t.color }}
+        >
+          {t.initials}
+        </div>
+        <div>
+          <p className="text-[13px] font-bold text-white leading-none">{t.name}</p>
+          <p className="text-[12px] text-white/50 mt-1">{t.role} · {t.location}</p>
+        </div>
+      </div>
+    </div>
+  </motion.div>
+);
+
+const CompactCard = ({ t, delay = 0 }: { t: typeof testimonials[0]; delay?: number }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 14 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true, margin: '-40px' }}
+    transition={{ delay, duration: 0.45 }}
+    className="h-full rounded-2xl bg-[#1A35D4] p-5 shadow-lg shadow-brand-primary/15 flex flex-col"
+  >
+    <Stars n={t.rating} />
+    <p className="text-[13px] text-white/85 leading-relaxed mt-3 mb-3 flex-1">
       &ldquo;{t.content}&rdquo;
     </p>
-    <div className="flex items-center gap-2.5 pt-3.5 border-t border-slate-50">
+    <p className="text-[12px] font-bold text-white mb-4">{t.metric}</p>
+    <div className="flex items-center gap-2.5 pt-3.5 border-t border-white/10">
       <div
-        className="w-8 h-8 rounded-full flex items-center justify-center text-[9px] font-black text-white flex-shrink-0"
+        className="w-8 h-8 rounded-full flex items-center justify-center text-[9px] font-black text-white flex-shrink-0 ring-2 ring-white/15"
         style={{ backgroundColor: t.color }}
       >
         {t.initials}
       </div>
       <div>
-        <p className="text-[12px] font-bold text-brand-navy leading-none">{t.name}</p>
-        <p className="text-[11px] text-brand-gray mt-0.5">{t.role}</p>
+        <p className="text-[12px] font-bold text-white leading-none">{t.name}</p>
+        <p className="text-[11px] text-white/50 mt-0.5">{t.role} · {t.location}</p>
       </div>
     </div>
-  </div>
+  </motion.div>
 );
 
 export const SocialProof = () => {
-  const row1 = [...testimonials.slice(0, 4), ...testimonials.slice(0, 4)];
-  const row2 = [...testimonials.slice(2), ...testimonials.slice(2)];
+  const featured = testimonials.find((t) => t.featured)!;
+  const rest = testimonials.filter((t) => !t.featured);
+  const [sideA, sideB, ...bottomRow] = rest;
 
   return (
-    <section id="testimonials" className="py-24 lg:py-32 bg-[#1A35D4] relative overflow-hidden">
+    <section id="testimonials" className="py-24 lg:py-32 bg-brand-light relative overflow-hidden">
       <Container className="relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mb-12"
+          className="mb-12 lg:mb-16"
         >
-          <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-brand-accent mb-4">
+          <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-brand-primary mb-4">
             What Members Say
           </p>
           <h2
-            className="text-white leading-[1.05]"
+            className="text-brand-navy leading-[1.05]"
             style={{ fontSize: 'clamp(2rem, 4vw, 2.8rem)' }}
           >
             <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 400 }}>People </span>
             <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.03em' }}>trust AjoFlow.</span>
           </h2>
         </motion.div>
-      </Container>
 
-      {/* Row 1 — scrolls left */}
-      <div className="relative overflow-hidden mb-4">
-        <div className="absolute left-0 top-0 bottom-0 w-16 lg:w-20 bg-gradient-to-r from-[#1A35D4] to-transparent z-10 pointer-events-none" />
-        <div className="absolute right-0 top-0 bottom-0 w-16 lg:w-20 bg-gradient-to-l from-[#1A35D4] to-transparent z-10 pointer-events-none" />
-        <div
-          className="flex py-2"
-          style={{ animation: 'marquee-left 32s linear infinite', willChange: 'transform' }}
-        >
-          {row1.map((t, i) => (
-            <TestimonialCard key={i} t={t} />
+        {/* Featured quote (wide) + two compact cards stacked beside it */}
+        <div className="grid lg:grid-cols-5 gap-5 mb-5">
+          <div className="lg:col-span-3">
+            <FeaturedCard t={featured} />
+          </div>
+          <div className="lg:col-span-2 grid gap-5">
+            <CompactCard t={sideA} delay={0.1} />
+            <CompactCard t={sideB} delay={0.18} />
+          </div>
+        </div>
+
+        {/* Bottom row — remaining testimonials, equal weight */}
+        <div className="grid sm:grid-cols-3 gap-5">
+          {bottomRow.map((t, i) => (
+            <CompactCard key={t.name} t={t} delay={0.1 * i} />
           ))}
         </div>
-      </div>
 
-      {/* Row 2 — scrolls right */}
-      <div className="relative overflow-hidden">
-        <div className="absolute left-0 top-0 bottom-0 w-16 lg:w-20 bg-gradient-to-r from-[#1A35D4] to-transparent z-10 pointer-events-none" />
-        <div className="absolute right-0 top-0 bottom-0 w-16 lg:w-20 bg-gradient-to-l from-[#1A35D4] to-transparent z-10 pointer-events-none" />
-        <div
-          className="flex py-2"
-          style={{ animation: 'marquee-right 28s linear infinite', willChange: 'transform' }}
-        >
-          {row2.map((t, i) => (
-            <TestimonialCard key={i} t={t} />
-          ))}
-        </div>
-      </div>
-
-      {/* Partners strip */}
-      <Container>
+        {/* Partners strip */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           className="mt-16 flex flex-wrap justify-center items-center gap-5"
         >
-          <span className="text-[11px] font-bold text-slate-300 uppercase tracking-[0.15em]">Payments by</span>
+          <span className="text-[11px] font-bold text-brand-gray uppercase tracking-[0.15em]">Payments by</span>
 
           <div className="flex items-center gap-2 px-5 py-3 rounded-2xl border border-slate-200 bg-white shadow-sm">
             <svg width="22" height="22" viewBox="0 0 32 32" fill="none">

@@ -63,6 +63,28 @@
   50%       { transform: translateY(-10px); }
 }
 
+/* Asymmetric bento — wide automation cell, tall passbook cell, wide payout cell.
+   Deliberately unequal so the grid reads as art-directed rather than a 3-up row. */
+.bento-features {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    "automation"
+    "passbook"
+    "payout";
+}
+
+@media (min-width: 1024px) {
+  .bento-features {
+    grid-template-columns: 1.3fr 1.3fr 1fr;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+      "automation automation passbook"
+      "payout     payout     passbook";
+  }
+}
+
 /* Custom sidebar scrollbar */
 .sidebar-nav::-webkit-scrollbar {
   width: 3px;

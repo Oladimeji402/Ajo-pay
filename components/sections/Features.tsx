@@ -2,216 +2,197 @@
 
 import { Container } from '../ui/Container';
 import { motion } from 'motion/react';
-import { CheckCircle2, TrendingUp, Users, ArrowDownLeft } from 'lucide-react';
+import { CheckCircle2, ArrowDownLeft, Zap } from 'lucide-react';
 
-// ─── Feature 1 visual: Contribution schedule ─────────────────────────────────
-const ScheduleVisual = () => (
-    <div className="w-full max-w-[280px] mx-auto">
-        <div className="bg-white/[0.05] border border-white/[0.07] rounded-2xl p-5 space-y-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/30 mb-4">Contribution Schedule</p>
-            {[
-                { month: 'October', amount: '₦50,000', status: 'done' },
-                { month: 'November', amount: '₦50,000', status: 'done' },
-                { month: 'December', amount: '₦50,000', status: 'active' },
-                { month: 'January', amount: '₦50,000', status: 'upcoming' },
-                { month: 'February', amount: '₦50,000', status: 'upcoming' },
-            ].map((row, i) => (
-                <div key={i} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                        <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
-                            row.status === 'done' ? 'bg-brand-primary/20' :
-                            row.status === 'active' ? 'bg-brand-accent/20' : 'bg-white/[0.04]'
-                        }`}>
-                            {row.status === 'done' && <CheckCircle2 size={11} className="text-brand-electric" />}
-                            {row.status === 'active' && <div className="w-2 h-2 rounded-full bg-brand-accent animate-pulse" />}
-                            {row.status === 'upcoming' && <div className="w-1.5 h-1.5 rounded-full bg-white/15" />}
+// Ghost watermark number — ties each bento cell back to the numbered-step
+// language used in How It Works, without repeating the same card shape.
+const GhostNumber = ({ n }: { n: string }) => (
+    <span
+        className="absolute -top-2 right-4 text-[5.5rem] font-black leading-none select-none pointer-events-none"
+        style={{ fontFamily: 'var(--font-display)', color: '#F59E0B', opacity: 0.1 }}
+    >
+        {n}
+    </span>
+);
+
+// ─── Cell 1: Automation (wide) ────────────────────────────────────────────────
+const AutomationCard = () => (
+    <div className="relative h-full rounded-2xl border border-white/[0.07] bg-white/[0.05] p-6 lg:p-8 overflow-hidden">
+        <GhostNumber n="01" />
+        <div className="relative grid sm:grid-cols-2 gap-6 items-center h-full">
+            <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand-accent mb-3">Automation</p>
+                <h3
+                    className="text-white text-[1.4rem] leading-tight mb-2"
+                    style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
+                >
+                    Never miss a contribution
+                </h3>
+                <p className="text-white/50 text-[14px] leading-relaxed">
+                    Set your amount and schedule once. Automatic deductions happen on time — daily, weekly, or monthly.
+                </p>
+            </div>
+
+            <div className="rounded-xl border border-white/[0.08] bg-white/[0.04] p-4 space-y-3">
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/30 mb-1">Contribution Schedule</p>
+                {[
+                    { label: 'Daily deduction', amount: '₦5,000', on: true },
+                    { label: 'Weekly deduction', amount: '₦25,000', on: false },
+                    { label: 'Monthly target', amount: '₦100,000', on: true },
+                ].map((row, i) => (
+                    <div key={i} className="flex items-center justify-between gap-3">
+                        <div>
+                            <p className="text-[12px] font-semibold text-white">{row.label}</p>
+                            <p className="text-[11px] text-white/40">{row.amount}</p>
                         </div>
-                        <span className="text-[12px] text-white/50">{row.month}</span>
+                        <div className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${row.on ? 'bg-brand-accent' : 'bg-white/15'}`}>
+                            <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${row.on ? 'left-[22px]' : 'left-0.5'}`} />
+                        </div>
                     </div>
-                    <span className={`text-[12px] font-bold ${
-                        row.status === 'done' ? 'text-brand-electric' :
-                        row.status === 'active' ? 'text-brand-accent' : 'text-white/20'
-                    }`}>{row.amount}</span>
-                </div>
-            ))}
+                ))}
+            </div>
         </div>
     </div>
 );
 
-// ─── Feature 2 visual: Savings visibility panel ───────────────────────────────
-const GroupVisual = () => {
-    const members = [
-        { initials: 'OJ', color: '#1E3A6E', paid: true },
-        { initials: 'CE', color: '#2563EB', paid: true },
-        { initials: 'IK', color: '#F59E0B', paid: true, current: true },
-        { initials: 'AU', color: '#334155', paid: false },
-        { initials: 'BT', color: '#334155', paid: false },
-        { initials: 'ED', color: '#334155', paid: false },
+// ─── Cell 2: Digital passbook (tall) ──────────────────────────────────────────
+const PassbookCard = () => {
+    const cycles = [
+        { period: 'Cycle 1', status: 'paid' as const },
+        { period: 'Cycle 2', status: 'paid' as const },
+        { period: 'Cycle 3', status: 'paid' as const },
+        { period: 'Cycle 4', status: 'current' as const },
+        { period: 'Cycle 5', status: 'pending' as const },
+        { period: 'Cycle 6', status: 'pending' as const },
     ];
 
     return (
-        <div className="w-full max-w-[280px] mx-auto">
-            <div className="bg-white/[0.05] border border-white/[0.07] rounded-2xl p-5">
-                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/30 mb-4">Savings health · Month 3</p>
-                <div className="space-y-2.5">
-                    {members.map((m, i) => (
-                        <div key={i} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2.5">
-                                <div
-                                    className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-black text-white flex-shrink-0"
-                                    style={{ backgroundColor: m.color }}
-                                >
-                                    {m.initials}
+        <div className="relative h-full rounded-2xl border border-white/[0.07] bg-white/[0.05] p-6 lg:p-8 overflow-hidden flex flex-col">
+            <GhostNumber n="02" />
+            <div className="relative mb-6">
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand-accent mb-3">Transparency</p>
+                <h3
+                    className="text-white text-[1.35rem] leading-tight mb-2"
+                    style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
+                >
+                    Digital passbook clarity
+                </h3>
+                <p className="text-white/50 text-[14px] leading-relaxed">
+                    See every paid vs. pending cycle in real time — clear records, no guesswork.
+                </p>
+            </div>
+
+            <div className="relative mt-auto rounded-xl border border-white/[0.08] bg-white/[0.04] p-4">
+                <div className="flex items-center justify-between mb-3">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/30">Passbook · Month 4</p>
+                    <p className="text-[11px] font-bold text-brand-accent">₦150,000 saved</p>
+                </div>
+                {/* Vertical timeline */}
+                <div className="space-y-0">
+                    {cycles.map((c, i) => (
+                        <div key={i} className="flex items-start gap-3">
+                            <div className="flex flex-col items-center">
+                                <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 ${
+                                    c.status === 'paid' ? 'bg-brand-primary/25' :
+                                    c.status === 'current' ? 'bg-brand-accent/25' : 'bg-white/[0.06]'
+                                }`}>
+                                    {c.status === 'paid' && <CheckCircle2 size={9} className="text-brand-electric" />}
+                                    {c.status === 'current' && <div className="w-1.5 h-1.5 rounded-full bg-brand-accent animate-pulse" />}
+                                    {c.status === 'pending' && <div className="w-1 h-1 rounded-full bg-white/20" />}
                                 </div>
-                                <div className="h-1.5 w-20 rounded-full bg-white/[0.06] overflow-hidden">
-                                    <div
-                                        className="h-full rounded-full transition-all"
-                                        style={{
-                                            width: m.paid ? '100%' : '0%',
-                                            backgroundColor: m.current ? '#F59E0B' : '#2563EB',
-                                        }}
-                                    />
-                                </div>
+                                {i < cycles.length - 1 && (
+                                    <div className={`w-px flex-1 min-h-[14px] ${c.status === 'paid' ? 'bg-brand-electric/30' : 'bg-white/10'}`} />
+                                )}
                             </div>
-                            <span className={`text-[10px] font-bold ${
-                                m.current ? 'text-brand-accent' :
-                                m.paid ? 'text-brand-electric' : 'text-white/20'
-                            }`}>
-                                {m.current ? 'Due now' : m.paid ? '✓ Paid' : 'Pending'}
-                            </span>
+                            <div className="flex items-center justify-between flex-1 pb-3.5 -mt-0.5">
+                                <span className="text-[12px] text-white/50">{c.period}</span>
+                                <span className={`text-[11px] font-bold ${
+                                    c.status === 'paid' ? 'text-brand-electric' :
+                                    c.status === 'current' ? 'text-brand-accent' : 'text-white/20'
+                                }`}>
+                                    {c.status === 'paid' ? 'Paid' : c.status === 'current' ? 'Due' : 'Pending'}
+                                </span>
+                            </div>
                         </div>
                     ))}
-                </div>
-                <div className="mt-4 pt-4 border-t border-white/[0.06] flex justify-between text-[10px]">
-                    <span className="text-white/30">5 / 6 periods paid</span>
-                    <span className="text-brand-accent font-bold">₦500,000 saved</span>
                 </div>
             </div>
         </div>
     );
 };
 
-// ─── Feature 3 visual: Payout notification ────────────────────────────────────
-const PayoutVisual = () => (
-    <div className="w-full max-w-[280px] mx-auto space-y-3">
-        <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-            className="bg-white/[0.08] border border-white/[0.10] rounded-2xl p-4 flex items-center gap-3"
-        >
-            <div className="w-10 h-10 rounded-xl bg-brand-accent/15 flex items-center justify-center flex-shrink-0">
-                <TrendingUp size={18} className="text-brand-accent" />
-            </div>
+// ─── Cell 3: Instant payouts (wide) ───────────────────────────────────────────
+const PayoutCard = () => (
+    <div className="relative h-full rounded-2xl border border-white/[0.07] bg-white/[0.05] p-6 lg:p-8 overflow-hidden">
+        <GhostNumber n="03" />
+        <div className="relative grid sm:grid-cols-2 gap-6 items-center h-full">
             <div>
-                <p className="text-[11px] font-bold text-white leading-tight">Withdrawal Recorded</p>
-                <p className="text-[10px] text-white/40 mt-0.5">General Savings · Just now</p>
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand-accent mb-3">Instant Payouts</p>
+                <h3
+                    className="text-white text-[1.4rem] leading-tight mb-2"
+                    style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
+                >
+                    Money lands in seconds
+                </h3>
+                <p className="text-white/50 text-[14px] leading-relaxed">
+                    When your payout is due, funds transfer instantly to your verified bank account.
+                </p>
             </div>
-            <p className="text-[15px] font-black text-brand-accent ml-auto">+₦450K</p>
-        </motion.div>
 
-        <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.45, duration: 0.5 }}
-            className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-3.5 flex items-center gap-3"
-        >
-            <div className="w-8 h-8 rounded-lg bg-brand-primary/20 flex items-center justify-center flex-shrink-0">
-                <ArrowDownLeft size={14} className="text-brand-electric" />
-            </div>
-            <div className="flex-1">
-                <p className="text-[11px] font-bold text-white">Target Savings Plan</p>
-                <p className="text-[10px] text-white/30">Bank transfer · 2 min ago</p>
-            </div>
-            <p className="text-[13px] font-bold text-brand-electric">+₦600,000</p>
-        </motion.div>
+            <div className="space-y-3">
+                <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.15, duration: 0.4 }}
+                    className="rounded-xl border border-brand-accent/25 bg-brand-accent/10 p-3.5 flex items-center gap-3"
+                >
+                    <div className="w-9 h-9 rounded-lg bg-brand-accent/20 flex items-center justify-center flex-shrink-0">
+                        <Zap size={16} className="text-brand-accent" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-[12px] font-bold text-white leading-tight">Payout Sent</p>
+                        <p className="text-[10px] text-brand-accent/90 mt-0.5">+₦600,000 to Access Bank</p>
+                    </div>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-brand-accent bg-brand-accent/15 px-1.5 py-0.5 rounded flex-shrink-0">
+                        Success
+                    </span>
+                </motion.div>
 
-        <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.6 }}
-            className="flex items-center justify-between px-4 py-3 bg-white/[0.03] border border-white/[0.05] rounded-xl"
-        >
-            <span className="text-[10px] text-white/30 uppercase tracking-widest">New Balance</span>
-            <span className="text-[14px] font-black text-white">₦1,050,000</span>
-        </motion.div>
+                <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.28, duration: 0.4 }}
+                    className="rounded-xl border border-white/[0.08] bg-white/[0.04] p-3 flex items-center gap-3"
+                >
+                    <div className="w-8 h-8 rounded-lg bg-brand-primary/25 flex items-center justify-center flex-shrink-0">
+                        <ArrowDownLeft size={13} className="text-brand-electric" />
+                    </div>
+                    <div className="flex-1">
+                        <p className="text-[11px] font-bold text-white">Target Savings Plan</p>
+                        <p className="text-[10px] text-white/40">2 min ago</p>
+                    </div>
+                    <p className="text-[12px] font-bold text-brand-electric">+₦600,000</p>
+                </motion.div>
+            </div>
+        </div>
     </div>
 );
 
-// ─── Feature row ──────────────────────────────────────────────────────────────
-interface FeatureRowProps {
-    number: string;
-    tag: string;
-    title: string;
-    description: string;
-    visual: React.ReactNode;
-    reverse?: boolean;
-    index: number;
-}
-
-const FeatureRow = ({ number, tag, title, description, visual, reverse = false, index }: FeatureRowProps) => (
-    <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-60px' }}
-        transition={{ delay: index * 0.08, duration: 0.55 }}
-        className={`grid lg:grid-cols-2 gap-10 lg:gap-20 items-center py-14 lg:py-20 border-b border-white/[0.05] last:border-0 ${reverse ? 'lg:[&>*:first-child]:order-2 lg:[&>*:last-child]:order-1' : ''}`}
-    >
-        {/* Text side */}
-        <div>
-            <div className="flex items-baseline gap-3 mb-5">
-                <span
-                    className="text-[3.5rem] font-black leading-none tracking-[-0.04em] opacity-10 select-none"
-                    style={{ fontFamily: 'var(--font-display)', color: '#F59E0B' }}
-                >
-                    {number}
-                </span>
-                <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-brand-accent/60">
-                    {tag}
-                </span>
-            </div>
-            <h3
-                className="text-white leading-[1.1] mb-4"
-                style={{ fontSize: 'clamp(1.6rem, 3vw, 2rem)' }}
-            >
-                <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 400 }}>
-                    {title.split(' ')[0]}{' '}
-                </span>
-                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.025em' }}>
-                    {title.split(' ').slice(1).join(' ')}
-                </span>
-            </h3>
-            <p className="text-white/45 text-[15px] leading-relaxed max-w-sm">
-                {description}
-            </p>
-        </div>
-
-        {/* Visual side */}
-        <div className="flex justify-center lg:justify-end">
-            {visual}
-        </div>
-    </motion.div>
-);
-
-// ─── Features section ─────────────────────────────────────────────────────────
+// ─── Features section — asymmetric bento ──────────────────────────────────────
 export const Features = () => {
     return (
-        <section id="features" className="bg-[#1A35D4] relative overflow-hidden">
-
+        <section id="features" className="bg-[#1A35D4] relative overflow-hidden py-24 lg:py-32">
             <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-brand-primary/[0.04] rounded-full blur-[120px] -ml-40 -mt-40 pointer-events-none" />
             <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-brand-accent/[0.03] rounded-full blur-[120px] -mr-40 -mb-40 pointer-events-none" />
 
             <Container className="relative z-10">
-
-                {/* Section header */}
                 <motion.div
                     initial={{ opacity: 0, y: 16 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className="pt-20 lg:pt-28 pb-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4"
+                    className="mb-12 lg:mb-16 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4"
                 >
                     <div>
                         <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-brand-accent mb-4">
@@ -230,35 +211,35 @@ export const Features = () => {
                     </p>
                 </motion.div>
 
-                {/* Feature rows */}
-                <FeatureRow
-                    index={0}
-                    number="01"
-                    tag="Automation"
-                    title="Never miss a contribution again."
-                    description="Set your amount and schedule once. Automatic deductions happen on time, every time — you stay focused on your goal, not the admin."
-                    visual={<ScheduleVisual />}
-                />
-
-                <FeatureRow
-                    index={1}
-                    number="02"
-                    tag="Visibility"
-                    title="Your savings, fully transparent."
-                    description="See plan status, paid periods, missed periods, and total saved in real time for both target and general plans."
-                    visual={<GroupVisual />}
-                    reverse
-                />
-
-                <FeatureRow
-                    index={2}
-                    number="03"
-                    tag="Payouts"
-                    title="Your money lands instantly."
-                    description="When payout is due, admins can process it with verified account details and clear payment records."
-                    visual={<PayoutVisual />}
-                />
-
+                <div className="bento-features">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, margin: '-40px' }}
+                        transition={{ duration: 0.5 }}
+                        className="[grid-area:automation]"
+                    >
+                        <AutomationCard />
+                    </motion.div>
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, margin: '-40px' }}
+                        transition={{ delay: 0.1, duration: 0.5 }}
+                        className="[grid-area:passbook]"
+                    >
+                        <PassbookCard />
+                    </motion.div>
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, margin: '-40px' }}
+                        transition={{ delay: 0.2, duration: 0.5 }}
+                        className="[grid-area:payout]"
+                    >
+                        <PayoutCard />
+                    </motion.div>
+                </div>
             </Container>
         </section>
     );

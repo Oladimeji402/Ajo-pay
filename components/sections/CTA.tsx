@@ -8,14 +8,14 @@ import Link from 'next/link';
 export const CTA = () => {
     return (
         <section
-            className="py-24 lg:py-32 relative overflow-hidden"
-            style={{ backgroundColor: '#0D1A6E' }}
+            className="py-20 lg:py-24 relative overflow-hidden"
+            style={{ backgroundColor: '#1A35D4' }}
         >
             {/* Texture — subtle dark dot grid */}
             <div
                 className="absolute inset-0 pointer-events-none opacity-[0.07]"
                 style={{
-                    backgroundImage: 'radial-gradient(rgba(15,23,42,1) 0.5px, transparent 0.5px)',
+                    backgroundImage: 'radial-gradient(rgba(13,26,110,1) 0.5px, transparent 0.5px)',
                     backgroundSize: '28px 28px',
                 }}
             />
@@ -23,11 +23,11 @@ export const CTA = () => {
             {/* Ambient shape — top right */}
             <div
                 className="absolute -top-20 -right-20 w-64 h-64 rounded-full pointer-events-none"
-                style={{ backgroundColor: 'rgba(15,23,42,0.06)', filter: 'blur(60px)' }}
+                style={{ backgroundColor: 'rgba(13,26,110,0.18)', filter: 'blur(60px)' }}
             />
             <div
                 className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full pointer-events-none"
-                style={{ backgroundColor: 'rgba(15,23,42,0.08)', filter: 'blur(60px)' }}
+                style={{ backgroundColor: 'rgba(13,26,110,0.22)', filter: 'blur(60px)' }}
             />
 
             <Container className="relative z-10">
@@ -36,10 +36,10 @@ export const CTA = () => {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.55 }}
-                    className="grid lg:grid-cols-[1fr_auto] gap-10 lg:gap-20 items-center"
+                    className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-10 lg:gap-16"
                 >
                     {/* Left — headline */}
-                    <div>
+                    <div className="lg:max-w-md">
                         <h2
                             className="leading-[1.0] mb-5"
                             style={{
